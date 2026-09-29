@@ -9,8 +9,10 @@ export function mountCamera(root, ctx) {
   let compareB = null;
   let loading = false;
 
+  let reloadAgain = false;
   async function reload() {
-    if (loading) return;
+    // A reload requested while one is in flight must not be lost.
+    if (loading) { reloadAgain = true; return; }
     const state = ctx.getState();
     if (!state.experimentId) return;   // no experiment selected yet
     loading = true;
@@ -25,6 +27,7 @@ export function mountCamera(root, ctx) {
       if (error.code !== 'unauthenticated') ctx.showError(`观测列表加载失败：${error.message}`);
     } finally {
       loading = false;
+      if (reloadAgain) { reloadAgain = false; reload(); }
     }
   }
 
@@ -121,9 +124,9 @@ export function mountCamera(root, ctx) {
     const header = h('div', {class: 'row'},
       h('button', {type: 'button', onclick: reload}, '刷新列表'),
       h('span', {class: 'muted'}, `共 ${observations.length} 条 · 图像为服务端合成 PNG（来源 synthetic_image）`));
-    root.replaceChildren(header, compareSection(),
+    root.replaceChildren(...[header, compareSection(),
       h('div', {class: 'obs-list'}, observations.length ? observations.map(obsCard)
-        : h('p', {class: 'muted'}, '暂无观测；在「操作」提交扫描后生成。')));
+        : h('p', {class: 'muted'}, '暂无观测；在「操作」提交扫描后生成。'))].filter(Boolean));
   }
 
   render();

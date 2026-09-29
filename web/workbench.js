@@ -320,6 +320,8 @@ async function mountSceneModule() {
   try {
     await scene.ready;
     sceneReady = true;
+    // Read-only diagnostics for browser acceptance; no write path is exposed.
+    Object.defineProperty(window, 'oscarScene', {value: Object.freeze({getStatus: () => scene.getStatus()})});
     scene.setView('interior');
     updateScene(getState());
   } catch { /* onError already surfaced */ }

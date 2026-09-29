@@ -93,6 +93,9 @@ export class DeviceClient {
     const extra: Record<string, string> = leaseId != null ? {'lease-id': String(leaseId)} : {};
     return (await this.request<Action>('POST', `${this.exp(experimentId)}/actions/${actionId}/cancel`, {}, extra)).body;
   }
+  observations(experimentId: string) {
+    return this.get<{observations: Observation[]}>(`${this.exp(experimentId)}/observations`).then(r => r.observations);
+  }
   observation(experimentId: string, id: string) { return this.get<Observation>(`${this.exp(experimentId)}/observations/${id}`); }
   async asset(experimentId: string, assetId: string): Promise<Uint8Array> {
     const headers: Record<string, string> = {...(this.opts.headers ?? {})};
