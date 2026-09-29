@@ -11,3 +11,4 @@ data/
 *.token
 test-results/
 playwright-report/
+reports/e2e/results.json

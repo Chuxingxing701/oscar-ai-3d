@@ -76,4 +76,52 @@
 - C3：真实 Culture Agent（复用本屏障协议与 run token 流程）、三条演示、`npm run demo:all`。
 
 ## C2：操作台 — 未开始
-## C3：Agent 与演示 — 未开始
+
+## C3：Agent 与演示 — 完成（2026-09-30）
+
+### 已实现
+
+- `packages/culture-policy`（`@oscar/culture-policy`，纯函数、无 IO/wall 钟/可变 RNG）：
+  - `scriptedDecide(ctx)`：按场景的确定性演示策略，输入 = 任务 profile（scenario JSON）+ StateSnapshot + 已记录观测 + 已知动作结果 + 提交错误 + 策略记忆 → `{kind:'act'|'wait'|'finish'}`；决策理由短且引用证据（observation id、device_estimate 数值、scheduled_policy）。规则：routine（扫描→低于带下沿则整排 media.add 至带中点（钳位）→复查→finish）、exchange（扫描→fraction 换液→shake→静置 wait(at_sim_s)→双目复查→前后对比 finish）、drift（set_targets（同 lease 立即终态）→首扫模糊**不伪造视觉结论**→await_stable→复查→容差内 finish）。限度：预算/仿真期限、同行液体冷却 60 s、模糊扫描与 resource_busy/observation_stale 有界重试后 finish(failed)；只读 device_estimate，从不读真值（如需 oracle 标签必须显式 `oracle_demo`，本版未使用）。
+  - `ModelAdapter {id; available(); decide(ctx)}`：`ScriptedAdapter`（用策略）与 `LlmAdapter` 占位（`OSCAR_LLM_PROVIDER/API_KEY/MODEL` 三者齐才 available；配置了也显式抛 llm_adapter_not_implemented，绝不静默回退）。工具表由 manifest 机械生成（`buildTools(manifest, run.capabilities)`，§7.1），已接入 ctx.tools 供未来 LLM 适配器。
+- `services/culture-agent`（`@oscar/culture-agent`，独立进程）：
+  - `main.ts`：仅绑 `127.0.0.1`（`--port`/`OSCAR_AGENT_PORT` 默认 8781，`--port 0` 支持）；先打印 `OSCAR_AGENT_LISTENING` 再等服务 token 文件（Runtime 创建，120 s 超时），完成重启恢复后打印 `OSCAR_AGENT_READY {"port":N}`；SIGTERM 优雅退出。
+  - 自有 SQLite `<data>/agent/agent.sqlite`（目录 0700）：runs（**run token 仅存于此文件**，绝不写日志/接口/事件/报告）、intents（幂等键+规范化请求，**HTTP 前持久化**）、events（每 run 独立单调 seq）、seen（重启安全的事件去重）。
+  - HTTP（仅网关调用，X-Service-Token 常量时间比较，缺失/错误 401，token 未加载 503）：`POST /runs`（202）、`GET /runs`、`GET /runs/{id}`（含报告）、`GET /runs/{id}/events`（SSE Last-Event-ID/after_seq + `?format=json`）、`POST /runs/{id}/control`。
+  - 控制循环（lockstep）：设备 SSE `decision.granted`（run token）驱动 + 断线退避重连时 `leases/current` 补拾 + 启动期补拾（覆盖“resume 先于循环存在”）；每持约 `lease.granted`→gather→decide→act（键 `${run_id}-d${n}` 先落库，同 canonical 复用未决键）→release(wake)，`next_lease` 同刻继续；决策期每 ttl/3 续期；`OSCAR_AGENT_DECISION_DELAY_MS=min-max` 注入随机 wall 延迟（决策内容不依赖）。错误：busy/stale 交策略有界重试、`run_on_hold`→本地暂停（新屏障即续）、`lease_not_active`→重取屏障再规划、401/experiment_archived→结束；不确定失败（网络/5xx）先 `by-key` 对账。realtime：不受支持，run `ended(aborted)` 并在报告注明。
+  - 报告：steps（决策/动作/效果摘要）、observations（id+图片 sha256）、库存对账（焦点排逐孔 start/end/delta、储液/废液/吸头）、环境前后、counts、`determinism_broken`；存 agent DB 并 `POST agent-status {status:'ended', reason, report}` 结束 run。
+  - 重启恢复（§6.5/§6.6）：启动把本地 active 的 run 置 `paused(agent_restarted)` 上报 Runtime（吊销屏障）；无 action_id 的意图按 `by-key` 对账、**不自动重发**；恢复仅由操作者网关 resume 触发（新屏障 run_resumed），Agent 重新观察再规划（已成功的液体操作不重复）。Runtime 重启→SSE 断开重连→见 `paused(runtime_restarted)` 保持暂停。
+- Runtime 最小扩展（【C3 细化】，已同步 API_CONTRACT.md §4/§4.2）：
+  - `POST /api/v1/runs/{id}/agent-status` 增收 `{status:'ended', reason:'completed'|'failed'|'aborted', report?}`：走既有 endRun（吊销 token/屏障、取消未终结动作），report 存 `agent_reports` 表，`run.ended` 带 outcome；非法 reason 422。
+  - 新增 `GET /api/v1/runs/{id}/report`（operator 或该 run token；无报告 404）。
+  - store 增加 `agent_reports` 表；endRun 支持附加事件载荷。其余未动。
+- 脚本：`scripts/dev.ts`（`npm run dev`：先起 Agent 再起 Runtime，等两行 READY，打印 workbench URL、一次性配对链接、`npm run pair` 提示、纯展示说明 `node server.mjs → http://127.0.0.1:8765/web/`；信号转发，任一退出即杀另一个；`--runtime-port/--agent-port/--data-dir`）。`scripts/demo-all.ts`（`npm run demo:all`：三场景+异常恢复各用独立临时数据目录起新进程，经网关以 operator 起 scripted run，结束后**经 API** 校验显式判据，写 `reports/demo/<demo>.json`+`summary.json`+`summary.md`，任一失败退出非零；`--only/--out-dir/--keep`；子进程必杀、临时目录默认清理）。根 package.json 增 `npm run runtime` / `npm run agent`。
+
+### 实际通过的命令（2026-09-30）
+
+- `npm run typecheck`：0 错误。
+- `npm test`：**136 项全部通过，0 失败**（C0/C1 基线 107 + C3 新增 29：culture-policy/agent 单测 21（策略 13、HTTP 7、意图持久化与按键对账 1）、runtime agent-report 4、tests/system agent-e2e 3；另含 A 侧场景 34——与 C1 时相同，其中 3 项 e2e 为 C3 前已有）。另：`node --test services/runtime/test/*.test.ts` 59/59。
+- `npm run demo:all`：**4/4 通过**（routine_maintenance 9 判据、exchange_and_mix 12、environment_drift 9、anomaly_recovery 7；全部 PASS，约 6 s wall，speed 600）。输出摘要：`=== summary: 4/4 demos passed ===`，报告在 `reports/demo/`。
+- `npm run dev`（15 s 冒烟）：两进程就绪、工作台/配对链接/纯展示提示打印正常，退出无孤儿进程。
+- `tests/system/agent-determinism.test.ts`：speed 1（含 50–350 ms 随机决策延迟）vs speed 600（10–500 ms）→ 规范化动作序列（capability/arguments/submitted_at_sim_s/status/ended_at_sim_s）、逐孔终体积、观测图片 sha256 列表**完全一致**，`determinism_broken=false`（单测约 61 s，speed 1 是真实墙钟）。
+
+### 约定与实现取舍（已同步标注到 API_CONTRACT.md【C3 细化】）
+
+- Agent 启动顺序解耦：先 `OSCAR_AGENT_LISTENING`（可接 `--port 0`）再等服务 token → 重启恢复 → `OSCAR_AGENT_READY`；token 未加载时请求 503。demo/e2e 依赖 LISTENING 行先起 Agent、再以实际端口起 Runtime。
+- 异常恢复 demo/测试用 `OSCAR_LEASE_TTL_MS=120000/300000` 防止 kill -9 期间屏障过期（否则 Runtime 会 paused(lease_timeout)+determinism_broken）。
+- `agent-status ended` 只能成功一次（endRun 吊销 run token）；Agent 对 401 视为“已结束”，本地仍留报告。
+- 意图键 `${run_id}-d${n}`（n 为 act 决策序号，持久化计数器）；同 canonical（capability+arguments+evidence+reason+basis 规范化 JSON）复用未决键 → 不确定失败后重发同键，Runtime 幂等保证至多一次效果。
+- 演示校验全部经 operator API（动作 summary/快照差量/事件/观测/报告），不信任 Agent 自述；未选孔比较用 0.5 µL 蒸发容差、换液体积恢复 2 µL。
+- LLM 模式：无凭证/凭证不全 → run `paused(model_unavailable)`（上报+会话流 error 事件，无任何 decision 事件）；有凭证但未接线 → 决策抛错同样暂停，绝不静默回退 scripted。
+
+### 已知限制
+
+- LLM 适配器为占位（工具表已装配并传入 ctx）；realtime 时钟模式不支持（run 以 aborted 收尾并注明），屏障协议仅 lockstep。
+- Agent 会话流 SSE 在进程内推送（与 Runtime SSE 相同的单写者模型）；Agent 不镜像设备事件，只记 Agent 侧事件。
+- `reports/demo/` 为运行产物（含 run/action/obs id 与种子），不入库版本管理由评审决定。
+- 策略的 observation_stale 恢复路径与“同行冷却”在当前三条演示中未被真实触发（运行时侧新鲜度校验先行），由单测覆盖。
+
+### 下一步
+
+- C2 操作台接入：Agent 面板消费 `/api/v1/agent/runs[/{id}[/events]]`（decision 事件已含 basis/reason/evidence_refs/capability/arguments；report 含库存对账与前后对比素材）。
+- 演示页/CLI 对 `model_unavailable`、`agent_restarted` 暂停态的呈现与 resume 入口。

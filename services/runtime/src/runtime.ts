@@ -1028,7 +1028,7 @@ export class Runtime {
   }
 
   /** End a run inside a tx: revoke token + lease, cancel its non-terminal actions. */
-  private endRun(exp: ExpRow, runId: string, reason: string): RunRow {
+  private endRun(exp: ExpRow, runId: string, reason: string, extraPayload: Record<string, unknown> = {}): RunRow {
     const run = this.runById(runId)!;
     run.status = 'ended';
     run.run.status = 'ended';
@@ -1056,7 +1056,7 @@ export class Runtime {
       this.saveAction(row);
     }
     this.saveWorld(exp.id, world);
-    this.emit(exp, 'run.ended', {run_id: runId, reason}, {run_id: runId});
+    this.emit(exp, 'run.ended', {run_id: runId, reason, ...extraPayload}, {run_id: runId});
     return run;
   }
 
@@ -1152,6 +1152,44 @@ export class Runtime {
     });
     this.notify(result.experiment_id, this.loadExp(result.experiment_id)?.event_seq ?? 0);
     return result;
+  }
+
+  /**
+   * 【C3 细化】Agent final report: {status:'ended', reason:'completed'|'failed'|'aborted',
+   * report?} from the run token. Ends the run through the existing endRun path
+   * (revoking the token + lease, cancelling its non-terminal actions), stores
+   * the report JSON in agent_reports and emits run.ended with the outcome.
+   */
+  agentEnded(runId: string, reason: 'completed' | 'failed' | 'aborted', report: unknown): RunRecord {
+    const result = this.store.tx(() => {
+      const run = this.runById(runId);
+      if (!run) throw new DeviceError('not_found', `No run ${runId}`);
+      const exp = this.loadExp(run.experiment_id)!;
+      if (report !== null && report !== undefined) {
+        this.store.stmt(`INSERT INTO agent_reports (run_id, experiment_id, reason, report_json, created_at_wall)
+          VALUES (?,?,?,?,?) ON CONFLICT(run_id) DO UPDATE SET reason=excluded.reason,
+          report_json=excluded.report_json, created_at_wall=excluded.created_at_wall`)
+          .run(runId, run.experiment_id, reason, JSON.stringify(report), nowIso());
+      }
+      if (run.status !== 'ended') {
+        this.endRun(exp, runId, reason, {outcome: reason, by: 'agent', report_present: report != null});
+      } else {
+        this.emit(exp, 'run.ended', {run_id: runId, reason, outcome: reason, by: 'agent_report',
+          report_present: report != null, note: 'run was already ended; report stored only'}, {run_id: runId});
+      }
+      this.saveExp(exp);
+      return this.runById(runId)!.run;
+    });
+    this.notify(result.experiment_id, this.loadExp(result.experiment_id)?.event_seq ?? 0);
+    return result;
+  }
+
+  /** 【C3 细化】Stored agent report for a run (operator or that run token). */
+  agentReport(runId: string): {run_id: string; reason: string; report: unknown; created_at_wall: string} | undefined {
+    const row = this.store.stmt('SELECT * FROM agent_reports WHERE run_id = ?').get(runId) as Record<string, unknown> | undefined;
+    if (!row) return undefined;
+    return {run_id: runId, reason: String(row.reason), report: JSON.parse(String(row.report_json)),
+      created_at_wall: String(row.created_at_wall)};
   }
 
   // -- clock ----------------------------------------------------------------

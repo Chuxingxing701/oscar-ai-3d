@@ -1,0 +1,15 @@
+{
+  "name": "@oscar/culture-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OSCAR Culture Agent: independent process, scripted/LLM adapters, lease-driven control loop, own SQLite session store",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@oscar/device-contract": "0.1.0",
+    "@oscar/simulator": "0.1.0",
+    "@oscar/culture-policy": "0.1.0"
+  }
+}

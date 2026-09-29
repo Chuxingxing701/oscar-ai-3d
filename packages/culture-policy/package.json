@@ -1,0 +1,14 @@
+{
+  "name": "@oscar/culture-policy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic scripted Culture Agent policy and model adapters (scripted / llm placeholder)",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@oscar/device-contract": "0.1.0",
+    "@oscar/simulator": "0.1.0"
+  }
+}

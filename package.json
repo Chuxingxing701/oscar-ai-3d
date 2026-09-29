@@ -18,6 +18,8 @@
     "test:e2e": "playwright test -c tests/e2e/playwright.config.ts",
     "demo:all": "node scripts/demo-all.ts",
     "dev": "node scripts/dev.ts",
+    "runtime": "node services/runtime/src/main.ts",
+    "agent": "node services/culture-agent/src/main.ts",
     "vendor:three": "node scripts/vendor-three.mjs",
     "vendor:check": "node scripts/vendor-three.mjs --check",
     "pair": "node scripts/pair.ts"

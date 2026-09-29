@@ -12,6 +12,8 @@
 
 Runtime 参数：`--port`、`--data-dir`、`--agent-url`、`--lan`、`--allow-host <host[:port]>`（可多次）、`--access-code-file`（或 `OSCAR_ACCESS_CODE`）、`--scenario`、`--seed`、`--clock-mode`。`--lan` 且访问码缺失或短于 16 字符时以非零码退出。【C1 细化】`--port 0` 允许（测试用）：实际端口从就绪行读取；启动时向 stdout 打印一行机器可读的 `OSCAR_RUNTIME_READY {"port":N,"pair_url":...,"data_dir":...}` 与一行人类可读的配对链接；`--data-dir` 支持绝对路径。墙钟 TTL 可用环境变量覆盖（见 §6）。
 
+【C3 细化】Agent 参数：`--port`（`OSCAR_AGENT_PORT`，默认 8781，`--port 0` 支持）、`--data-dir`（`OSCAR_DATA_DIR`，默认 `data`，与 Runtime 共享）、`--runtime-url`（`OSCAR_RUNTIME_URL`，默认 `http://127.0.0.1:8780`）。启动顺序解耦：Agent 先绑定端口并打印 `OSCAR_AGENT_LISTENING {"port":N}`（此时服务 token 未加载，请求得 503），等 `<data>/secrets/service.token` 出现（Runtime 创建）并完成重启恢复（§6.5）后打印 `OSCAR_AGENT_READY {"port":N,...}`。`OSCAR_AGENT_DECISION_DELAY_MS=min-max` 注入随机 wall 延迟（仅确定性测试用；决策内容不依赖它）。SIGTERM/SIGINT 优雅退出。
+
 ### 【C1 细化】ID 唯一性
 
 `runs.id`/`actions.id`/`observations.id`/`assets.id` 是全局主键，因此 ID 带实验序号：`act-001-01`（实验 001 的第 1 个动作）、`obs-001-001`、`ast-001-001`、`run-001-1`；实验 ID `exp-001`；`lease_id` 是全局单调整数。
@@ -68,7 +70,8 @@ Runtime 参数：`--port`、`--data-dir`、`--agent-url`、`--lan`、`--allow-ho
 | `POST /api/v1/experiments/{id}/leases/{lease_id}/release` | 体 `{wake:{on_actions?, at_sim_s?}}` → `{lease, next_lease}` |
 | `POST /api/v1/experiments/{id}/control` | operator：`ControlRequest` 之一 |
 | `GET /api/v1/experiments/{id}/runs` / `runs/current` | Runtime 侧 run 记录 |
-| `POST /api/v1/runs/{run_id}/agent-status` | run token；`{status:'paused', reason}` Agent 自报暂停（如 `agent_restarted`、`model_unavailable`） |
+| `POST /api/v1/runs/{run_id}/agent-status` | run token；`{status:'paused', reason}` Agent 自报暂停（如 `agent_restarted`、`model_unavailable`）。【C3 细化】或 `{status:'ended', reason:'completed'\|'failed'\|'aborted', report?}`：经既有 endRun 路径结束 run（吊销 run token 与屏障、请求取消其未终结动作），report JSON 存入 `agent_reports` 表，`run.ended` 事件携带 `outcome` 与 `by:'agent'`；其余 reason 值 422。run 已结束后 token 已吊销，重复投送得 401（Agent 将其视为“已结束”而非错误） |
+| `GET /api/v1/runs/{run_id}/report` | 【C3 细化】operator 或该 run 的（未吊销）run token：`{run_id, reason, report, created_at_wall}`；无报告 404。报告含 steps（决策/动作/效果摘要）、observations（id+图片 sha256）、库存对账（储液/废液/吸头/焦点排逐孔 start/end/delta）、环境前后、`determinism_broken` |
 | `GET /api/v1/runs/{run_id}` | run token 或 operator：`RunRecord` |
 | `/api/v1/agent/*` | 网关：operator 会话校验后代理到 Agent（附 `X-Service-Token`），SSE 透传 `Last-Event-ID`；Agent 不在时 `503 agent_unavailable` |
 | `GET /api/v1/experiments/{id}/debug/truth` | 【C1 细化】仅 operator：暴露 `simulator_truth`（环境真值、逐孔 culture/蒸发、head 载液），用于测试校验与 `oracle_demo` 标注；不进入普通快照 |
@@ -79,6 +82,22 @@ Runtime 参数：`--port`、`--data-dir`、`--agent-url`、`--lan`、`--allow-ho
 - `POST /api/v1/agent/runs/{id}/control {action:'pause'|'resume'|'cancel'}`：Runtime 先执行自身语义（pause：run→paused，撤销屏障；resume：run→active，新屏障 `run_resumed`；cancel：run→ended，撤销 token 与屏障，请求取消其未终结动作），再转发给 Agent。
 - hold：`POST /experiments/{id}/control {hold:{run_id, on}}`。on：run→on_hold，撤销屏障，run 新写入 `403 run_on_hold`；off：run→active 并建新屏障。
 - 其余 `GET /api/v1/agent/runs[/{id}[/events]]` 直接代理（Agent 会话流，自有 seq）。
+
+### 4.2 Culture Agent 服务端 API【C3 细化】
+
+Agent 是独立进程，仅监听 `127.0.0.1:port`，所有请求要求 `X-Service-Token` 与共享秘钥匹配（sha256 摘要常量时间比较；缺失/错误一律 401）。未加载服务 token 时 503。
+
+| 方法与路径 | 说明 |
+| --- | --- |
+| `POST /runs` | Runtime 网关转发（§4.1 的 payload：`run_id, run_token, experiment_id, clock_mode, lease, mode, goal, plates, capabilities, budget, scenario_id, seed`）。持久化 run 行（含 run token，仅存于 `<data>/agent/agent.sqlite`，该目录 0700，绝不写日志/接口/事件）→ 写 `run.accepted` 事件 → 启动控制循环 → `202 {run_id, accepted:true}`。同 `run_id` 重复转发返回 `202 {duplicate:true}`，不启动第二个循环 |
+| `GET /runs` | `{runs:[{run_id, experiment_id, scenario, mode, status, pause_reason, counts:{decisions,actions,observations}, report_present, ...}]}` |
+| `GET /runs/{id}` | 上述字段 + `report`（完成后） |
+| `GET /runs/{id}/events` | Agent 会话流 SSE（`Last-Event-ID`/`after_seq`，帧 `id:<seq>` `event:agent`，15 s 心跳）；`?format=json&limit=` 分页 JSON。事件类型：`run.accepted`、`decision`（含 basis/reason/evidence_refs/capability/arguments）、`action.submitted`、`action.result`、`observation.recorded`、`wait`、`lease.granted`、`paused`、`resumed`、`error`、`report` |
+| `POST /runs/{id}/control` | `{action:'pause'\|'resume'\|'cancel'}`，Runtime 已先行应用自身语义。pause：本地停止发起新动作；resume：按幂等键对账后在新屏障到达时继续；cancel：停止循环并写本地 `aborted` 报告（token 已被 Runtime 吊销，无法再投送） |
+
+控制循环（lockstep）：以 run token 经 DeviceClient 订阅设备 SSE 的 `decision.granted`（断线退避重连并以 `GET leases/current` 补拾）；每次持约有 lease.granted 事件 → 读状态/动作结果/观测 → 纯函数 scripted 策略决策 → act：先持久化幂等键 `${run_id}-d${n}` 与规范化请求**再发 HTTP**（同一 canonical 复用未决键，绝不换新键重做液体操作）→ release(wake)，`next_lease` 非空则同刻继续 → finish：生成结构化报告（库存对账、观测 sha256、环境前后、`determinism_broken`）入库并 `POST agent-status {status:'ended', reason, report}`。决策期间每 `ttl/3` 续期。错误处理：`resource_busy`/`observation_stale` 交给策略有界重试；`run_on_hold` → 本地暂停（解除 hold 的新屏障到达即继续）；`lease_not_active` → 重取当前屏障再规划；`experiment_archived`/401 → 结束循环。
+
+重启恢复（§6.5）：进程启动时把本地 `active` 的 run 置为 `paused(agent_restarted)` 并上报 Runtime（Runtime 吊销屏障）；对每个无 `action_id` 的持久化意图按 `GET actions/by-key/{key}` 对账，**不自动重发**；恢复必须由操作者经网关 resume 显式触发（新屏障 `run_resumed`），Agent 重新观察后从观测状态再规划（已成功的换液不会重复）。Runtime 重启时 Agent 的 SSE 断开重连，看到 run `paused(runtime_restarted)` 即保持暂停等待 resume。`mode:'llm'` 且 `OSCAR_LLM_*` 不完整 → run 置 `paused(model_unavailable)`（上报 Runtime 并写入会话流），绝不静默回退 scripted。`clock_mode:'realtime'` 不受支持：run 以 `ended(aborted)` 收尾并在报告中注明（演示 Agent 仅 lockstep）。
 
 ## 5. 动作状态机与执行
 

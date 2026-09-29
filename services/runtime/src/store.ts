@@ -135,6 +135,13 @@ CREATE TABLE IF NOT EXISTS diagnostics (
   kind TEXT NOT NULL,
   detail TEXT
 );
+CREATE TABLE IF NOT EXISTS agent_reports (
+  run_id TEXT PRIMARY KEY,
+  experiment_id TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  report_json TEXT NOT NULL,
+  created_at_wall TEXT NOT NULL
+);
 `;
 
 export class Store {

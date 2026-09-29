@@ -328,9 +328,31 @@ export class HttpApi {
         throw new DeviceError('forbidden', 'Only the run token may report agent status');
       }
       const status = String(ctx.body?.status ?? '');
-      if (status !== 'paused') throw new DeviceError('invalid_argument', "agent-status accepts {status:'paused'}");
-      const updated = runtime.agentStatus(run.id, status, ctx.body?.reason ? String(ctx.body.reason) : null);
-      return this.sendJson(res, 200, updated);
+      if (status === 'paused') {
+        const updated = runtime.agentStatus(run.id, status, ctx.body?.reason ? String(ctx.body.reason) : null);
+        return this.sendJson(res, 200, updated);
+      }
+      if (status === 'ended') {
+        // 【C3 细化】final report delivery: ends the run via the existing
+        // endRun path and stores the report JSON (agent_reports table).
+        const reason = String(ctx.body?.reason ?? '');
+        if (reason !== 'completed' && reason !== 'failed' && reason !== 'aborted') {
+          throw new DeviceError('invalid_argument', "ended requires reason 'completed' | 'failed' | 'aborted'");
+        }
+        const updated = runtime.agentEnded(run.id, reason, ctx.body?.report ?? null);
+        return this.sendJson(res, 200, updated);
+      }
+      throw new DeviceError('invalid_argument',
+        "agent-status accepts {status:'paused', reason} or {status:'ended', reason:'completed'|'failed'|'aborted', report?}");
+    }
+    if (rest === '/report' && method === 'GET') {
+      this.requireAuth(ctx);
+      if (ctx.principal!.kind === 'run' && ctx.principal!.run_id !== run.id) {
+        throw new DeviceError('forbidden', 'Run tokens may only read their own report');
+      }
+      const report = runtime.agentReport(run.id);
+      if (!report) throw new DeviceError('not_found', `No agent report for run ${run.id}`);
+      return this.sendJson(res, 200, report);
     }
     throw new DeviceError('not_found', `No route ${method} /api/v1/runs/${runId}${rest}`);
   }
