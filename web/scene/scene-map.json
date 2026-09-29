@@ -1,0 +1,3567 @@
+{
+  "version": 1,
+  "device_id": "oscar-01",
+  "model": "../../models/OSCAR_full.glb",
+  "model_sha256": "1b0ef82b46ca2d42f7a7363dc149c8c1bfa6cee98b37513c3ffd7267d0e164fb",
+  "coordinates": {
+    "unit": "m",
+    "up": "+Y",
+    "front": "+Z",
+    "blender_to_gltf": [
+      "x",
+      "z",
+      "-y"
+    ],
+    "well_numbering": "column=i+1; row=A+(ny-1-j); A is far from operator"
+  },
+  "motion": {
+    "root": "Motion",
+    "x": "Motion_X",
+    "y": "Motion_Y",
+    "z": "Motion_Z",
+    "idle_clip": "OSCAR_Demo_18s",
+    "home_m": [
+      -0.463,
+      0,
+      -0.155
+    ],
+    "row_head": {
+      "channels": 6,
+      "pitch_m": 0.0216,
+      "tip_height_m": 1.113,
+      "tip_depth_m": 0.018,
+      "source_needle_nodes": [
+        "Visible_needle_00",
+        "Visible_needle_01",
+        "Visible_needle_02",
+        "Visible_needle_03",
+        "Visible_needle_04",
+        "Visible_needle_05",
+        "Visible_needle_06",
+        "Visible_needle_07"
+      ],
+      "note": "Display head matches one full six-well row of the current 24-well plates."
+    },
+    "lowering_m": 0.12
+  },
+  "stations": [
+    {
+      "id": "plate-01",
+      "kind": "plate",
+      "prefix": "Station_1_2",
+      "anchor_node": "Station_1_2_body",
+      "center_m": [
+        -0.875,
+        0.937,
+        0.075
+      ],
+      "nodes": [
+        "Station_1_2_body",
+        "Station_1_2_carrier",
+        "Station_1_2_locator",
+        "Station_1_2_locator.001",
+        "Station_1_2_locator.002",
+        "Station_1_2_locator.003",
+        "Station_1_2_well_0_0",
+        "Station_1_2_well_0_1",
+        "Station_1_2_well_0_2",
+        "Station_1_2_well_0_3",
+        "Station_1_2_well_1_0",
+        "Station_1_2_well_1_1",
+        "Station_1_2_well_1_2",
+        "Station_1_2_well_1_3",
+        "Station_1_2_well_2_0",
+        "Station_1_2_well_2_1",
+        "Station_1_2_well_2_2",
+        "Station_1_2_well_2_3",
+        "Station_1_2_well_3_0",
+        "Station_1_2_well_3_1",
+        "Station_1_2_well_3_2",
+        "Station_1_2_well_3_3",
+        "Station_1_2_well_4_0",
+        "Station_1_2_well_4_1",
+        "Station_1_2_well_4_2",
+        "Station_1_2_well_4_3",
+        "Station_1_2_well_5_0",
+        "Station_1_2_well_5_1",
+        "Station_1_2_well_5_2",
+        "Station_1_2_well_5_3"
+      ],
+      "columns": 6,
+      "rows": 4,
+      "wells": [
+        {
+          "well_id": "A1",
+          "node": "Station_1_2_well_0_3",
+          "center_m": [
+            -0.929,
+            0.9495,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A2",
+          "node": "Station_1_2_well_1_3",
+          "center_m": [
+            -0.9074,
+            0.9495,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A3",
+          "node": "Station_1_2_well_2_3",
+          "center_m": [
+            -0.8858,
+            0.9495,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A4",
+          "node": "Station_1_2_well_3_3",
+          "center_m": [
+            -0.8642,
+            0.9495,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A5",
+          "node": "Station_1_2_well_4_3",
+          "center_m": [
+            -0.8426,
+            0.9495,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A6",
+          "node": "Station_1_2_well_5_3",
+          "center_m": [
+            -0.821,
+            0.9495,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "B1",
+          "node": "Station_1_2_well_0_2",
+          "center_m": [
+            -0.929,
+            0.9495,
+            0.0641667
+          ]
+        },
+        {
+          "well_id": "B2",
+          "node": "Station_1_2_well_1_2",
+          "center_m": [
+            -0.9074,
+            0.9495,
+            0.0641667
+          ]
+        },
+        {
+          "well_id": "B3",
+          "node": "Station_1_2_well_2_2",
+          "center_m": [
+            -0.8858,
+            0.9495,
+            0.0641667
+          ]
+        },
+        {
+          "well_id": "B4",
+          "node": "Station_1_2_well_3_2",
+          "center_m": [
+            -0.8642,
+            0.9495,
+            0.0641667
+          ]
+        },
+        {
+          "well_id": "B5",
+          "node": "Station_1_2_well_4_2",
+          "center_m": [
+            -0.8426,
+            0.9495,
+            0.0641667
+          ]
+        },
+        {
+          "well_id": "B6",
+          "node": "Station_1_2_well_5_2",
+          "center_m": [
+            -0.821,
+            0.9495,
+            0.0641667
+          ]
+        },
+        {
+          "well_id": "C1",
+          "node": "Station_1_2_well_0_1",
+          "center_m": [
+            -0.929,
+            0.9495,
+            0.0858333
+          ]
+        },
+        {
+          "well_id": "C2",
+          "node": "Station_1_2_well_1_1",
+          "center_m": [
+            -0.9074,
+            0.9495,
+            0.0858333
+          ]
+        },
+        {
+          "well_id": "C3",
+          "node": "Station_1_2_well_2_1",
+          "center_m": [
+            -0.8858,
+            0.9495,
+            0.0858333
+          ]
+        },
+        {
+          "well_id": "C4",
+          "node": "Station_1_2_well_3_1",
+          "center_m": [
+            -0.8642,
+            0.9495,
+            0.0858333
+          ]
+        },
+        {
+          "well_id": "C5",
+          "node": "Station_1_2_well_4_1",
+          "center_m": [
+            -0.8426,
+            0.9495,
+            0.0858333
+          ]
+        },
+        {
+          "well_id": "C6",
+          "node": "Station_1_2_well_5_1",
+          "center_m": [
+            -0.821,
+            0.9495,
+            0.0858333
+          ]
+        },
+        {
+          "well_id": "D1",
+          "node": "Station_1_2_well_0_0",
+          "center_m": [
+            -0.929,
+            0.9495,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "D2",
+          "node": "Station_1_2_well_1_0",
+          "center_m": [
+            -0.9074,
+            0.9495,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "D3",
+          "node": "Station_1_2_well_2_0",
+          "center_m": [
+            -0.8858,
+            0.9495,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "D4",
+          "node": "Station_1_2_well_3_0",
+          "center_m": [
+            -0.8642,
+            0.9495,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "D5",
+          "node": "Station_1_2_well_4_0",
+          "center_m": [
+            -0.8426,
+            0.9495,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "D6",
+          "node": "Station_1_2_well_5_0",
+          "center_m": [
+            -0.821,
+            0.9495,
+            0.1075
+          ]
+        }
+      ]
+    },
+    {
+      "id": "plate-02",
+      "kind": "plate",
+      "prefix": "Station_1_3",
+      "anchor_node": "Station_1_3_body",
+      "center_m": [
+        -0.875,
+        0.937,
+        -0.04
+      ],
+      "nodes": [
+        "Station_1_3_body",
+        "Station_1_3_carrier",
+        "Station_1_3_locator",
+        "Station_1_3_locator.001",
+        "Station_1_3_locator.002",
+        "Station_1_3_locator.003",
+        "Station_1_3_well_0_0",
+        "Station_1_3_well_0_1",
+        "Station_1_3_well_0_2",
+        "Station_1_3_well_0_3",
+        "Station_1_3_well_1_0",
+        "Station_1_3_well_1_1",
+        "Station_1_3_well_1_2",
+        "Station_1_3_well_1_3",
+        "Station_1_3_well_2_0",
+        "Station_1_3_well_2_1",
+        "Station_1_3_well_2_2",
+        "Station_1_3_well_2_3",
+        "Station_1_3_well_3_0",
+        "Station_1_3_well_3_1",
+        "Station_1_3_well_3_2",
+        "Station_1_3_well_3_3",
+        "Station_1_3_well_4_0",
+        "Station_1_3_well_4_1",
+        "Station_1_3_well_4_2",
+        "Station_1_3_well_4_3",
+        "Station_1_3_well_5_0",
+        "Station_1_3_well_5_1",
+        "Station_1_3_well_5_2",
+        "Station_1_3_well_5_3"
+      ],
+      "columns": 6,
+      "rows": 4,
+      "wells": [
+        {
+          "well_id": "A1",
+          "node": "Station_1_3_well_0_3",
+          "center_m": [
+            -0.929,
+            0.9495,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A2",
+          "node": "Station_1_3_well_1_3",
+          "center_m": [
+            -0.9074,
+            0.9495,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A3",
+          "node": "Station_1_3_well_2_3",
+          "center_m": [
+            -0.8858,
+            0.9495,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A4",
+          "node": "Station_1_3_well_3_3",
+          "center_m": [
+            -0.8642,
+            0.9495,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A5",
+          "node": "Station_1_3_well_4_3",
+          "center_m": [
+            -0.8426,
+            0.9495,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A6",
+          "node": "Station_1_3_well_5_3",
+          "center_m": [
+            -0.821,
+            0.9495,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "B1",
+          "node": "Station_1_3_well_0_2",
+          "center_m": [
+            -0.929,
+            0.9495,
+            -0.0508333
+          ]
+        },
+        {
+          "well_id": "B2",
+          "node": "Station_1_3_well_1_2",
+          "center_m": [
+            -0.9074,
+            0.9495,
+            -0.0508333
+          ]
+        },
+        {
+          "well_id": "B3",
+          "node": "Station_1_3_well_2_2",
+          "center_m": [
+            -0.8858,
+            0.9495,
+            -0.0508333
+          ]
+        },
+        {
+          "well_id": "B4",
+          "node": "Station_1_3_well_3_2",
+          "center_m": [
+            -0.8642,
+            0.9495,
+            -0.0508333
+          ]
+        },
+        {
+          "well_id": "B5",
+          "node": "Station_1_3_well_4_2",
+          "center_m": [
+            -0.8426,
+            0.9495,
+            -0.0508333
+          ]
+        },
+        {
+          "well_id": "B6",
+          "node": "Station_1_3_well_5_2",
+          "center_m": [
+            -0.821,
+            0.9495,
+            -0.0508333
+          ]
+        },
+        {
+          "well_id": "C1",
+          "node": "Station_1_3_well_0_1",
+          "center_m": [
+            -0.929,
+            0.9495,
+            -0.0291667
+          ]
+        },
+        {
+          "well_id": "C2",
+          "node": "Station_1_3_well_1_1",
+          "center_m": [
+            -0.9074,
+            0.9495,
+            -0.0291667
+          ]
+        },
+        {
+          "well_id": "C3",
+          "node": "Station_1_3_well_2_1",
+          "center_m": [
+            -0.8858,
+            0.9495,
+            -0.0291667
+          ]
+        },
+        {
+          "well_id": "C4",
+          "node": "Station_1_3_well_3_1",
+          "center_m": [
+            -0.8642,
+            0.9495,
+            -0.0291667
+          ]
+        },
+        {
+          "well_id": "C5",
+          "node": "Station_1_3_well_4_1",
+          "center_m": [
+            -0.8426,
+            0.9495,
+            -0.0291667
+          ]
+        },
+        {
+          "well_id": "C6",
+          "node": "Station_1_3_well_5_1",
+          "center_m": [
+            -0.821,
+            0.9495,
+            -0.0291667
+          ]
+        },
+        {
+          "well_id": "D1",
+          "node": "Station_1_3_well_0_0",
+          "center_m": [
+            -0.929,
+            0.9495,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "D2",
+          "node": "Station_1_3_well_1_0",
+          "center_m": [
+            -0.9074,
+            0.9495,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "D3",
+          "node": "Station_1_3_well_2_0",
+          "center_m": [
+            -0.8858,
+            0.9495,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "D4",
+          "node": "Station_1_3_well_3_0",
+          "center_m": [
+            -0.8642,
+            0.9495,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "D5",
+          "node": "Station_1_3_well_4_0",
+          "center_m": [
+            -0.8426,
+            0.9495,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "D6",
+          "node": "Station_1_3_well_5_0",
+          "center_m": [
+            -0.821,
+            0.9495,
+            -0.0075
+          ]
+        }
+      ]
+    },
+    {
+      "id": "media-01",
+      "kind": "media",
+      "prefix": "Station_3_3",
+      "anchor_node": "Station_3_3_tray_insert",
+      "center_m": [
+        -0.463,
+        0.939,
+        -0.04
+      ],
+      "nodes": [
+        "Station_3_3_carrier",
+        "Station_3_3_locator",
+        "Station_3_3_locator.001",
+        "Station_3_3_locator.002",
+        "Station_3_3_locator.003",
+        "Station_3_3_shallow_tray",
+        "Station_3_3_tray_insert"
+      ]
+    },
+    {
+      "id": "waste-01",
+      "kind": "waste",
+      "prefix": "Station_3_4",
+      "anchor_node": "Station_3_4_tray_insert",
+      "center_m": [
+        -0.463,
+        0.939,
+        -0.155
+      ],
+      "nodes": [
+        "Station_3_4_carrier",
+        "Station_3_4_locator",
+        "Station_3_4_locator.001",
+        "Station_3_4_locator.002",
+        "Station_3_4_locator.003",
+        "Station_3_4_shallow_tray",
+        "Station_3_4_tray_insert"
+      ]
+    },
+    {
+      "id": "tips-01",
+      "kind": "tips",
+      "prefix": "Station_4_1",
+      "anchor_node": "Station_4_1_tipbox",
+      "center_m": [
+        -0.257,
+        0.944,
+        0.19
+      ],
+      "nodes": [
+        "Station_4_1_carrier",
+        "Station_4_1_locator",
+        "Station_4_1_locator.001",
+        "Station_4_1_locator.002",
+        "Station_4_1_locator.003",
+        "Station_4_1_tipbox",
+        "Station_4_1_tips_body",
+        "Station_4_1_tips_well_0_0",
+        "Station_4_1_tips_well_0_1",
+        "Station_4_1_tips_well_0_2",
+        "Station_4_1_tips_well_0_3",
+        "Station_4_1_tips_well_0_4",
+        "Station_4_1_tips_well_0_5",
+        "Station_4_1_tips_well_0_6",
+        "Station_4_1_tips_well_0_7",
+        "Station_4_1_tips_well_10_0",
+        "Station_4_1_tips_well_10_1",
+        "Station_4_1_tips_well_10_2",
+        "Station_4_1_tips_well_10_3",
+        "Station_4_1_tips_well_10_4",
+        "Station_4_1_tips_well_10_5",
+        "Station_4_1_tips_well_10_6",
+        "Station_4_1_tips_well_10_7",
+        "Station_4_1_tips_well_11_0",
+        "Station_4_1_tips_well_11_1",
+        "Station_4_1_tips_well_11_2",
+        "Station_4_1_tips_well_11_3",
+        "Station_4_1_tips_well_11_4",
+        "Station_4_1_tips_well_11_5",
+        "Station_4_1_tips_well_11_6",
+        "Station_4_1_tips_well_11_7",
+        "Station_4_1_tips_well_1_0",
+        "Station_4_1_tips_well_1_1",
+        "Station_4_1_tips_well_1_2",
+        "Station_4_1_tips_well_1_3",
+        "Station_4_1_tips_well_1_4",
+        "Station_4_1_tips_well_1_5",
+        "Station_4_1_tips_well_1_6",
+        "Station_4_1_tips_well_1_7",
+        "Station_4_1_tips_well_2_0",
+        "Station_4_1_tips_well_2_1",
+        "Station_4_1_tips_well_2_2",
+        "Station_4_1_tips_well_2_3",
+        "Station_4_1_tips_well_2_4",
+        "Station_4_1_tips_well_2_5",
+        "Station_4_1_tips_well_2_6",
+        "Station_4_1_tips_well_2_7",
+        "Station_4_1_tips_well_3_0",
+        "Station_4_1_tips_well_3_1",
+        "Station_4_1_tips_well_3_2",
+        "Station_4_1_tips_well_3_3",
+        "Station_4_1_tips_well_3_4",
+        "Station_4_1_tips_well_3_5",
+        "Station_4_1_tips_well_3_6",
+        "Station_4_1_tips_well_3_7",
+        "Station_4_1_tips_well_4_0",
+        "Station_4_1_tips_well_4_1",
+        "Station_4_1_tips_well_4_2",
+        "Station_4_1_tips_well_4_3",
+        "Station_4_1_tips_well_4_4",
+        "Station_4_1_tips_well_4_5",
+        "Station_4_1_tips_well_4_6",
+        "Station_4_1_tips_well_4_7",
+        "Station_4_1_tips_well_5_0",
+        "Station_4_1_tips_well_5_1",
+        "Station_4_1_tips_well_5_2",
+        "Station_4_1_tips_well_5_3",
+        "Station_4_1_tips_well_5_4",
+        "Station_4_1_tips_well_5_5",
+        "Station_4_1_tips_well_5_6",
+        "Station_4_1_tips_well_5_7",
+        "Station_4_1_tips_well_6_0",
+        "Station_4_1_tips_well_6_1",
+        "Station_4_1_tips_well_6_2",
+        "Station_4_1_tips_well_6_3",
+        "Station_4_1_tips_well_6_4",
+        "Station_4_1_tips_well_6_5",
+        "Station_4_1_tips_well_6_6",
+        "Station_4_1_tips_well_6_7",
+        "Station_4_1_tips_well_7_0",
+        "Station_4_1_tips_well_7_1",
+        "Station_4_1_tips_well_7_2",
+        "Station_4_1_tips_well_7_3",
+        "Station_4_1_tips_well_7_4",
+        "Station_4_1_tips_well_7_5",
+        "Station_4_1_tips_well_7_6",
+        "Station_4_1_tips_well_7_7",
+        "Station_4_1_tips_well_8_0",
+        "Station_4_1_tips_well_8_1",
+        "Station_4_1_tips_well_8_2",
+        "Station_4_1_tips_well_8_3",
+        "Station_4_1_tips_well_8_4",
+        "Station_4_1_tips_well_8_5",
+        "Station_4_1_tips_well_8_6",
+        "Station_4_1_tips_well_8_7",
+        "Station_4_1_tips_well_9_0",
+        "Station_4_1_tips_well_9_1",
+        "Station_4_1_tips_well_9_2",
+        "Station_4_1_tips_well_9_3",
+        "Station_4_1_tips_well_9_4",
+        "Station_4_1_tips_well_9_5",
+        "Station_4_1_tips_well_9_6",
+        "Station_4_1_tips_well_9_7"
+      ],
+      "columns": 12,
+      "rows": 8,
+      "wells": [
+        {
+          "well_id": "A1",
+          "node": "Station_4_1_tips_well_0_7",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A2",
+          "node": "Station_4_1_tips_well_1_7",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A3",
+          "node": "Station_4_1_tips_well_2_7",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A4",
+          "node": "Station_4_1_tips_well_3_7",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A5",
+          "node": "Station_4_1_tips_well_4_7",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A6",
+          "node": "Station_4_1_tips_well_5_7",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A7",
+          "node": "Station_4_1_tips_well_6_7",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A8",
+          "node": "Station_4_1_tips_well_7_7",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A9",
+          "node": "Station_4_1_tips_well_8_7",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A10",
+          "node": "Station_4_1_tips_well_9_7",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A11",
+          "node": "Station_4_1_tips_well_10_7",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "A12",
+          "node": "Station_4_1_tips_well_11_7",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.1575
+          ]
+        },
+        {
+          "well_id": "B1",
+          "node": "Station_4_1_tips_well_0_6",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B2",
+          "node": "Station_4_1_tips_well_1_6",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B3",
+          "node": "Station_4_1_tips_well_2_6",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B4",
+          "node": "Station_4_1_tips_well_3_6",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B5",
+          "node": "Station_4_1_tips_well_4_6",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B6",
+          "node": "Station_4_1_tips_well_5_6",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B7",
+          "node": "Station_4_1_tips_well_6_6",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B8",
+          "node": "Station_4_1_tips_well_7_6",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B9",
+          "node": "Station_4_1_tips_well_8_6",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B10",
+          "node": "Station_4_1_tips_well_9_6",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B11",
+          "node": "Station_4_1_tips_well_10_6",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "B12",
+          "node": "Station_4_1_tips_well_11_6",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.1667857
+          ]
+        },
+        {
+          "well_id": "C1",
+          "node": "Station_4_1_tips_well_0_5",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C2",
+          "node": "Station_4_1_tips_well_1_5",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C3",
+          "node": "Station_4_1_tips_well_2_5",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C4",
+          "node": "Station_4_1_tips_well_3_5",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C5",
+          "node": "Station_4_1_tips_well_4_5",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C6",
+          "node": "Station_4_1_tips_well_5_5",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C7",
+          "node": "Station_4_1_tips_well_6_5",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C8",
+          "node": "Station_4_1_tips_well_7_5",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C9",
+          "node": "Station_4_1_tips_well_8_5",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C10",
+          "node": "Station_4_1_tips_well_9_5",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C11",
+          "node": "Station_4_1_tips_well_10_5",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "C12",
+          "node": "Station_4_1_tips_well_11_5",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.1760714
+          ]
+        },
+        {
+          "well_id": "D1",
+          "node": "Station_4_1_tips_well_0_4",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D2",
+          "node": "Station_4_1_tips_well_1_4",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D3",
+          "node": "Station_4_1_tips_well_2_4",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D4",
+          "node": "Station_4_1_tips_well_3_4",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D5",
+          "node": "Station_4_1_tips_well_4_4",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D6",
+          "node": "Station_4_1_tips_well_5_4",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D7",
+          "node": "Station_4_1_tips_well_6_4",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D8",
+          "node": "Station_4_1_tips_well_7_4",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D9",
+          "node": "Station_4_1_tips_well_8_4",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D10",
+          "node": "Station_4_1_tips_well_9_4",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D11",
+          "node": "Station_4_1_tips_well_10_4",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "D12",
+          "node": "Station_4_1_tips_well_11_4",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.1853571
+          ]
+        },
+        {
+          "well_id": "E1",
+          "node": "Station_4_1_tips_well_0_3",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E2",
+          "node": "Station_4_1_tips_well_1_3",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E3",
+          "node": "Station_4_1_tips_well_2_3",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E4",
+          "node": "Station_4_1_tips_well_3_3",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E5",
+          "node": "Station_4_1_tips_well_4_3",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E6",
+          "node": "Station_4_1_tips_well_5_3",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E7",
+          "node": "Station_4_1_tips_well_6_3",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E8",
+          "node": "Station_4_1_tips_well_7_3",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E9",
+          "node": "Station_4_1_tips_well_8_3",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E10",
+          "node": "Station_4_1_tips_well_9_3",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E11",
+          "node": "Station_4_1_tips_well_10_3",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "E12",
+          "node": "Station_4_1_tips_well_11_3",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.1946429
+          ]
+        },
+        {
+          "well_id": "F1",
+          "node": "Station_4_1_tips_well_0_2",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F2",
+          "node": "Station_4_1_tips_well_1_2",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F3",
+          "node": "Station_4_1_tips_well_2_2",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F4",
+          "node": "Station_4_1_tips_well_3_2",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F5",
+          "node": "Station_4_1_tips_well_4_2",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F6",
+          "node": "Station_4_1_tips_well_5_2",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F7",
+          "node": "Station_4_1_tips_well_6_2",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F8",
+          "node": "Station_4_1_tips_well_7_2",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F9",
+          "node": "Station_4_1_tips_well_8_2",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F10",
+          "node": "Station_4_1_tips_well_9_2",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F11",
+          "node": "Station_4_1_tips_well_10_2",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "F12",
+          "node": "Station_4_1_tips_well_11_2",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.2039286
+          ]
+        },
+        {
+          "well_id": "G1",
+          "node": "Station_4_1_tips_well_0_1",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G2",
+          "node": "Station_4_1_tips_well_1_1",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G3",
+          "node": "Station_4_1_tips_well_2_1",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G4",
+          "node": "Station_4_1_tips_well_3_1",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G5",
+          "node": "Station_4_1_tips_well_4_1",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G6",
+          "node": "Station_4_1_tips_well_5_1",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G7",
+          "node": "Station_4_1_tips_well_6_1",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G8",
+          "node": "Station_4_1_tips_well_7_1",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G9",
+          "node": "Station_4_1_tips_well_8_1",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G10",
+          "node": "Station_4_1_tips_well_9_1",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G11",
+          "node": "Station_4_1_tips_well_10_1",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "G12",
+          "node": "Station_4_1_tips_well_11_1",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.2132143
+          ]
+        },
+        {
+          "well_id": "H1",
+          "node": "Station_4_1_tips_well_0_0",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H2",
+          "node": "Station_4_1_tips_well_1_0",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H3",
+          "node": "Station_4_1_tips_well_2_0",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H4",
+          "node": "Station_4_1_tips_well_3_0",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H5",
+          "node": "Station_4_1_tips_well_4_0",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H6",
+          "node": "Station_4_1_tips_well_5_0",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H7",
+          "node": "Station_4_1_tips_well_6_0",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H8",
+          "node": "Station_4_1_tips_well_7_0",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H9",
+          "node": "Station_4_1_tips_well_8_0",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H10",
+          "node": "Station_4_1_tips_well_9_0",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H11",
+          "node": "Station_4_1_tips_well_10_0",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.2225
+          ]
+        },
+        {
+          "well_id": "H12",
+          "node": "Station_4_1_tips_well_11_0",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.2225
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tips-02",
+      "kind": "tips",
+      "prefix": "Station_4_2",
+      "anchor_node": "Station_4_2_tipbox",
+      "center_m": [
+        -0.257,
+        0.944,
+        0.075
+      ],
+      "nodes": [
+        "Station_4_2_carrier",
+        "Station_4_2_locator",
+        "Station_4_2_locator.001",
+        "Station_4_2_locator.002",
+        "Station_4_2_locator.003",
+        "Station_4_2_tipbox",
+        "Station_4_2_tips_body",
+        "Station_4_2_tips_well_0_0",
+        "Station_4_2_tips_well_0_1",
+        "Station_4_2_tips_well_0_2",
+        "Station_4_2_tips_well_0_3",
+        "Station_4_2_tips_well_0_4",
+        "Station_4_2_tips_well_0_5",
+        "Station_4_2_tips_well_0_6",
+        "Station_4_2_tips_well_0_7",
+        "Station_4_2_tips_well_10_0",
+        "Station_4_2_tips_well_10_1",
+        "Station_4_2_tips_well_10_2",
+        "Station_4_2_tips_well_10_3",
+        "Station_4_2_tips_well_10_4",
+        "Station_4_2_tips_well_10_5",
+        "Station_4_2_tips_well_10_6",
+        "Station_4_2_tips_well_10_7",
+        "Station_4_2_tips_well_11_0",
+        "Station_4_2_tips_well_11_1",
+        "Station_4_2_tips_well_11_2",
+        "Station_4_2_tips_well_11_3",
+        "Station_4_2_tips_well_11_4",
+        "Station_4_2_tips_well_11_5",
+        "Station_4_2_tips_well_11_6",
+        "Station_4_2_tips_well_11_7",
+        "Station_4_2_tips_well_1_0",
+        "Station_4_2_tips_well_1_1",
+        "Station_4_2_tips_well_1_2",
+        "Station_4_2_tips_well_1_3",
+        "Station_4_2_tips_well_1_4",
+        "Station_4_2_tips_well_1_5",
+        "Station_4_2_tips_well_1_6",
+        "Station_4_2_tips_well_1_7",
+        "Station_4_2_tips_well_2_0",
+        "Station_4_2_tips_well_2_1",
+        "Station_4_2_tips_well_2_2",
+        "Station_4_2_tips_well_2_3",
+        "Station_4_2_tips_well_2_4",
+        "Station_4_2_tips_well_2_5",
+        "Station_4_2_tips_well_2_6",
+        "Station_4_2_tips_well_2_7",
+        "Station_4_2_tips_well_3_0",
+        "Station_4_2_tips_well_3_1",
+        "Station_4_2_tips_well_3_2",
+        "Station_4_2_tips_well_3_3",
+        "Station_4_2_tips_well_3_4",
+        "Station_4_2_tips_well_3_5",
+        "Station_4_2_tips_well_3_6",
+        "Station_4_2_tips_well_3_7",
+        "Station_4_2_tips_well_4_0",
+        "Station_4_2_tips_well_4_1",
+        "Station_4_2_tips_well_4_2",
+        "Station_4_2_tips_well_4_3",
+        "Station_4_2_tips_well_4_4",
+        "Station_4_2_tips_well_4_5",
+        "Station_4_2_tips_well_4_6",
+        "Station_4_2_tips_well_4_7",
+        "Station_4_2_tips_well_5_0",
+        "Station_4_2_tips_well_5_1",
+        "Station_4_2_tips_well_5_2",
+        "Station_4_2_tips_well_5_3",
+        "Station_4_2_tips_well_5_4",
+        "Station_4_2_tips_well_5_5",
+        "Station_4_2_tips_well_5_6",
+        "Station_4_2_tips_well_5_7",
+        "Station_4_2_tips_well_6_0",
+        "Station_4_2_tips_well_6_1",
+        "Station_4_2_tips_well_6_2",
+        "Station_4_2_tips_well_6_3",
+        "Station_4_2_tips_well_6_4",
+        "Station_4_2_tips_well_6_5",
+        "Station_4_2_tips_well_6_6",
+        "Station_4_2_tips_well_6_7",
+        "Station_4_2_tips_well_7_0",
+        "Station_4_2_tips_well_7_1",
+        "Station_4_2_tips_well_7_2",
+        "Station_4_2_tips_well_7_3",
+        "Station_4_2_tips_well_7_4",
+        "Station_4_2_tips_well_7_5",
+        "Station_4_2_tips_well_7_6",
+        "Station_4_2_tips_well_7_7",
+        "Station_4_2_tips_well_8_0",
+        "Station_4_2_tips_well_8_1",
+        "Station_4_2_tips_well_8_2",
+        "Station_4_2_tips_well_8_3",
+        "Station_4_2_tips_well_8_4",
+        "Station_4_2_tips_well_8_5",
+        "Station_4_2_tips_well_8_6",
+        "Station_4_2_tips_well_8_7",
+        "Station_4_2_tips_well_9_0",
+        "Station_4_2_tips_well_9_1",
+        "Station_4_2_tips_well_9_2",
+        "Station_4_2_tips_well_9_3",
+        "Station_4_2_tips_well_9_4",
+        "Station_4_2_tips_well_9_5",
+        "Station_4_2_tips_well_9_6",
+        "Station_4_2_tips_well_9_7"
+      ],
+      "columns": 12,
+      "rows": 8,
+      "wells": [
+        {
+          "well_id": "A1",
+          "node": "Station_4_2_tips_well_0_7",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A2",
+          "node": "Station_4_2_tips_well_1_7",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A3",
+          "node": "Station_4_2_tips_well_2_7",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A4",
+          "node": "Station_4_2_tips_well_3_7",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A5",
+          "node": "Station_4_2_tips_well_4_7",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A6",
+          "node": "Station_4_2_tips_well_5_7",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A7",
+          "node": "Station_4_2_tips_well_6_7",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A8",
+          "node": "Station_4_2_tips_well_7_7",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A9",
+          "node": "Station_4_2_tips_well_8_7",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A10",
+          "node": "Station_4_2_tips_well_9_7",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A11",
+          "node": "Station_4_2_tips_well_10_7",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "A12",
+          "node": "Station_4_2_tips_well_11_7",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.0425
+          ]
+        },
+        {
+          "well_id": "B1",
+          "node": "Station_4_2_tips_well_0_6",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B2",
+          "node": "Station_4_2_tips_well_1_6",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B3",
+          "node": "Station_4_2_tips_well_2_6",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B4",
+          "node": "Station_4_2_tips_well_3_6",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B5",
+          "node": "Station_4_2_tips_well_4_6",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B6",
+          "node": "Station_4_2_tips_well_5_6",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B7",
+          "node": "Station_4_2_tips_well_6_6",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B8",
+          "node": "Station_4_2_tips_well_7_6",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B9",
+          "node": "Station_4_2_tips_well_8_6",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B10",
+          "node": "Station_4_2_tips_well_9_6",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B11",
+          "node": "Station_4_2_tips_well_10_6",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "B12",
+          "node": "Station_4_2_tips_well_11_6",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.0517857
+          ]
+        },
+        {
+          "well_id": "C1",
+          "node": "Station_4_2_tips_well_0_5",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C2",
+          "node": "Station_4_2_tips_well_1_5",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C3",
+          "node": "Station_4_2_tips_well_2_5",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C4",
+          "node": "Station_4_2_tips_well_3_5",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C5",
+          "node": "Station_4_2_tips_well_4_5",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C6",
+          "node": "Station_4_2_tips_well_5_5",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C7",
+          "node": "Station_4_2_tips_well_6_5",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C8",
+          "node": "Station_4_2_tips_well_7_5",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C9",
+          "node": "Station_4_2_tips_well_8_5",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C10",
+          "node": "Station_4_2_tips_well_9_5",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C11",
+          "node": "Station_4_2_tips_well_10_5",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "C12",
+          "node": "Station_4_2_tips_well_11_5",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.0610714
+          ]
+        },
+        {
+          "well_id": "D1",
+          "node": "Station_4_2_tips_well_0_4",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D2",
+          "node": "Station_4_2_tips_well_1_4",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D3",
+          "node": "Station_4_2_tips_well_2_4",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D4",
+          "node": "Station_4_2_tips_well_3_4",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D5",
+          "node": "Station_4_2_tips_well_4_4",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D6",
+          "node": "Station_4_2_tips_well_5_4",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D7",
+          "node": "Station_4_2_tips_well_6_4",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D8",
+          "node": "Station_4_2_tips_well_7_4",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D9",
+          "node": "Station_4_2_tips_well_8_4",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D10",
+          "node": "Station_4_2_tips_well_9_4",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D11",
+          "node": "Station_4_2_tips_well_10_4",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "D12",
+          "node": "Station_4_2_tips_well_11_4",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.0703571
+          ]
+        },
+        {
+          "well_id": "E1",
+          "node": "Station_4_2_tips_well_0_3",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E2",
+          "node": "Station_4_2_tips_well_1_3",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E3",
+          "node": "Station_4_2_tips_well_2_3",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E4",
+          "node": "Station_4_2_tips_well_3_3",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E5",
+          "node": "Station_4_2_tips_well_4_3",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E6",
+          "node": "Station_4_2_tips_well_5_3",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E7",
+          "node": "Station_4_2_tips_well_6_3",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E8",
+          "node": "Station_4_2_tips_well_7_3",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E9",
+          "node": "Station_4_2_tips_well_8_3",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E10",
+          "node": "Station_4_2_tips_well_9_3",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E11",
+          "node": "Station_4_2_tips_well_10_3",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "E12",
+          "node": "Station_4_2_tips_well_11_3",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.0796429
+          ]
+        },
+        {
+          "well_id": "F1",
+          "node": "Station_4_2_tips_well_0_2",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F2",
+          "node": "Station_4_2_tips_well_1_2",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F3",
+          "node": "Station_4_2_tips_well_2_2",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F4",
+          "node": "Station_4_2_tips_well_3_2",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F5",
+          "node": "Station_4_2_tips_well_4_2",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F6",
+          "node": "Station_4_2_tips_well_5_2",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F7",
+          "node": "Station_4_2_tips_well_6_2",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F8",
+          "node": "Station_4_2_tips_well_7_2",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F9",
+          "node": "Station_4_2_tips_well_8_2",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F10",
+          "node": "Station_4_2_tips_well_9_2",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F11",
+          "node": "Station_4_2_tips_well_10_2",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "F12",
+          "node": "Station_4_2_tips_well_11_2",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.0889286
+          ]
+        },
+        {
+          "well_id": "G1",
+          "node": "Station_4_2_tips_well_0_1",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G2",
+          "node": "Station_4_2_tips_well_1_1",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G3",
+          "node": "Station_4_2_tips_well_2_1",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G4",
+          "node": "Station_4_2_tips_well_3_1",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G5",
+          "node": "Station_4_2_tips_well_4_1",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G6",
+          "node": "Station_4_2_tips_well_5_1",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G7",
+          "node": "Station_4_2_tips_well_6_1",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G8",
+          "node": "Station_4_2_tips_well_7_1",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G9",
+          "node": "Station_4_2_tips_well_8_1",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G10",
+          "node": "Station_4_2_tips_well_9_1",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G11",
+          "node": "Station_4_2_tips_well_10_1",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "G12",
+          "node": "Station_4_2_tips_well_11_1",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.0982143
+          ]
+        },
+        {
+          "well_id": "H1",
+          "node": "Station_4_2_tips_well_0_0",
+          "center_m": [
+            -0.311,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H2",
+          "node": "Station_4_2_tips_well_1_0",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H3",
+          "node": "Station_4_2_tips_well_2_0",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H4",
+          "node": "Station_4_2_tips_well_3_0",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H5",
+          "node": "Station_4_2_tips_well_4_0",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H6",
+          "node": "Station_4_2_tips_well_5_0",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H7",
+          "node": "Station_4_2_tips_well_6_0",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H8",
+          "node": "Station_4_2_tips_well_7_0",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H9",
+          "node": "Station_4_2_tips_well_8_0",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H10",
+          "node": "Station_4_2_tips_well_9_0",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H11",
+          "node": "Station_4_2_tips_well_10_0",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            0.1075
+          ]
+        },
+        {
+          "well_id": "H12",
+          "node": "Station_4_2_tips_well_11_0",
+          "center_m": [
+            -0.203,
+            0.9985,
+            0.1075
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tips-03",
+      "kind": "tips",
+      "prefix": "Station_4_3",
+      "anchor_node": "Station_4_3_tipbox",
+      "center_m": [
+        -0.257,
+        0.944,
+        -0.04
+      ],
+      "nodes": [
+        "Station_4_3_carrier",
+        "Station_4_3_locator",
+        "Station_4_3_locator.001",
+        "Station_4_3_locator.002",
+        "Station_4_3_locator.003",
+        "Station_4_3_tipbox",
+        "Station_4_3_tips_body",
+        "Station_4_3_tips_well_0_0",
+        "Station_4_3_tips_well_0_1",
+        "Station_4_3_tips_well_0_2",
+        "Station_4_3_tips_well_0_3",
+        "Station_4_3_tips_well_0_4",
+        "Station_4_3_tips_well_0_5",
+        "Station_4_3_tips_well_0_6",
+        "Station_4_3_tips_well_0_7",
+        "Station_4_3_tips_well_10_0",
+        "Station_4_3_tips_well_10_1",
+        "Station_4_3_tips_well_10_2",
+        "Station_4_3_tips_well_10_3",
+        "Station_4_3_tips_well_10_4",
+        "Station_4_3_tips_well_10_5",
+        "Station_4_3_tips_well_10_6",
+        "Station_4_3_tips_well_10_7",
+        "Station_4_3_tips_well_11_0",
+        "Station_4_3_tips_well_11_1",
+        "Station_4_3_tips_well_11_2",
+        "Station_4_3_tips_well_11_3",
+        "Station_4_3_tips_well_11_4",
+        "Station_4_3_tips_well_11_5",
+        "Station_4_3_tips_well_11_6",
+        "Station_4_3_tips_well_11_7",
+        "Station_4_3_tips_well_1_0",
+        "Station_4_3_tips_well_1_1",
+        "Station_4_3_tips_well_1_2",
+        "Station_4_3_tips_well_1_3",
+        "Station_4_3_tips_well_1_4",
+        "Station_4_3_tips_well_1_5",
+        "Station_4_3_tips_well_1_6",
+        "Station_4_3_tips_well_1_7",
+        "Station_4_3_tips_well_2_0",
+        "Station_4_3_tips_well_2_1",
+        "Station_4_3_tips_well_2_2",
+        "Station_4_3_tips_well_2_3",
+        "Station_4_3_tips_well_2_4",
+        "Station_4_3_tips_well_2_5",
+        "Station_4_3_tips_well_2_6",
+        "Station_4_3_tips_well_2_7",
+        "Station_4_3_tips_well_3_0",
+        "Station_4_3_tips_well_3_1",
+        "Station_4_3_tips_well_3_2",
+        "Station_4_3_tips_well_3_3",
+        "Station_4_3_tips_well_3_4",
+        "Station_4_3_tips_well_3_5",
+        "Station_4_3_tips_well_3_6",
+        "Station_4_3_tips_well_3_7",
+        "Station_4_3_tips_well_4_0",
+        "Station_4_3_tips_well_4_1",
+        "Station_4_3_tips_well_4_2",
+        "Station_4_3_tips_well_4_3",
+        "Station_4_3_tips_well_4_4",
+        "Station_4_3_tips_well_4_5",
+        "Station_4_3_tips_well_4_6",
+        "Station_4_3_tips_well_4_7",
+        "Station_4_3_tips_well_5_0",
+        "Station_4_3_tips_well_5_1",
+        "Station_4_3_tips_well_5_2",
+        "Station_4_3_tips_well_5_3",
+        "Station_4_3_tips_well_5_4",
+        "Station_4_3_tips_well_5_5",
+        "Station_4_3_tips_well_5_6",
+        "Station_4_3_tips_well_5_7",
+        "Station_4_3_tips_well_6_0",
+        "Station_4_3_tips_well_6_1",
+        "Station_4_3_tips_well_6_2",
+        "Station_4_3_tips_well_6_3",
+        "Station_4_3_tips_well_6_4",
+        "Station_4_3_tips_well_6_5",
+        "Station_4_3_tips_well_6_6",
+        "Station_4_3_tips_well_6_7",
+        "Station_4_3_tips_well_7_0",
+        "Station_4_3_tips_well_7_1",
+        "Station_4_3_tips_well_7_2",
+        "Station_4_3_tips_well_7_3",
+        "Station_4_3_tips_well_7_4",
+        "Station_4_3_tips_well_7_5",
+        "Station_4_3_tips_well_7_6",
+        "Station_4_3_tips_well_7_7",
+        "Station_4_3_tips_well_8_0",
+        "Station_4_3_tips_well_8_1",
+        "Station_4_3_tips_well_8_2",
+        "Station_4_3_tips_well_8_3",
+        "Station_4_3_tips_well_8_4",
+        "Station_4_3_tips_well_8_5",
+        "Station_4_3_tips_well_8_6",
+        "Station_4_3_tips_well_8_7",
+        "Station_4_3_tips_well_9_0",
+        "Station_4_3_tips_well_9_1",
+        "Station_4_3_tips_well_9_2",
+        "Station_4_3_tips_well_9_3",
+        "Station_4_3_tips_well_9_4",
+        "Station_4_3_tips_well_9_5",
+        "Station_4_3_tips_well_9_6",
+        "Station_4_3_tips_well_9_7"
+      ],
+      "columns": 12,
+      "rows": 8,
+      "wells": [
+        {
+          "well_id": "A1",
+          "node": "Station_4_3_tips_well_0_7",
+          "center_m": [
+            -0.311,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A2",
+          "node": "Station_4_3_tips_well_1_7",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A3",
+          "node": "Station_4_3_tips_well_2_7",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A4",
+          "node": "Station_4_3_tips_well_3_7",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A5",
+          "node": "Station_4_3_tips_well_4_7",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A6",
+          "node": "Station_4_3_tips_well_5_7",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A7",
+          "node": "Station_4_3_tips_well_6_7",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A8",
+          "node": "Station_4_3_tips_well_7_7",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A9",
+          "node": "Station_4_3_tips_well_8_7",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A10",
+          "node": "Station_4_3_tips_well_9_7",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A11",
+          "node": "Station_4_3_tips_well_10_7",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "A12",
+          "node": "Station_4_3_tips_well_11_7",
+          "center_m": [
+            -0.203,
+            0.9985,
+            -0.0725
+          ]
+        },
+        {
+          "well_id": "B1",
+          "node": "Station_4_3_tips_well_0_6",
+          "center_m": [
+            -0.311,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B2",
+          "node": "Station_4_3_tips_well_1_6",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B3",
+          "node": "Station_4_3_tips_well_2_6",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B4",
+          "node": "Station_4_3_tips_well_3_6",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B5",
+          "node": "Station_4_3_tips_well_4_6",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B6",
+          "node": "Station_4_3_tips_well_5_6",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B7",
+          "node": "Station_4_3_tips_well_6_6",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B8",
+          "node": "Station_4_3_tips_well_7_6",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B9",
+          "node": "Station_4_3_tips_well_8_6",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B10",
+          "node": "Station_4_3_tips_well_9_6",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B11",
+          "node": "Station_4_3_tips_well_10_6",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "B12",
+          "node": "Station_4_3_tips_well_11_6",
+          "center_m": [
+            -0.203,
+            0.9985,
+            -0.0632143
+          ]
+        },
+        {
+          "well_id": "C1",
+          "node": "Station_4_3_tips_well_0_5",
+          "center_m": [
+            -0.311,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C2",
+          "node": "Station_4_3_tips_well_1_5",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C3",
+          "node": "Station_4_3_tips_well_2_5",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C4",
+          "node": "Station_4_3_tips_well_3_5",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C5",
+          "node": "Station_4_3_tips_well_4_5",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C6",
+          "node": "Station_4_3_tips_well_5_5",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C7",
+          "node": "Station_4_3_tips_well_6_5",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C8",
+          "node": "Station_4_3_tips_well_7_5",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C9",
+          "node": "Station_4_3_tips_well_8_5",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C10",
+          "node": "Station_4_3_tips_well_9_5",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C11",
+          "node": "Station_4_3_tips_well_10_5",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "C12",
+          "node": "Station_4_3_tips_well_11_5",
+          "center_m": [
+            -0.203,
+            0.9985,
+            -0.0539286
+          ]
+        },
+        {
+          "well_id": "D1",
+          "node": "Station_4_3_tips_well_0_4",
+          "center_m": [
+            -0.311,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D2",
+          "node": "Station_4_3_tips_well_1_4",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D3",
+          "node": "Station_4_3_tips_well_2_4",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D4",
+          "node": "Station_4_3_tips_well_3_4",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D5",
+          "node": "Station_4_3_tips_well_4_4",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D6",
+          "node": "Station_4_3_tips_well_5_4",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D7",
+          "node": "Station_4_3_tips_well_6_4",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D8",
+          "node": "Station_4_3_tips_well_7_4",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D9",
+          "node": "Station_4_3_tips_well_8_4",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D10",
+          "node": "Station_4_3_tips_well_9_4",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D11",
+          "node": "Station_4_3_tips_well_10_4",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "D12",
+          "node": "Station_4_3_tips_well_11_4",
+          "center_m": [
+            -0.203,
+            0.9985,
+            -0.0446429
+          ]
+        },
+        {
+          "well_id": "E1",
+          "node": "Station_4_3_tips_well_0_3",
+          "center_m": [
+            -0.311,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E2",
+          "node": "Station_4_3_tips_well_1_3",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E3",
+          "node": "Station_4_3_tips_well_2_3",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E4",
+          "node": "Station_4_3_tips_well_3_3",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E5",
+          "node": "Station_4_3_tips_well_4_3",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E6",
+          "node": "Station_4_3_tips_well_5_3",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E7",
+          "node": "Station_4_3_tips_well_6_3",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E8",
+          "node": "Station_4_3_tips_well_7_3",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E9",
+          "node": "Station_4_3_tips_well_8_3",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E10",
+          "node": "Station_4_3_tips_well_9_3",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E11",
+          "node": "Station_4_3_tips_well_10_3",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "E12",
+          "node": "Station_4_3_tips_well_11_3",
+          "center_m": [
+            -0.203,
+            0.9985,
+            -0.0353571
+          ]
+        },
+        {
+          "well_id": "F1",
+          "node": "Station_4_3_tips_well_0_2",
+          "center_m": [
+            -0.311,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F2",
+          "node": "Station_4_3_tips_well_1_2",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F3",
+          "node": "Station_4_3_tips_well_2_2",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F4",
+          "node": "Station_4_3_tips_well_3_2",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F5",
+          "node": "Station_4_3_tips_well_4_2",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F6",
+          "node": "Station_4_3_tips_well_5_2",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F7",
+          "node": "Station_4_3_tips_well_6_2",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F8",
+          "node": "Station_4_3_tips_well_7_2",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F9",
+          "node": "Station_4_3_tips_well_8_2",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F10",
+          "node": "Station_4_3_tips_well_9_2",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F11",
+          "node": "Station_4_3_tips_well_10_2",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "F12",
+          "node": "Station_4_3_tips_well_11_2",
+          "center_m": [
+            -0.203,
+            0.9985,
+            -0.0260714
+          ]
+        },
+        {
+          "well_id": "G1",
+          "node": "Station_4_3_tips_well_0_1",
+          "center_m": [
+            -0.311,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G2",
+          "node": "Station_4_3_tips_well_1_1",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G3",
+          "node": "Station_4_3_tips_well_2_1",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G4",
+          "node": "Station_4_3_tips_well_3_1",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G5",
+          "node": "Station_4_3_tips_well_4_1",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G6",
+          "node": "Station_4_3_tips_well_5_1",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G7",
+          "node": "Station_4_3_tips_well_6_1",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G8",
+          "node": "Station_4_3_tips_well_7_1",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G9",
+          "node": "Station_4_3_tips_well_8_1",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G10",
+          "node": "Station_4_3_tips_well_9_1",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G11",
+          "node": "Station_4_3_tips_well_10_1",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "G12",
+          "node": "Station_4_3_tips_well_11_1",
+          "center_m": [
+            -0.203,
+            0.9985,
+            -0.0167857
+          ]
+        },
+        {
+          "well_id": "H1",
+          "node": "Station_4_3_tips_well_0_0",
+          "center_m": [
+            -0.311,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H2",
+          "node": "Station_4_3_tips_well_1_0",
+          "center_m": [
+            -0.3011818,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H3",
+          "node": "Station_4_3_tips_well_2_0",
+          "center_m": [
+            -0.2913636,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H4",
+          "node": "Station_4_3_tips_well_3_0",
+          "center_m": [
+            -0.2815455,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H5",
+          "node": "Station_4_3_tips_well_4_0",
+          "center_m": [
+            -0.2717273,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H6",
+          "node": "Station_4_3_tips_well_5_0",
+          "center_m": [
+            -0.2619091,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H7",
+          "node": "Station_4_3_tips_well_6_0",
+          "center_m": [
+            -0.2520909,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H8",
+          "node": "Station_4_3_tips_well_7_0",
+          "center_m": [
+            -0.2422727,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H9",
+          "node": "Station_4_3_tips_well_8_0",
+          "center_m": [
+            -0.2324545,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H10",
+          "node": "Station_4_3_tips_well_9_0",
+          "center_m": [
+            -0.2226364,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H11",
+          "node": "Station_4_3_tips_well_10_0",
+          "center_m": [
+            -0.2128182,
+            0.9985,
+            -0.0075
+          ]
+        },
+        {
+          "well_id": "H12",
+          "node": "Station_4_3_tips_well_11_0",
+          "center_m": [
+            -0.203,
+            0.9985,
+            -0.0075
+          ]
+        }
+      ]
+    }
+  ]
+}
