@@ -1,0 +1,60 @@
+{
+  "id": "exchange_and_mix",
+  "version": "1.0.0",
+  "seed": 42,
+  "description": "换液与混匀（演示）：plate-01 A 排约 800 µL，营养耗竭/代谢物累积（培养液偏黄）；演示流程：扫描 → 整排 50% 换液 → 300 rpm 30 s 振荡 → 等待静置 → 复查对比。所有数值为演示参数。",
+  "initial": {
+    "chamber": {
+      "targets": {"temperature_c": 37.0, "co2_pct": 5.0, "humidity_pct": 95.0},
+      "actual": {"temperature_c": 36.9, "co2_pct": 5.0, "humidity_pct": 94.5}
+    },
+    "plates": [
+      {
+        "id": "plate-01", "station_id": "Station_1_2", "format": "24", "medium_id": "medium-a",
+        "wells_volume_ul": {
+          "A": [810, 800, 795, 805, 790, 800],
+          "B": [800, 800, 800, 800, 800, 800],
+          "C": [800, 800, 800, 800, 800, 800],
+          "D": [800, 800, 800, 800, 800, 800]
+        },
+        "culture": {"nutrient": 0.18, "metabolite": 0.82, "morphology": 0.45, "rows": {"A": {"nutrient": 0.12, "metabolite": 0.9}}}
+      },
+      {
+        "id": "plate-02", "station_id": "Station_1_3", "format": "24", "medium_id": "medium-a",
+        "wells_volume_ul": {
+          "A": [800, 800, 800, 800, 800, 800],
+          "B": [800, 800, 800, 800, 800, 800],
+          "C": [800, 800, 800, 800, 800, 800],
+          "D": [800, 800, 800, 800, 800, 800]
+        },
+        "culture": {"nutrient": 0.75, "metabolite": 0.25, "morphology": 0.3}
+      }
+    ],
+    "reservoirs": [
+      {"id": "media-01", "station_id": "Station_3_3", "medium_id": "medium-a", "remaining_ul": 50000, "capacity_ul": 50000}
+    ],
+    "waste": {"id": "waste-01", "station_id": "Station_3_4", "used_ul": 0, "capacity_ul": 100000},
+    "tip_racks": [
+      {"id": "tips-01", "station_id": "Station_4_1", "remaining": 96, "capacity": 96},
+      {"id": "tips-02", "station_id": "Station_4_2", "remaining": 96, "capacity": 96},
+      {"id": "tips-03", "station_id": "Station_4_3", "remaining": 96, "capacity": 96}
+    ]
+  },
+  "task": {
+    "goal": "对 plate-01 A 排执行演示性换液与混匀：基于扫描证据整排更换 50% 培养液，振荡混匀，静置后复查并对比前后图像。",
+    "allowed_capabilities": ["media.add", "media.exchange", "imaging.scan", "environment.set_targets", "environment.read", "environment.await_stable", "plate.shake", "action.get", "action.cancel", "observation.get"],
+    "plates": ["plate-01"],
+    "env_targets": {"temperature_c": 37.0, "co2_pct": 5.0, "humidity_pct": 95.0},
+    "tolerances": {"temperature_c": 0.3, "co2_pct": 0.2, "humidity_pct": 3.0},
+    "budgets": {"max_actions": 40, "max_sim_time_s": 7200},
+    "policy_hints": {
+      "focus": {"plate_id": "plate-01", "row_id": "A"},
+      "exchange_fraction": 0.5,
+      "shake": {"speed_rpm": 300, "duration_sim_s": 30},
+      "settle_after_shake_s": 30,
+      "target_band_ul": [600, 900],
+      "notes": "换液 fraction ≤ 1 − V_min/V（V_min=100 µL，V≈800 µL 时 fraction ≤ 0.875）。"
+    }
+  },
+  "faults": []
+}

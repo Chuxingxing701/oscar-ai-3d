@@ -34,6 +34,10 @@ export const ERROR_STATUS = {
   agent_unavailable: 503,
   model_unavailable: 503,
   internal: 500,
+  // C1 additions (action terminal errors / recovery), backwards compatible:
+  runtime_restarted: 503,
+  target_changed: 409,
+  timeout: 409,
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_STATUS;

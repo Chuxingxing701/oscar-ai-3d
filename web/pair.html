@@ -1,0 +1,52 @@
+<!doctype html>
+<!-- OSCAR pairing page (static, no tokens inside). Reads the one-time code
+     from the URL fragment and exchanges it for a session cookie. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OSCAR pairing</title>
+<style>
+  body {font-family: system-ui, sans-serif; background: #14161a; color: #e8e8ea; display: flex;
+    min-height: 100vh; align-items: center; justify-content: center; margin: 0;}
+  .card {background: #1d2026; padding: 2rem 2.5rem; border-radius: 10px; max-width: 26rem; box-shadow: 0 8px 30px rgba(0,0,0,.4);}
+  h1 {font-size: 1.2rem; margin-top: 0;}
+  p {color: #a8acb4; font-size: .9rem; line-height: 1.5;}
+  #status.ok {color: #7ed491;} #status.err {color: #e0837d;}
+  a {color: #8fb7e8;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>OSCAR Runtime 配对</h1>
+  <p id="status">正在读取配对码…</p>
+  <p><a href="/web/workbench.html">手动进入操作台</a>（需要已配对的会话）</p>
+</div>
+<script>
+(async () => {
+  const status = document.getElementById('status');
+  const code = new URLSearchParams(location.hash.replace(/^#/, '')).get('code');
+  history.replaceState(null, '', '/pair'); // clear the fragment immediately
+  if (!code) {
+    status.textContent = '地址中没有配对码。请从 Runtime 启动日志中打开完整配对链接。';
+    status.className = 'err';
+    return;
+  }
+  try {
+    const r = await fetch('/api/v1/session', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({pairing_code: code}),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    status.textContent = '配对成功，正在进入操作台…';
+    status.className = 'ok';
+    location.href = '/web/workbench.html';
+  } catch (e) {
+    status.textContent = '配对失败（' + e.message + '）。配对码一次性且 5 分钟有效，请用 npm run pair 重新生成。';
+    status.className = 'err';
+  }
+})();
+</script>
+</body>
+</html>

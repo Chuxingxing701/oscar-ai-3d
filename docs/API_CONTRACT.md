@@ -10,7 +10,11 @@
 | Agent `services/culture-agent/src/main.ts` | 仅 `127.0.0.1:${OSCAR_AGENT_PORT:-8781}` | `${OSCAR_DATA_DIR}/agent/agent.sqlite` |
 | 共享秘钥 | — | `${OSCAR_DATA_DIR}/secrets/service.token`(0600)，Runtime 首次启动生成，Agent 读取 |
 
-Runtime 参数：`--port`、`--data-dir`、`--agent-url`、`--lan`、`--allow-host <host[:port]>`（可多次）、`--access-code-file`（或 `OSCAR_ACCESS_CODE`）、`--scenario`、`--seed`、`--clock-mode`。`--lan` 且访问码缺失或短于 16 字符时以非零码退出。
+Runtime 参数：`--port`、`--data-dir`、`--agent-url`、`--lan`、`--allow-host <host[:port]>`（可多次）、`--access-code-file`（或 `OSCAR_ACCESS_CODE`）、`--scenario`、`--seed`、`--clock-mode`。`--lan` 且访问码缺失或短于 16 字符时以非零码退出。【C1 细化】`--port 0` 允许（测试用）：实际端口从就绪行读取；启动时向 stdout 打印一行机器可读的 `OSCAR_RUNTIME_READY {"port":N,"pair_url":...,"data_dir":...}` 与一行人类可读的配对链接；`--data-dir` 支持绝对路径。墙钟 TTL 可用环境变量覆盖（见 §6）。
+
+### 【C1 细化】ID 唯一性
+
+`runs.id`/`actions.id`/`observations.id`/`assets.id` 是全局主键，因此 ID 带实验序号：`act-001-01`（实验 001 的第 1 个动作）、`obs-001-001`、`ast-001-001`、`run-001-1`；实验 ID `exp-001`；`lease_id` 是全局单调整数。
 
 ## 2. 访问控制（§6.6）
 
@@ -67,6 +71,7 @@ Runtime 参数：`--port`、`--data-dir`、`--agent-url`、`--lan`、`--allow-ho
 | `POST /api/v1/runs/{run_id}/agent-status` | run token；`{status:'paused', reason}` Agent 自报暂停（如 `agent_restarted`、`model_unavailable`） |
 | `GET /api/v1/runs/{run_id}` | run token 或 operator：`RunRecord` |
 | `/api/v1/agent/*` | 网关：operator 会话校验后代理到 Agent（附 `X-Service-Token`），SSE 透传 `Last-Event-ID`；Agent 不在时 `503 agent_unavailable` |
+| `GET /api/v1/experiments/{id}/debug/truth` | 【C1 细化】仅 operator：暴露 `simulator_truth`（环境真值、逐孔 culture/蒸发、head 载液），用于测试校验与 `oracle_demo` 标注；不进入普通快照 |
 
 ### 4.1 run 创建与控制（经网关）
 
@@ -81,21 +86,21 @@ Runtime 参数：`--port`、`--data-dir`、`--agent-url`、`--lan`、`--allow-ho
 - `environment.set_targets` 在受理事务内提交目标、`target_revision+1` 并直接 `succeeded`（202 响应体即终态）。
 - `action.cancel`：queued/running 立即 `cancelled`，丢弃未提交的当前阶段；已提交阶段保留；头内已吸液量按 `head_discard` 记入废液（守恒）；`partial=true` 当且仅当已提交液量/库存效果。对终态动作取消返回当前终态。
 - 结果 `summary`：逐孔 `removed_ul/added_ul`、`reservoir_delta_ul`、`waste_delta_ul`、`tips_used`。
-- 证据新鲜度：带 `evidence_refs` 的液体动作（或 run 提交液体动作时必须带）要求 observation 属同 Experiment、同板、覆盖目标整排、`plate_revision == 当前`、时龄 ≤ `observation.max_age_s`，否则 `409 observation_stale`。
+- 证据新鲜度：带 `evidence_refs` 的液体动作（或 run 提交液体动作时必须带）要求 observation 属同 Experiment、同板、覆盖目标整排、`plate_revision == 当前`、时龄 ≤ `observation.max_age_s`，否则 `409 observation_stale`。【C1 细化】受理顺序中的逐孔语义校验（容量/通道/残留/库存）先于资源占用检查；幂等查找仍先于两者。
 - `plate.revision` 在液量提交、shake 开始/结束时递增；蒸发与传感器采样不递增（蒸发单独记账 `evaporated_ul`）。
 - Runtime 重启：running/queued/cancelling → `failed(runtime_restarted)`（附已提交效果），释放锁；屏障 `revoked`；run→paused(`runtime_restarted`)；Experiment 模拟 `paused=true`。
 
 ## 6. 时钟与屏障（§5.3）
 
-- 固定步长 1 s。每一步是一个事务：queued→running → 各 running 动作按 `accept_seq` 推进阶段并提交到期效果 → 环境一阶响应与采样 → 培养演进 → 唤醒检查/建立屏障。事件在同一事务写入。
+- 固定步长 1 s。每一步是一个事务：queued→running → 各 running 动作按 `accept_seq` 推进阶段并提交到期效果 → 环境一阶响应与采样 → 培养演进 → 唤醒检查/建立屏障。事件在同一事务写入。【C1 细化】同一仿真步事务内写入的全部事件（含 queued→running 的 `action.started`）统一携带该步结束时刻 `sim_time_s`；阶段 `started_at_sim_s` 指向该步开始时刻。
 - realtime：未暂停时按 `speed`（0.1–3600）的 wall 节奏执行整步。
-- lockstep：存在 active 屏障时不推进；否则当存在未结束且非 on_hold 的 run 时按 `speed` 节奏推进（run paused 时仅在仍有未终结动作时推进）；无 run 时只响应 `control.step {until_sim_s|until_idle|steps}`（同步执行、立即返回新 sim_time）。
-- 屏障建立时机（仅在无 active 屏障时）：run 启动/恢复；该 run 已登记的唤醒条件在本步满足（`on_actions` 全部终态，或 `sim_time ≥ at_sim_s`）；该 run 的动作在本步以 failed/cancelled 异常终态（系统引发）。同一步多个触发合并为一个屏障，`triggers[]` 列出全部。
-- 持有期立即终态（`set_targets`、`cancel`）只把 `{kind:'appended', action_id}` 追加到当前屏障 `triggers[]`，不发新 `decision.granted`，`lease_id` 不变。
+- lockstep：存在 active 屏障时不推进；否则当存在未结束且非 on_hold 的 run 时按 `speed` 节奏推进（run paused 时仅在仍有未终结动作时推进）；无 run 时只响应 `control.step {until_sim_s|until_idle|steps}`（同步执行、立即返回新 sim_time）。【C1 细化】`control.step` 仅在 lockstep 且无 active run、无 active lease 时可用，否则 `400 invalid_request`。
+- 屏障建立时机（仅在无 active 屏障时）：run 启动/恢复；该 run 已登记的唤醒条件在本步满足（`on_actions` 全部终态，或 `sim_time ≥ at_sim_s`）；该 run 的动作在本步以 failed/cancelled 异常终态（系统引发）。同一步多个触发合并为一个屏障，`triggers[]` 列出全部。【C1 细化】时钟步提交的该 run 动作终态（含正常 succeeded）同样构成 `action_terminal` 触发：需要时钟的动作其终态与下一次 `decision.granted` 同一 `sim_time` 且事件相邻。
+- 持有期立即终态（`set_targets`、`cancel`）只把 `{kind:'appended', action_id}` 追加到当前屏障 `triggers[]`，不发新 `decision.granted`，`lease_id` 不变。【C1 细化】仅当活跃屏障属于该动作的 run 时追加。
 - release：同事务登记唤醒；若已满足，当前屏障 `released` 后立即建立下一屏障并在响应 `next_lease` 返回（中间不推进）。相同请求体重复 release 返回原结果；不同体 `409 lease_not_active`。
-- 续期 `ttl_wall_s=30`，累计持有上限 `max_hold_wall_s=300`。超时：屏障 `expired`，run→paused(`lease_timeout`)，run 与 Experiment `determinism_broken=true`。
-- 写请求：lockstep run 缺 `Lease-Id` → `409 lease_required`；lease 非 active → `409 lease_not_active`；lease 属于他人 run → `403 lease_forbidden`。operator 写不需要 lease；但 run 活跃（非 hold）时 operator 的设备写动作返回 `409 hold_required`（先 hold，§6.6 人工介入）。
-- run 活跃期间改 `clock_mode` → `409 clock_mode_locked`；realtime 下 `/leases` → `409 clock_mode_mismatch`。模拟暂停时新设备动作 `409 simulation_paused`（读取、取消、控制仍可用）。
+- 续期 `ttl_wall_s=30`，累计持有上限 `max_hold_wall_s=300`。超时：屏障 `expired`，run→paused(`lease_timeout`)，run 与 Experiment `determinism_broken=true`。【C1 细化】TTL/持有上限/配对码时效/限流退避可用环境变量覆盖以便测试：`OSCAR_LEASE_TTL_MS`、`OSCAR_LEASE_MAX_HOLD_MS`、`OSCAR_PAIRING_TTL_MS`、`OSCAR_RATE_LIMIT_BLOCK_MS`、`OSCAR_SESSION_TTL_MS`。
+- 写请求：lockstep run 缺 `Lease-Id` → `409 lease_required`；lease 非 active → `409 lease_not_active`；lease 属于他人 run → `403 lease_forbidden`（先校验归属再校验状态）。operator 写不需要 lease；但 run 活跃（非 hold）时 operator 的设备写动作返回 `409 hold_required`（先 hold，§6.6 人工介入）。【C1 细化】`action.cancel` 属安全操作，不要求 Lease-Id；已吊销的 run token 一律 `401 unauthenticated`；run 处于 on_hold 时其写请求 `403 run_on_hold`（优先于 lease 校验）。
+- run 活跃期间改 `clock_mode` → `409 clock_mode_locked`；realtime 下 `/leases`（含 renew/release）→ `409 clock_mode_mismatch`。模拟暂停时新设备动作 `409 simulation_paused`（读取、取消、控制仍可用）。
 
 ## 7. Reset（§5.1）
 
@@ -110,7 +115,7 @@ Runtime 只提供：`/web/**`（排除 `web/node_modules`、`web/scene/tests`、
 - `GET /events?after_seq=N`（或 `Last-Event-ID`）：先回放持久化事件 `seq > N`，再推送新事件。帧：`id: <seq>\nevent: device\ndata: <DeviceEvent JSON>\n\n`。
 - 非持久化时钟帧：`event: clock\ndata: {"experiment_id","sim_time_s","paused","speed","clock_mode"}`，最多 10 次/秒，无 id。每 15 s 注释心跳。
 - 已归档 Experiment：回放历史后推送 `event: archived` 并关闭。
-- 主要事件类型：`experiment.created`、`experiment.archived`、`action.accepted`、`action.started`、`action.stage_changed`（payload 含 `stage, primitive, target, from_target, tool, stage_started_at_sim_s, stage_duration_sim_s, step_index`）、`action.effect_committed`（payload 含 `StepEffect` 与提交后逐孔体积）、`action.succeeded|failed|cancelled`、`observation.created`、`environment.targets_set`、`environment.sampled`、`plate.shake_started|shake_stopped`、`decision.granted`、`lease.released|expired|revoked`、`run.created|paused|resumed|on_hold|ended`、`clock.paused|resumed|speed_changed|stepped`、`scenario.fault_injected`。
+- 主要事件类型：`experiment.created`、`experiment.archived`、`action.accepted`、`action.started`、`action.stage_changed`（payload 含 `stage, primitive, target, from_target, tool, stage_started_at_sim_s, stage_duration_sim_s, step_index`）、`action.effect_committed`（payload 含 `StepEffect` 与提交后逐孔体积）、`action.succeeded|failed|cancelled`、`observation.created`、`environment.targets_set`、`environment.sampled`、`plate.shake_started|shake_stopped`、`decision.granted`、`lease.released|expired|revoked`、`run.created|paused|resumed|on_hold|ended`、`clock.paused|resumed|speed_changed|stepped`、`scenario.fault_injected`。【C1 细化】`clock.stepped` 每次 `control.step` 调用写一条（操作者节奏遥测，不属于世界因果，确定性比对时可排除）；`environment.sampled` 每 30 s 采样时写一条。错误码表新增 `runtime_restarted`(503)、`target_changed`(409)、`timeout`(409)（动作终态原因/重启恢复使用，向后兼容）。
 
 ## 10. 场景显示投影（B 的适配层 `web/api/scene-adapter.js`）
 
