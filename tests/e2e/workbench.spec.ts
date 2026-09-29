@@ -131,3 +131,20 @@ test('closing the browser does not stop the Runtime; replay of an archived exper
   await expect(page.locator('#exp-id')).toContainText(reset.experiment.experiment_id, {timeout: 20_000});
   await ctx2.close();
 });
+
+test('repeated submit → step cycles never leave a stale action in the UI (snapshot/stream convergence)', async ({page}) => {
+  const client = operatorClient();
+  const exp = await client.currentExperimentId();
+  await pairAndOpen(page);
+  await page.locator('#tab-ops').click();
+  const box = page.locator('#form-scan input[type=checkbox]').first();
+  for (let i = 0; i < 8; i++) {
+    const n = (await client.actions(exp)).actions.length;
+    await box.check();
+    await page.locator('#form-scan button[type=submit]').click();
+    await acceptedThenStep(page, client, exp, n + 1);
+    await expect(page.locator('#action-bar')).not.toContainText(/已受理|运行中/, {timeout: 10_000});
+    await box.uncheck();
+  }
+  expect(await sceneUpdateErrors(page)).toEqual([]);
+});

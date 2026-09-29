@@ -130,6 +130,8 @@ export function parseEnvTargets(payload = {}) {
 // Snapshot application (authoritative)
 // --------------------------------------------------------------------------
 
+const TERMINAL = new Set(['succeeded', 'failed', 'cancelled']);
+
 export function applySnapshot(state, snapshot) {
   const next = {...state};
   next.experimentId = snapshot.experiment?.experiment_id ?? next.experimentId;
@@ -147,11 +149,21 @@ export function applySnapshot(state, snapshot) {
   next.run = clone(snapshot.run) ?? null;
   next.revisions = clone(snapshot.revisions) ?? {};
   const actions = new Map();
+  // `all_actions` (fetched right after the state) is authoritative for actions
+  // that finished while no stream was attached; without it a previously seen
+  // non-terminal copy would linger. Actives from the snapshot win.
+  if (Array.isArray(snapshot.all_actions)) {
+    for (const action of snapshot.all_actions) if (action?.action_id) actions.set(action.action_id, clone(action));
+  }
   for (const action of snapshot.active_actions || []) {
     if (action?.action_id) actions.set(action.action_id, clone(action));
   }
-  // Keep history of terminal actions already seen (timeline detail), refresh actives.
-  for (const [id, old] of state.actions) if (!actions.has(id)) actions.set(id, old);
+  if (!Array.isArray(snapshot.all_actions)) {
+    // Keep history already seen, but never a stale non-terminal copy the snapshot no longer lists.
+    for (const [id, old] of state.actions) {
+      if (!actions.has(id) && TERMINAL.has(old?.status)) actions.set(id, old);
+    }
+  }
   next.actions = actions;
   if (snapshot.experiment) {
     next.clock = {

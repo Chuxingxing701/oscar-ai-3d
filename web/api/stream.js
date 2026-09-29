@@ -43,14 +43,18 @@ export function createEventFeed({
     if (source) { try { source.close(); } catch { /* already closed */ } source = null; }
   }
 
+  let generation = 0;
   async function resync(reason) {
     if (stopped) return;
+    // Overlapping resyncs (manual refresh + gap/error) must not let an older
+    // snapshot land last: only the newest generation applies and subscribes.
+    const mine = ++generation;
     clearTimeout(resyncTimer); resyncTimer = 0;
     setStatus('reconnecting');
     closeSource();
     try {
       const snapshot = await fetchSnapshot();
-      if (stopped) return;
+      if (stopped || mine !== generation) return;
       state = applySnapshot(state || {actions: new Map(), observations: new Map(), envSamples: [], envTargets: [], events: [], clock: {sim_time_s: 0, paused: false, speed: 1, clock_mode: 'lockstep'}}, snapshot);
       currentExperimentId = state.experimentId;
       lastSeq = snapshot.event_seq ?? lastSeq;
@@ -59,7 +63,7 @@ export function createEventFeed({
       emit({kind: 'snapshot', reason});
       openStream();
     } catch (error) {
-      if (stopped) return;
+      if (stopped || mine !== generation) return;
       const delay = Math.min(reconnectDelayMs * 2 ** resyncAttempts, MAX_RESYNC_DELAY_MS);
       resyncAttempts += 1;
       resyncTimer = setTimeout(() => { resyncTimer = 0; resync('retry'); }, delay);

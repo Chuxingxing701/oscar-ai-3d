@@ -377,3 +377,35 @@ test('replayAt reconstructs volumes, stage, shake and time at each seq', () => {
   assert.equal(paused.experiment.paused, true);
   assert.equal(after.plates[0].wells.find(w => w.well_id === 'A2').volume_ul, 700);
 });
+
+test('a fresh snapshot never keeps a stale non-terminal action copy', () => {
+  let state = initialState();
+  state = applySnapshot(state, {...snapshotFixture(), active_actions: [{action_id: 'act-1', capability: 'imaging.scan', status: 'queued'}]});
+  assert.equal(state.actions.get('act-1').status, 'queued');
+  // The action finished while no stream was attached: the new snapshot lists no actives.
+  const later = applySnapshot(state, {...snapshotFixture({eventSeq: 9}), active_actions: []});
+  assert.equal(later.actions.has('act-1'), false, 'non-terminal copy dropped');
+  const withList = applySnapshot(state, {...snapshotFixture({eventSeq: 9}), active_actions: [],
+    all_actions: [{action_id: 'act-1', capability: 'imaging.scan', status: 'succeeded'}]});
+  assert.equal(withList.actions.get('act-1').status, 'succeeded', 'authoritative list wins');
+});
+
+test('overlapping resyncs: only the newest snapshot applies and subscribes', async () => {
+  FakeEventSource.instances = [];
+  const pending = [];
+  let source = null;
+  const feed = createEventFeed({
+    reconnectDelayMs: 1,
+    fetchSnapshot: () => new Promise(resolve => pending.push(resolve)),
+    subscribe: afterSeq => (source = new FakeEventSource(`/events?after_seq=${afterSeq}`)),
+    onState: () => {}, onStatus: () => {}, onArchived: () => {},
+  });
+  feed.start();              // resync #1 (in flight)
+  const second = feed.refresh(); // resync #2 (in flight)
+  pending[1](snapshotFixture({eventSeq: 20}));
+  await second;
+  pending[0](snapshotFixture({eventSeq: 7})); // older response lands last
+  await tick();
+  assert.equal(feed.state.eventSeq, 20);
+  assert.match(source.url, /after_seq=20$/);
+});

@@ -224,7 +224,13 @@ function startFeed(experimentId) {
   if (feed) feed.stop();
   currentExperimentId = experimentId;
   feed = createEventFeed({
-    fetchSnapshot: () => api.state(experimentId),
+    // State first, then the action list: the list is at least as new, and the
+    // event stream after event_seq converges any action that moved on since.
+    fetchSnapshot: async () => {
+      const snapshot = await api.state(experimentId);
+      const list = await api.actions(experimentId);
+      return {...snapshot, all_actions: list?.actions ?? []};
+    },
     subscribe: afterSeq => new EventSource(`/api/v1/experiments/${experimentId}/events?after_seq=${afterSeq}`),
     onState(state, meta) {
       liveState = state;
