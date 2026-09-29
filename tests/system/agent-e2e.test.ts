@@ -13,27 +13,10 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createServer as netServer, type AddressInfo} from 'node:net';
 import {DeviceClient, isTerminal} from '@oscar/device-contract';
+import {waitLine} from '../../scripts/proc-lines.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
 
-function waitLine(child: ChildProcess, prefix: string, timeoutMs = 60_000): Promise<string> {
-  return new Promise((resolvePromise, reject) => {
-    let buf = '';
-    const onData = (d: Buffer): void => {
-      buf += d.toString();
-      for (const line of buf.split('\n')) {
-        if (line.startsWith(prefix)) {
-          child.stdout!.removeListener('data', onData);
-          resolvePromise(line);
-          return;
-        }
-      }
-    };
-    child.stdout!.on('data', onData);
-    const t = setTimeout(() => reject(new Error(`${prefix} not seen in ${timeoutMs} ms`)), timeoutMs);
-    child.on('exit', () => { clearTimeout(t); reject(new Error(`process exited before ${prefix}`)); });
-  });
-}
 
 async function freePort(): Promise<number> {
   return new Promise(resolvePromise => {

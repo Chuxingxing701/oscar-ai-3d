@@ -18,6 +18,7 @@ import {isAbsolute, join, resolve} from 'node:path';
 import {parseArgs} from 'node:util';
 import {DeviceClient, isTerminal, type Action, type DeviceEvent, type Observation, type StateSnapshot} from '@oscar/device-contract';
 import {loadScenario} from '@oscar/simulator';
+import {waitLine} from './proc-lines.ts';
 
 const repoRoot = join(import.meta.dirname, '..');
 
@@ -65,24 +66,6 @@ async function freePort(): Promise<number> {
   });
 }
 
-function waitLine(child: ChildProcess, prefix: string, timeoutMs = 60_000): Promise<string> {
-  return new Promise((resolvePromise, reject) => {
-    let buf = '';
-    const onData = (d: Buffer): void => {
-      buf += d.toString();
-      for (const line of buf.split('\n')) {
-        if (line.startsWith(prefix)) {
-          child.stdout!.removeListener('data', onData);
-          resolvePromise(line);
-          return;
-        }
-      }
-    };
-    child.stdout!.on('data', onData);
-    const t = setTimeout(() => reject(new Error(`${prefix} not seen in ${timeoutMs} ms`)), timeoutMs);
-    child.on('exit', () => { clearTimeout(t); reject(new Error(`process exited before ${prefix}`)); });
-  });
-}
 
 /** One isolated Runtime+Agent pair. */
 class Stack {

@@ -12,27 +12,9 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createServer as netServer, type AddressInfo} from 'node:net';
 import {DeviceClient, type Action, type Observation} from '@oscar/device-contract';
+import {bufferOf, waitLine} from '../../scripts/proc-lines.ts';
 
 const ROOT = join(import.meta.dirname, '..', '..');
-
-function waitLine(child: ChildProcess, prefix: string, timeoutMs = 120_000): Promise<string> {
-  return new Promise((resolvePromise, reject) => {
-    let buf = '';
-    const onData = (d: Buffer): void => {
-      buf += d.toString();
-      for (const line of buf.split('\n')) {
-        if (line.startsWith(prefix)) {
-          child.stdout!.removeListener('data', onData);
-          resolvePromise(line);
-          return;
-        }
-      }
-    };
-    child.stdout!.on('data', onData);
-    const t = setTimeout(() => reject(new Error(`${prefix} not seen in ${timeoutMs} ms`)), timeoutMs);
-    child.on('exit', () => { clearTimeout(t); reject(new Error(`process exited before ${prefix}`)); });
-  });
-}
 
 async function freePort(): Promise<number> {
   return new Promise(resolvePromise => {
@@ -59,11 +41,13 @@ async function runOnce(speed: number, delayEnv: string): Promise<Trace> {
   const runtimeUrl = `http://127.0.0.1:${runtimePort}`;
   const agent = spawn(process.execPath, ['services/culture-agent/src/main.ts', '--port', '0',
     '--data-dir', dataDir, '--runtime-url', runtimeUrl], {cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], env});
+  bufferOf(agent);
   const listening = await waitLine(agent, 'OSCAR_AGENT_LISTENING ');
   const agentPort = (JSON.parse(listening.slice('OSCAR_AGENT_LISTENING '.length)) as {port: number}).port;
   const runtime = spawn(process.execPath, ['services/runtime/src/main.ts', '--port', String(runtimePort),
     '--data-dir', dataDir, '--scenario', 'routine_maintenance', '--seed', '42', '--clock-mode', 'lockstep',
     '--agent-url', `http://127.0.0.1:${agentPort}`], {cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], env});
+  bufferOf(runtime);
   try {
     await waitLine(runtime, 'OSCAR_RUNTIME_READY ');
     await waitLine(agent, 'OSCAR_AGENT_READY ');

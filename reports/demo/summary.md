@@ -1,6 +1,6 @@
 # OSCAR demo results (npm run demo:all)
 
-Generated: 2026-09-29T20:27:50.882Z
+Generated: 2026-09-29T20:45:11.732Z
 
 | demo | outcome | run | failed criteria |
 | --- | --- | --- | --- |
