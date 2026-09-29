@@ -1,0 +1,1 @@
+{"name":"oscar-ai-viewer","version":"1.0.0","private":true,"type":"module","dependencies":{"three":"0.180.0"},"description":"Runtime modules are vendored; no npm install is needed."}

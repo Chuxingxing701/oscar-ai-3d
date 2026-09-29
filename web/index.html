@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>OSCAR–AI · 三维工作岛</title>
+<link rel="icon" href="data:,"><link rel="stylesheet" href="style.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script></head>
+<body><main id="stage" aria-label="可旋转的 OSCAR 三维模型"></main>
+<header><div class="mark">A<span>+</span></div><div><div class="brand">AIMINGMED <span>／ DIGITAL SHOWCASE</span></div><h1>OSCAR–AI</h1><p>类器官系统培养鉴定智能工作岛</p></div><div class="version">REFERENCE MODEL <b>01</b></div></header>
+<section class="intro"><span id="mode-label">01 ／ EXTERIOR</span><h2 id="mode-title">从外观，走进工作舱。</h2><p id="hint">拖动旋转 · 滚轮缩放<br>点击设备，查看内部工作平台</p></section>
+<aside id="load-status" role="status">正在加载三维模型…</aside>
+<nav aria-label="模型展示控制"><button id="toggle" disabled>进入工作舱 <span>↗</span></button><button id="play" disabled aria-pressed="false">暂停演示</button><button id="reset" disabled>复位视角</button><button id="front" disabled>正面</button><button id="rotate" disabled aria-pressed="false">自动旋转</button></nav>
+<footer><span id="foot-state">外观模型</span><span>估算外包络 2.1 × 0.6 × 1.8 m <i>／</i> 运动为演示示意</span><a href="../README.md" target="_blank">模型说明 ↗</a></footer>
+<div id="webgl-error" hidden>当前浏览器无法启动 WebGL。请换用支持 WebGL 2 的浏览器，或查看 <a href="../previews/01_exterior.png">外观预览图</a>。</div>
+<script type="module" src="app.js"></script></body></html>
