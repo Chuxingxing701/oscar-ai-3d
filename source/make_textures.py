@@ -1,11 +1,19 @@
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
-import math
+import math, os
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'textures'; OUT.mkdir(parents=True,exist_ok=True)
-FONT='C:/Windows/Fonts/arial.ttf'
-BOLD='C:/Windows/Fonts/arialbd.ttf'
+def resolve_font(env, candidates):
+    for candidate in [os.environ.get(env, ''), *candidates]:
+        if candidate and Path(candidate).is_file(): return candidate
+    raise RuntimeError(f'Set {env} to a TrueType font path')
+FONT=resolve_font('OSCAR_FONT', ['C:/Windows/Fonts/arial.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    '/System/Library/Fonts/Supplemental/Arial.ttf'])
+BOLD=resolve_font('OSCAR_BOLD_FONT', ['C:/Windows/Fonts/arialbd.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+    '/System/Library/Fonts/Supplemental/Arial Bold.ttf'])
 def font(n,b=False): return ImageFont.truetype(BOLD if b else FONT,n)
 def text(d,xy,s,n,fill,b=False): d.text(xy,s,font=font(n,b),fill=fill,anchor='mm')
 def wave(d,box,count,color,reverse=False):
