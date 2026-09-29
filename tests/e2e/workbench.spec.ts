@@ -2,7 +2,7 @@
 // these flows): pairing, row-scoped manual operations driven by authoritative
 // state, 3D projection, refresh recovery, browser close, read-only replay.
 import {test, expect} from '@playwright/test';
-import {acceptedThenStep, hasSessionCookie, operatorClient, pairAndOpen, stack, stepIdle, trackErrors, wellVolume} from './helpers.ts';
+import {sceneUpdateErrors, acceptedThenStep, hasSessionCookie, operatorClient, pairAndOpen, stack, stepIdle, trackErrors, wellVolume} from './helpers.ts';
 
 test.describe.configure({mode: 'serial'});
 
@@ -19,6 +19,7 @@ test('pairing issues an HttpOnly cookie; pages and scripts carry no token', asyn
   }
   expect(await page.evaluate(() => JSON.stringify(localStorage) + document.cookie)).not.toContain('oscar_session');
   expect(errors).toEqual([]);
+  expect(await sceneUpdateErrors(page)).toEqual([]);
 });
 
 test('manual scan → row add shows explicit A1–A6 scope and updates only row A from Runtime state', async ({page}) => {
@@ -62,6 +63,7 @@ test('manual scan → row add shows explicit A1–A6 scope and updates only row 
   expect(add.status).toBe('succeeded');
   expect(Object.keys(add.summary.wells).sort()).toEqual(['A1', 'A2', 'A3', 'A4', 'A5', 'A6']);
   expect(errors).toEqual([]);
+  expect(await sceneUpdateErrors(page)).toEqual([]);
 });
 
 test('3D scene mirrors the running row stage and refresh resumes the active stage', async ({page}) => {
@@ -86,6 +88,7 @@ test('3D scene mirrors the running row stage and refresh resumes the active stag
   await expect(page.locator('#action-bar')).toContainText(r.action.action_id, {timeout: 15_000});
   await client.control(exp, {step: {until_idle: true}});
   await expect(page.locator('#action-bar')).not.toContainText('运行中', {timeout: 20_000});
+  expect(await sceneUpdateErrors(page)).toEqual([]);
 });
 
 test('closing the browser does not stop the Runtime; replay of an archived experiment never writes', async ({browser}) => {

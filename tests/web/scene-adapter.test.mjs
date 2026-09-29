@@ -78,6 +78,16 @@ test('scan stage uses well target with tool camera and validates', () => {
     {plate_id: 'plate-02', well_id: 'C2'});
 });
 
+test('scan travel stages (moving to a well) use the camera even when the stage has no tool', () => {
+  const scanAction = {action_id: 'act-03', capability: 'imaging.scan', status: 'running',
+    arguments: {plate_id: 'plate-01', wells: ['A1']}};
+  const head = {action_id: 'act-03', stage: {index: 0, stage: 'moving', primitive: 'motion.move_to_station',
+    target: {plate_id: 'plate-01', well_id: 'A1'}, from_target: null, duration_sim_s: 3, started_at_sim_s: 118}};
+  const display = projectDisplay(makeSnapshot({head, actions: new Map([['act-03', scanAction]])}));
+  assert.equal(display.actions[0].tool, 'camera');
+  validateSnapshot(map, display);
+});
+
 test('park move uses target null and validates', () => {
   const head = {action_id: 'act-01', stage: {index: 8, stage: 'moving', primitive: 'motion.park',
     target: null, from_target: {resource_id: 'waste-01'}, duration_sim_s: 3, started_at_sim_s: 119}};

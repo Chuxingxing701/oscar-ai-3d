@@ -49,3 +49,8 @@ export async function acceptedThenStep(page: Page, client: DeviceClient, exp: st
   await stepIdle(page);
   await expect.poll(async () => (await client.state(exp)).active_actions.length, {timeout: 30_000}).toBe(0);
 }
+
+/** Display projection must never be rejected by the scene (fails loudly instead of a toast). */
+export async function sceneUpdateErrors(page: Page): Promise<string[]> {
+  return page.evaluate(() => (window as unknown as {oscarScene?: {updateErrors(): string[]}}).oscarScene?.updateErrors() ?? []);
+}

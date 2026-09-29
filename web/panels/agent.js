@@ -5,7 +5,7 @@
 // 503 agent_unavailable only disables this tab; manual operation stays usable.
 import {h, fmtSimTime, capabilityLabel} from './ui.js';
 
-const SSE_EVENT_NAMES = ['message', 'decision', 'observation', 'action', 'report', 'error', 'status', 'finish', 'run', 'log'];
+const SSE_EVENT_NAMES = ['agent', 'message', 'decision', 'observation', 'action', 'report', 'error', 'status', 'finish', 'run', 'log'];
 const BASIS_SET = new Set(['scripted', 'llm', 'oracle_demo', 'device_estimate', 'simulated', 'scheduled_policy', 'operator']);
 
 export function mountAgent(root, ctx) {
@@ -46,7 +46,7 @@ export function mountAgent(root, ctx) {
       const response = await ctx.api.startAgentRun({experiment_id: state.experimentId,
         mode: modeSel.value, goal: goalInput.value || undefined});
       entries = [];
-      const runId = response?.run_id || null;
+      const runId = response?.run?.run_id || response?.run_id || null;
       if (runId) connectEvents(runId);
       ctx.setStatus(`Agent run 已启动：${runId || '（未知 id）'}`);
       ctx.refreshNow();
@@ -71,8 +71,10 @@ export function mountAgent(root, ctx) {
       source.addEventListener(name, event => {
         let entry;
         try { entry = JSON.parse(event.data); } catch { entry = {type: name, text: event.data}; }
-        if (entry && entry.seq != null && entries.some(e => e.seq === entry.seq && (e.type === (entry.type || name)))) return;
-        entries.push({type: name === 'message' ? (entry?.type || 'message') : name, ...entry});
+        // Agent session events are {seq, run_id, type, payload}; flatten the payload for display.
+        if (entry && entry.payload && typeof entry.payload === 'object') entry = {...entry.payload, ...entry, payload: undefined};
+        if (entry && entry.seq != null && entries.some(e => e.seq === entry.seq)) return;
+        entries.push({...entry, type: entry?.type || name});
         if (entries.length > 300) entries = entries.slice(-300);
         renderLog();
         renderReport();
@@ -93,7 +95,9 @@ export function mountAgent(root, ctx) {
       .concat(entry.evidence_refs || [], entry.observation_ids || [],
         entry.evidence?.observation_ids || [])
       .filter(ref => typeof ref === 'string');
-    const text = entry.summary || entry.message || entry.decision || entry.description || entry.reason
+    const str = v => (typeof v === 'string' ? v : '');
+    const statusText = entry.status ? `状态 ${entry.status}${entry.partial ? '（部分效果）' : ''}${entry.error?.code ? ` · ${entry.error.code}` : ''}` : '';
+    const text = str(entry.summary) || str(entry.message) || str(entry.reason) || str(entry.description) || statusText
       || entry.text || (entry.tool_call ? `${entry.tool_call.name || ''} ${JSON.stringify(entry.tool_call.arguments || {})}` : '')
       || (entry.type ? '' : JSON.stringify(entry).slice(0, 140));
     return h('li', {class: entry.level === 'error' || entry.type === 'error' ? 'err' : ''},
@@ -116,7 +120,7 @@ export function mountAgent(root, ctx) {
   }
 
   function renderReport() {
-    const report = entries.find(e => /report|finish/.test(String(e.type || '')));
+    const report = [...entries].reverse().find(e => /report|finish/.test(String(e.type || '')));
     if (!report) { reportBox.hidden = true; return; }
     reportBox.hidden = false;
     reportBox.replaceChildren(h('h3', {}, '报告'),

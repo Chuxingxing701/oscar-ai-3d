@@ -589,7 +589,7 @@ export class Runtime {
       const target: StageTarget = p.at === 'well' || p.at === 'plate'
         ? {plate_id: plateId, well_id: wells[0]}
         : null;
-      stages.push({stage: p.stage as Stage, primitive: p.primitive, tool: p.stage === 'scanning' ? 'camera' : undefined,
+      stages.push({stage: p.stage as Stage, primitive: p.primitive, tool: 'camera',
         target, from_target: prev, duration: p.stage === 'scanning' ? scanDuration : stageDuration(p.stage),
         commit: p.commit});
       prev = target;

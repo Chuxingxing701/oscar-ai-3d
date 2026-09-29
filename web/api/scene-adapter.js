@@ -105,7 +105,9 @@ export function projectDisplay(snapshot, simTimeS = null) {
         stage: head.stage.stage,
         target,
         from_target: from ?? undefined,
-        tool: head.stage.stage === 'scanning' ? 'camera' : head.stage.tool ?? undefined,
+        // Every stage of a scan travels with the head camera; well targets are never pipette targets.
+        tool: head.stage.stage === 'scanning' || action?.capability === 'imaging.scan'
+          || (target && 'well_id' in target) ? 'camera' : head.stage.tool ?? undefined,
         stage_started_at_sim_s: head.stage.started_at_sim_s ?? time,
         stage_duration_sim_s: head.stage.duration_sim_s ?? 0,
       });

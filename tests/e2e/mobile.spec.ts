@@ -1,6 +1,6 @@
 // Narrow screen (390×844): the primary manual flow is reachable through the pane switcher.
 import {test, expect} from '@playwright/test';
-import {acceptedThenStep, operatorClient, pairAndOpen, trackErrors} from './helpers.ts';
+import {sceneUpdateErrors, acceptedThenStep, operatorClient, pairAndOpen, trackErrors} from './helpers.ts';
 
 test('narrow screen: switch panes and run a row add', async ({page}) => {
   const errors = trackErrors(page);
@@ -32,4 +32,5 @@ test('narrow screen: switch panes and run a row add', async ({page}) => {
   expect(overflow).toBeLessThanOrEqual(1);
   await page.screenshot({path: 'reports/e2e/mobile.png'});
   expect(errors).toEqual([]);
+  expect(await sceneUpdateErrors(page)).toEqual([]);
 });

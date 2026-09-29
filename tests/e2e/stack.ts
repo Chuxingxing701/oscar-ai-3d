@@ -68,6 +68,10 @@ export function readStack(): StackInfo {
   return JSON.parse(readFileSync(STATE_FILE, 'utf8')) as StackInfo;
 }
 
+export function writeStackPid(key: 'agentPid' | 'runtimePid', pid: number): void {
+  writeFileSync(STATE_FILE, JSON.stringify({...readStack(), [key]: pid}));
+}
+
 export function operatorToken(info: StackInfo): string {
   return readFileSync(join(info.dataDir, 'runtime', 'operator.token'), 'utf8').trim();
 }

@@ -35,6 +35,7 @@ let liveState = initialState();
 let selection = null;              // {plate_id, well_id?} | null
 let scene = null;
 let sceneReady = false;
+const sceneUpdateErrors = [];
 let displayFrozen = false;
 let currentExperimentId = null;
 let feed = null;
@@ -189,6 +190,7 @@ function updateScene(state) {
   try {
     scene.update(display);
   } catch (error) {
+    sceneUpdateErrors.push(error.message);
     showError(`场景更新失败：${error.message}`);
   }
 }
@@ -321,7 +323,8 @@ async function mountSceneModule() {
     await scene.ready;
     sceneReady = true;
     // Read-only diagnostics for browser acceptance; no write path is exposed.
-    Object.defineProperty(window, 'oscarScene', {value: Object.freeze({getStatus: () => scene.getStatus()})});
+    Object.defineProperty(window, 'oscarScene', {value: Object.freeze({getStatus: () => scene.getStatus(),
+      updateErrors: () => [...sceneUpdateErrors]})});
     scene.setView('interior');
     updateScene(getState());
   } catch { /* onError already surfaced */ }
