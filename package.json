@@ -1,0 +1,30 @@
+{
+  "name": "oscar-mhs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OSCAR virtual culture device: Runtime, device contract, workbench and Culture Agent",
+  "engines": {
+    "node": ">=24.15 <25"
+  },
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node scripts/run-tests.mjs",
+    "test:scene": "node --test web/scene/tests/scene.test.mjs && python3 source/prepare_scene_assets.py --check",
+    "test:e2e": "playwright test -c tests/e2e/playwright.config.ts",
+    "demo:all": "node scripts/demo-all.ts",
+    "dev": "node scripts/dev.ts",
+    "vendor:three": "node scripts/vendor-three.mjs",
+    "vendor:check": "node scripts/vendor-three.mjs --check"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.19.0",
+    "three": "0.180.0",
+    "typescript": "5.9.3"
+  }
+}

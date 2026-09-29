@@ -1,3 +1,13 @@
 *.blend1
 __pycache__/
 *.pyc
+node_modules/
+# Runtime / Agent data (SQLite, tokens, assets). Never commit.
+data/
+.data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.token
+test-results/
+playwright-report/

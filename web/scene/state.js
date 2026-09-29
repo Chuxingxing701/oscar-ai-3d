@@ -123,11 +123,12 @@ export function validateSnapshot(map, state) {
   for (const action of state.actions) {
     if (!STAGES.includes(action.stage)) throw new Error(`Unsupported display stage: ${action.stage}`);
     finite(action.stage_started_at_sim_s, 'stage start'); finite(action.stage_duration_sim_s, 'stage duration');
-    if (!action.target) throw new Error('Action target required');
-    findTarget(map, action.target);
+    // A null target is only meaningful for travel back to the home/park pose.
+    if (!action.target && action.stage !== 'moving') throw new Error('Action target required');
+    if (action.target) findTarget(map, action.target);
     if (action.from_target) findTarget(map, action.from_target);
     if (action.stage !== 'scanning' && action.tool !== 'camera') {
-      pipetteLayout(map, action.target);
+      if (action.target) pipetteLayout(map, action.target);
       if (action.from_target) pipetteLayout(map, action.from_target);
     }
     if (action.from_pose_m) {

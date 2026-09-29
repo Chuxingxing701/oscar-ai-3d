@@ -97,6 +97,14 @@ test('invalid snapshots fail before they can replace the current display', () =>
     x => x.actions[0].from_pose_m = [0, -.5, 0]]) {
     const bad = structuredClone(s); change(bad); assert.throws(() => validateSnapshot(map, bad));
   }
+  // B integration compat: a null target is allowed only for travel back to home (park).
+  const park = structuredClone(s);
+  park.actions = [{stage: 'moving', target: null, from_target: {plate_id: 'plate-01', row_id: 'A'},
+    stage_started_at_sim_s: 10, stage_duration_sim_s: 3}];
+  assert.equal(validateSnapshot(map, park), park);
+  assert.deepEqual(sampleMotion(map, park.actions[0], 13).pose, map.motion.home_m);
+  const noTarget = structuredClone(park); noTarget.actions[0].stage = 'dispensing';
+  assert.throws(() => validateSnapshot(map, noTarget));
 });
 
 test('real GLB batching preserves controlled nodes, head camera and plate/well picking', async () => {
