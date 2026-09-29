@@ -791,4 +791,4 @@ v0.3 修订期间的额外核对：在本机 Node v24.21.0 上启动测试 HTTP 
 
 v0.4 只修正 v0.3 规则之间的冲突，没有新增实测。GET/HEAD 不带 `Origin` 的判断依据是 [Fetch 标准的 Origin 头](https://fetch.spec.whatwg.org/#origin-header)。图片 hash 一致性、屏障交接和执行中 reset 目前仍是待实现的验收目标，尚未验证。
 
-设计稿核查时 OSCAR 仓库缺少 `web/vendor/`、外部贴图及历史验证报告。2026-09-30 A 的场景交付已补齐 vendor、恢复贴图并提供本轮独立验证记录，见 [场景交接](SCENE_HANDOFF.md)。上述 API、仿真器或 Agent 仍待 B 实现。
+设计稿核查时 OSCAR 仓库缺少 `web/vendor/`、外部贴图及历史验证报告。2026-09-30 A 的场景交付已补齐 vendor、恢复贴图并提供本轮独立验证记录，见 [场景交接](SCENE_HANDOFF.md)。2026-09-30 B 已按本设计实现 C0–C3 主要框架检查点（Runtime、仿真器、访问控制、操作台、scripted Agent 与演示），实现契约见 [API_CONTRACT](API_CONTRACT.md)，验收见 [检查点报告](../reports/framework_checkpoint.md)。

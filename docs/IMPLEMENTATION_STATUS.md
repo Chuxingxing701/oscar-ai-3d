@@ -75,7 +75,28 @@
 - C2 操作台接入：workbench 页面消费 state/SSE（`head` 投影已按 §10 供 shake/头动作分列）；`web/api/scene-adapter.js` 由 B 侧接手。
 - C3：真实 Culture Agent（复用本屏障协议与 run token 流程）、三条演示、`npm run demo:all`。
 
-## C2：操作台 — 未开始
+## C2：操作台 — 完成（2026-09-30）
+
+### 已实现
+
+- `web/workbench.html|css|js`：Runtime 同源受控页面。顶栏（实验、时钟模式/倍率、模拟时刻、「暂停 Runtime」、单步/推进至空闲、重置、「冻结画面（仅显示）」、SSE 状态）；左侧设备/腔室/板孔网格/库存与实验历史；中央 3D（A 的 `mountScene`，默认内部视角，列表与 3D 拾取互相定位）；右侧「操作 / 相机 / 环境 / Agent」；底部动作阶段条与事件时间线；≤760 px 分区切换。
+- `web/api/`：`http.js`（同源 cookie、统一错误、401 引导配对、只读模式在 fetch 之前拒绝写请求）、`stream.js`（先快照后订阅、seq 去重、缺口重建、仅最新一代 resync 生效）、`store.js`（纯 reducer + `replayAt` 只读回放重建；快照附带全部动作列表为权威）、`scene-adapter.js`（§10 投影：整排/单孔+camera/工位/归位，shake 只进板字段，显示时刻取服务端确认值）、`ids.js`。
+- `web/panels/`：资源、操作（提交前显示「作用范围：plate-01 A1–A6（整排 6 通道同时吸排）」，请求只用 `plate_id+row_id`）、相机（单目/左右对照、前后对比、模糊时不显示数值）、环境（目标线/观测线趋势）、Agent（启动 scripted/llm、暂停/恢复/取消、hold、决策日志带 basis 与可点击证据、报告；503 时提示 Agent 不可用而人工操作可用）、时间线、历史（只读回放 banner，写控件全部禁用）。
+- 场景只读诊断句柄 `window.oscarScene.getStatus()/updateErrors()`（无写接口），供浏览器验收断言场景从未拒绝投影。
+- `tests/e2e/`：Playwright 1.63.0 配置、真实 Runtime+Agent 栈（global setup/teardown，隔离临时目录），8 项浏览器验收。
+
+### 实际通过的命令
+
+- `node --test tests/web/*.test.mjs`：28/28（适配器、流/存储、只读守卫、两项并发 resync/残留动作回归）。
+- `npm run test:e2e`：干净克隆中 8/8，连续两次。
+
+### 验收中修复的问题
+
+- 扫描行进阶段在 Runtime 中没有 `tool:'camera'`，适配器按针排校验导致场景拒绝快照 → Runtime 扫描所有阶段标注 camera，适配器兜底推断；补单测与 e2e 断言。
+- 手动 refresh 与 gap/error resync 重叠时旧快照后到，造成事件停滞 → generation 守卫；快照时丢弃未列出的非终态旧副本，并附全部动作列表。
+- resync 覆盖了 `observation.created`，相机列表不刷新 → 快照后相机列表重载；相机重载在飞行中请求不再丢失。
+- Agent 面板未监听 Agent SSE 的 `event: agent` 与 `{type,payload}` 结构 → 已对齐。
+
 
 ## C3：Agent 与演示 — 完成（2026-09-30）
 
@@ -125,3 +146,9 @@
 
 - C2 操作台接入：Agent 面板消费 `/api/v1/agent/runs[/{id}[/events]]`（decision 事件已含 basis/reason/evidence_refs/capability/arguments；report 含库存对账与前后对比素材）。
 - 演示页/CLI 对 `model_unavailable`、`agent_restarted` 暂停态的呈现与 resume 入口。
+
+## 检查点汇总（2026-09-30）
+
+C0–C3 主要框架检查点已达成，记录见 [reports/framework_checkpoint.md](../reports/framework_checkpoint.md)。干净克隆中：`npm ci` ✓、`npm run typecheck` ✓、`npm test` 139/139、`npm run test:e2e` 8/8、`npm run demo:all` 4/4、`npm run dev` 就绪且无孤儿进程。
+
+后续可选 P2（未开始）：真实 LLM 适配器（工具表已装配）、有限视觉工作集与会话压缩、Agent realtime 支持、取头几何与实机参数确认。
