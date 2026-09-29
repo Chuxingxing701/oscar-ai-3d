@@ -131,7 +131,9 @@ export function mountCamera(root, ctx) {
 
   render();
   reload();
-  ctx.bus.on('observation.created', () => { clearTimeout(reload._t); reload._t = setTimeout(reload, 400); });
+  const reloadSoon = () => { clearTimeout(reload._t); reload._t = setTimeout(reload, 400); };
+  ctx.bus.on('observation.created', reloadSoon);
+  ctx.bus.on('snapshot', reloadSoon);
   ctx.bus.on('experiment', reload);
 
   return {

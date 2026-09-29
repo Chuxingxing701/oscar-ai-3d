@@ -235,6 +235,8 @@ function startFeed(experimentId) {
     onState(state, meta) {
       liveState = state;
       if (meta.kind === 'event' && meta.event?.type === 'observation.created') bus.emit('observation.created', meta.event);
+      // Events covered by a resync snapshot are never replayed individually.
+      if (meta.kind === 'snapshot') bus.emit('snapshot', meta);
       scheduleRender();
     },
     onStatus(status) {
