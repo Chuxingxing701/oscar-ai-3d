@@ -1,0 +1,11 @@
+{
+  "width": 2.1,
+  "depth": 0.6,
+  "height": 1.8,
+  "main_right": 0.19,
+  "divider_right": 0.36,
+  "deck_height": 0.90,
+  "cycle_seconds": 18,
+  "fps": 30,
+  "note": "User-estimated envelope in metres. All local dimensions are visual estimates; hidden mechanics and motion are illustrative."
+}
