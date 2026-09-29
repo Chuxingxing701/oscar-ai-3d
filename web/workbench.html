@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>OSCAR 操作台 · 设备工作台</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="workbench.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/":"./vendor/addons/"}}</script>
+</head>
+<body>
+<div id="replay-banner" hidden>只读回放 — 该 Experiment 已归档，所有写操作已禁用 <button id="exit-replay" type="button">返回当前实验</button></div>
+
+<header id="topbar">
+  <div class="brandbox">
+    <div class="mark">A<span>+</span></div>
+    <div class="ids">
+      <h1>OSCAR 操作台</h1>
+      <p><b id="exp-id">—</b> <span class="chip" id="exp-status">…</span> <span id="exp-scenario"></span></p>
+    </div>
+  </div>
+  <div class="clockbox" role="group" aria-label="时钟控制">
+    <label>时钟模式
+      <select id="clock-mode" aria-label="时钟模式">
+        <option value="lockstep">lockstep（步进）</option>
+        <option value="realtime">realtime（实时）</option>
+      </select>
+    </label>
+    <label>倍率
+      <select id="clock-speed" aria-label="仿真倍率">
+        <option value="0.1">0.1×</option>
+        <option value="1">1×</option>
+        <option value="10">10×</option>
+        <option value="60">60×</option>
+        <option value="600">600×</option>
+      </select>
+    </label>
+    <output id="sim-time" aria-label="模拟时刻">0 s</output>
+  </div>
+  <div class="controlbox" role="group" aria-label="运行控制">
+    <button id="btn-pause-runtime" type="button" class="primary">暂停 Runtime</button>
+    <button id="btn-step" type="button">单步</button>
+    <button id="btn-step-idle" type="button">推进至空闲</button>
+    <button id="btn-reset" type="button" class="danger">重置</button>
+    <button id="btn-freeze" type="button" aria-pressed="false" title="仅冻结 3D 画面显示，不向 Runtime 发送暂停">冻结画面<span class="hint">仅显示</span></button>
+  </div>
+  <div class="connbox">
+    <span id="conn-dot" class="dot offline" aria-hidden="true"></span>
+    <span id="conn-text">离线</span>
+    <span id="conn-detail" class="muted"></span>
+  </div>
+</header>
+
+<nav id="mobile-tabs" aria-label="工作台分区">
+  <button data-pane="scene" type="button" class="on">场景</button>
+  <button data-pane="resources" type="button">资源</button>
+  <button data-pane="ops" type="button">操作</button>
+  <button data-pane="camera" type="button">相机</button>
+  <button data-pane="env" type="button">环境</button>
+  <button data-pane="agent" type="button">Agent</button>
+  <button data-pane="timeline" type="button">时间线</button>
+</nav>
+
+<main id="layout">
+  <aside id="pane-resources" class="pane" aria-label="资源列表">
+    <section class="card" id="device-card"><h2>设备</h2><div class="card-body"></div></section>
+    <section class="card" id="chamber-mini"><h2>腔室</h2><div class="card-body"></div></section>
+    <section class="card" id="plates-card"><h2>培养板（点击孔位定位 3D）</h2><div class="card-body"></div></section>
+    <section class="card" id="inventory-card"><h2>储液 / 废液 / 吸头</h2><div class="card-body"></div></section>
+  </aside>
+
+  <section id="pane-scene" class="pane" aria-label="3D 场景">
+    <div id="scene-tools" role="group" aria-label="场景视图">
+      <button id="view-interior" type="button" class="on">内部</button>
+      <button id="view-exterior" type="button">外观</button>
+      <button id="view-deck" type="button">工位全景</button>
+      <output id="scene-selection" class="muted">未选择</output>
+    </div>
+    <div id="scene-stage" aria-label="OSCAR 3D 场景；拖动旋转，点击选择板孔"></div>
+    <p id="scene-error" role="alert" hidden></p>
+    <p class="scene-note">3D 动作为演示示意（排枪 6 通道为演示配置、取头为示意、扫描图像为合成）。</p>
+  </section>
+
+  <section id="right-col" class="pane" aria-label="面板">
+    <div id="tabbar" role="tablist" aria-label="右侧面板">
+      <button role="tab" id="tab-ops" aria-selected="true" type="button">操作</button>
+      <button role="tab" id="tab-camera" aria-selected="false" type="button">相机</button>
+      <button role="tab" id="tab-env" aria-selected="false" type="button">环境</button>
+      <button role="tab" id="tab-agent" aria-selected="false" type="button">Agent</button>
+    </div>
+    <div id="tab-ops-panel" role="tabpanel" aria-labelledby="tab-ops" class="tab-panel"></div>
+    <div id="tab-camera-panel" role="tabpanel" aria-labelledby="tab-camera" class="tab-panel" hidden></div>
+    <div id="tab-env-panel" role="tabpanel" aria-labelledby="tab-env" class="tab-panel" hidden></div>
+    <div id="tab-agent-panel" role="tabpanel" aria-labelledby="tab-agent" class="tab-panel" hidden></div>
+  </section>
+
+  <section id="pane-timeline" class="pane" aria-label="事件时间线">
+    <div id="action-bar" aria-label="当前动作阶段"></div>
+    <div id="timeline-card" class="card">
+      <div class="timeline-head">
+        <h2>事件时间线</h2>
+        <label>筛选
+          <select id="timeline-filter" aria-label="事件筛选">
+            <option value="all">全部</option>
+            <option value="action">动作</option>
+            <option value="observation">观测</option>
+            <option value="environment">环境</option>
+            <option value="clock">时钟</option>
+            <option value="run">运行 / 屏障</option>
+            <option value="shake">摇床</option>
+          </select>
+        </label>
+        <span id="replay-controls" hidden>
+          <label>回放位置 <input type="range" id="replay-seq" min="0" max="0" value="0" step="1" aria-label="回放事件序号"></label>
+          <output id="replay-seq-out">seq 0</output>
+        </span>
+      </div>
+      <ol id="timeline-list" aria-live="polite"></ol>
+    </div>
+  </section>
+</main>
+
+<div id="status-live" role="status" aria-live="polite"></div>
+<div id="error-live" role="alert" aria-live="assertive"></div>
+
+<div id="auth-overlay" hidden>
+  <div class="auth-card">
+    <h2>需要操作员会话</h2>
+    <p id="auth-message">未认证或会话已过期。请前往配对页获取会话（配对码见 Runtime 启动输出）。</p>
+    <div class="row">
+      <a class="button primary" href="/pair">前往配对 /pair</a>
+      <a class="button" href="/login">访问码登录 /login</a>
+      <button id="auth-retry" type="button">重试</button>
+    </div>
+  </div>
+</div>
+
+<div id="archived-toast" hidden>
+  <span id="archived-text"></span>
+  <button id="archived-switch" type="button" class="primary">切换到新实验</button>
+</div>
+
+<script type="module" src="workbench.js"></script>
+</body>
+</html>
