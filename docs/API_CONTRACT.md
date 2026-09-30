@@ -139,3 +139,45 @@ Runtime 只提供：`/web/**`（排除 `web/node_modules`、`web/scene/tests`、
 ## 10. 场景显示投影（B 的适配层 `web/api/scene-adapter.js`）
 
 `StateSnapshot` → `scene.update()`：板/孔 `volume_ul/capacity_ul`；`plate.shake`；`actions` 只放 `snapshot.head`（当前占用共享头的阶段，最多一个），并发 shake 只进入板字段。阶段目标：整排 `{plate_id,row_id}`、扫描 `{plate_id,well_id}` + `tool:'camera'`、工位 `{resource_id}`、归位 `null`（场景做了最小兼容：`moving` 允许 `target:null` 表示回待命位）。显示时刻取服务端确认的 `sim_time_s`，不超前到未确认阶段或体积。
+
+## 10. 长期培养会话与总助手契约（D 阶段，2026-10-01）
+
+长期会话挂在 Culture Agent 上（网关同源代理 `/api/v1/agent/*`，operator 凭证；Agent 侧统一 X-Service-Token）。设计依据 [LONG_LIVED_AGENT_DESIGN.md](LONG_LIVED_AGENT_DESIGN.md)；本节记录实现时确定的细节。
+
+### 10.1 会话与任务 API（`/api/v1/agent/...`）
+
+| 操作 | 端点 | 语义 |
+| --- | --- | --- |
+| 列出会话 | `GET /sessions` | 当前实验 + 归档回看；每项含 loop_state、active_task、last_message_seq/last_event_seq |
+| 建立/获取唯一会话 | `POST /sessions` `{experiment_id?}` | 对 `(runtime_instance_id, experiment_id)` 幂等 get-or-create；归档实验 409 `experiment_archived`；默认取 Runtime 当前实验 |
+| 会话详情 | `GET /sessions/:id` | messages（尾 50）、tasks、plan、armed wakes、checkpoint、last_seq |
+| 继续对话 | `POST /sessions/:id/messages` `{content, request_id?}` | request_id 幂等（重发返回原 message）；202 返回 message_id；唤醒调度器 |
+| 会话事件 | `GET /sessions/:id/events?after_seq=&format=json\|sse` | 独立 session_seq 单调；SSE 支持 Last-Event-ID 断点续传 |
+| 创建任务 | `POST /sessions/:id/tasks` `{goal_text, goal_spec, request_id?, budget?}` | goal_spec 校验（GoalSpec）；缺关键执行参数→`needs_input`；已有活动任务 409 `task_already_active`（MVP 单活动任务） |
+| 任务详情/更新 | `GET/POST /tasks/:id` | 更新带 `expected_revision`（CAS，冲突 409 `revision_conflict`），goal_revision 单调递增 |
+| 任务控制 | `POST /tasks/:id/control` `{pause\|resume\|cancel}` | cancel=取消在途设备动作并对账+撤销 wakes；与 Runtime 控制语义分离 |
+| 聚合状态 | `GET /sessions/:id/status` | 设备新鲜度（可达/时钟/sim_time/在途动作）、loop 状态与等待原因、下次唤醒、预算、水位（消息/事件/inbox/checkpoint）、模型可用性 |
+| 会话控制 | `POST /sessions/:id/control` `{pause_agent\|resume_agent}` | 暂停 Agent=停止新决策/新动作（任务与设备不受影响） |
+| 强制压缩 | `POST /sessions/:id/compact` | 测试/演示钩子：生成 checkpoint（generation 递增），原始消息不删 |
+| 记忆 | `GET /sessions/:id/memory` | 最新 memory checkpoint（summary/facts/open_questions/evidence_refs/versions） |
+
+写拒绝：归档会话一律 409 `session_archived`（messages/tasks/control/compact）。
+
+### 10.2 GoalSpec（goal_spec 字段）
+
+`{description, scope:{plates, rows?, reservoirs?}, metrics:[{metric, op, value, source, row_id?}], allowed_operations, monitoring:{interval_sim_s?, conditions?}, deadline_sim_s?, success:{description}, stop:{description, max_corrections?}, budget?, missing_parameters?}`。metric ∈ medium_volume_ul|liquid_level_ul|temperature_c|co2_pct|humidity_pct；allowed_operations ⊆ manifest 写能力。写工具执行前校验 scope（plate/row/reservoir 越界→`out_of_scope`）。
+
+### 10.3 总助手契约 v1（`/api/v1/agent/supervisor/v1/*`）
+
+`GET /supervisor`（契约自描述）、`GET /overview`、`POST /sessions`、`POST /sessions/:id/messages|/tasks`、`GET /sessions/:id/status|/events`、`GET/POST /tasks/:id`、`POST /tasks/:id/control`。与 10.1 同一核心（同队列/预算/revision 校验）；写操作要求 `delegated_principal`（服务端审计记录，权限不信任调用方自述）；长任务立即返回 `task_id`；订阅（SSE/JSON 轮询）只观察——断开不取消设备任务。响应带 `contract_version: "1.0.0"`。外部客户端示例：`tests/supervisor-contract.test.ts`（纯 HTTP，无 DOM/DB）。
+
+### 10.4 Runtime 侧最小扩展
+
+- `GET /api/v1/health` 增返 `instance_id`（首次启动生成存 meta 表；会话绑定用它区分数据目录身份）。
+- Bearer service token（`<data>/secrets/service.token`）认证为 principal `service`：可读全部 operator 可读端点、可在 **realtime** 实验提交/取消动作（lockstep 实验写拒绝 409 `clock_mode_mismatch`，lease 纪律不变）。
+- `GET /actions/by-key/:key` 的 principal 作用域含 `service`（会话意图 by-key 恢复）。
+- 新错误码：`session_archived`(409)、`task_already_active`(409)。
+
+### 10.5 模型后端配置（服务端显式，无静默回退）
+
+`OSCAR_MODEL_BASE_URL`（OpenAI 兼容，如 DeepSeek `https://api.deepseek.com/v1`）、`OSCAR_MODEL_API_KEY` 或 `OSCAR_MODEL_API_KEY_FILE`、`OSCAR_MODEL_NAME`、可选 `OSCAR_MODEL_PROVIDER`（默认 `custom-openai`）。缺失→会话 loop `unavailable` + `model.unavailable` 事件（UI/状态可见），不回退 scripted。pi 版本成对锁定 `@earendil-works/pi-agent-core@0.84.0` + `@earendil-works/pi-ai@0.84.0`。测试用 HTTP 模型桩：`services/culture-agent/test/model-stub.ts`（显式夹具，走真实 wire/工具协议）。

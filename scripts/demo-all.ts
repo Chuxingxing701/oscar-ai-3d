@@ -86,7 +86,7 @@ class Stack {
     this.dataDir = mkdtempSync(join(tmpdir(), `oscar-demo-${name}-`));
   }
 
-  async start(scenario: string, seed: number): Promise<void> {
+  async start(scenario: string, seed: number, clockMode: 'lockstep' | 'realtime' = 'lockstep'): Promise<void> {
     const rtPort = await freePort();
     this.runtimePort = rtPort;
     this.runtimeUrlValue = `http://127.0.0.1:${rtPort}`;
@@ -98,7 +98,7 @@ class Stack {
     const listening = await waitLine(this.agentProc, 'OSCAR_AGENT_LISTENING ');
     this.agentPort = (JSON.parse(listening.slice('OSCAR_AGENT_LISTENING '.length)) as {port: number}).port;
     this.runtimeProc = spawn(process.execPath, ['services/runtime/src/main.ts', '--port', String(rtPort),
-      '--data-dir', this.dataDir, '--scenario', scenario, '--seed', String(seed), '--clock-mode', 'lockstep',
+      '--data-dir', this.dataDir, '--scenario', scenario, '--seed', String(seed), '--clock-mode', clockMode,
       '--agent-url', `http://127.0.0.1:${this.agentPort}`], {cwd: repoRoot, stdio: ['ignore', 'pipe', 'pipe'],
       env: {...process.env, ...this.env}});
     await waitLine(this.runtimeProc, 'OSCAR_RUNTIME_READY ');
@@ -541,13 +541,135 @@ async function runScenarioDemo(scenarioId: string): Promise<DemoResult> {
     inventory: (agentReport as {inventory?: unknown} | null)?.inventory};
 }
 
+// -- long-lived session demo (D5): realtime + HTTP model stub + supervisor ------
+
+async function runSessionDemo(): Promise<DemoResult> {
+  const criteria: Criterion[] = [];
+  const stack = new Stack('session-monitor');
+  const {startModelStub} = await import('../services/culture-agent/test/model-stub.ts');
+  const stub = await startModelStub();
+  const commands = [
+    'node services/runtime/src/main.ts --scenario routine_maintenance --clock-mode realtime (speed 1200)',
+    'node services/culture-agent/src/main.ts (OSCAR_MODEL_* -> local HTTP model stub on the OpenAI wire)',
+    'POST /api/v1/agent/supervisor/v1/sessions + /tasks (delegated_principal, task_id returned at once)',
+    'simulated 26 h: monitor wake every 6 h, media.add below 330 µL, verify scan, complete at deadline',
+  ];
+  let runId: string | null = null;
+  let exp: string | null = null;
+  let actions: Array<{action_id: string; capability: string; status: string}> = [];
+  let observations: string[] = [];
+  const goal = {
+    description: '维持 plate-01 A 排各孔培养液 ≥ 330 µL：定期扫描评估，低于阈值整排补液并复查',
+    scope: {plates: ['plate-01'], rows: ['A']},
+    metrics: [{metric: 'medium_volume_ul', op: '>=', value: 330, source: 'observation', row_id: 'A'}],
+    allowed_operations: ['imaging.scan', 'media.add'],
+    monitoring: {interval_sim_s: 21_600},
+    deadline_sim_s: 93_600,
+    success: {description: '监测窗口结束且不低于阈值'},
+    stop: {description: '预算或取消', max_corrections: 8},
+  };
+  try {
+    await stack.start('routine_maintenance', 42, 'realtime');
+    // NOTE: env must exist before the agent process starts; restart with env
+    await stack.stop();
+    const withModel = new Stack('session-monitor', {OSCAR_MODEL_BASE_URL: `http://127.0.0.1:${stub.port}/v1`,
+      OSCAR_MODEL_API_KEY: 'stub-key', OSCAR_MODEL_NAME: 'oscar-stub'});
+    await withModel.start('routine_maintenance', 42, 'realtime');
+    try {
+      const client = withModel.operator!;
+      exp = await client.currentExperimentId();
+      await client.control(exp, {speed: 1200});
+      const serviceToken = readFileSync(join(withModel.dataDir, 'secrets', 'service.token'), 'utf8').trim();
+      const agentPort = (withModel as unknown as {agentPort: number}).agentPort;
+      const sup = async <T>(method: string, path: string, body?: unknown): Promise<T> => {
+        const r = await fetch(`http://127.0.0.1:${agentPort}${path}`, {method,
+          headers: {'content-type': 'application/json', 'x-service-token': serviceToken},
+          body: body === undefined ? undefined : JSON.stringify(body)});
+        const json = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(`${String((json as {code?: string}).code ?? r.status)}: ${JSON.stringify(json).slice(0, 200)}`);
+        return json as T;
+      };
+      const created = await sup<{session_id: string}>('POST', '/supervisor/v1/sessions',
+        {experiment_id: exp, delegated_principal: 'demo'});
+      const task = await sup<{task_id: string; status: string}>('POST',
+        `/supervisor/v1/sessions/${created.session_id}/tasks`,
+        {goal_text: '照看 plate-01 A 排（演示协议 ≥ 330 µL）', goal_spec: goal, delegated_principal: 'demo'});
+      check(criteria, 'supervisor delegation returned task_id immediately', Boolean(task.task_id),
+        `task_id=${task.task_id}`);
+      // wait for completion (26 sim h at speed 1200 ≈ 78 s + turns)
+      const start = Date.now();
+      let final: {task: {status: string}} | null = null;
+      for (;;) {
+        const st = await sup<{task: {status: string}}>('GET', `/supervisor/v1/tasks/${task.task_id}`);
+        if (st.task.status === 'completed') {final = st; break;}
+        if (st.task.status === 'failed' || Date.now() - start > 170_000) {
+          throw new Error(`task ended as ${st.task.status}`);
+        }
+        await sleep(1000);
+      }
+      void final;
+      actions = (await client.actions(exp)).actions.filter(a => a.principal.kind === 'service')
+        .map(a => ({action_id: a.action_id, capability: a.capability, status: a.status}));
+      observations = ((await client.request<{observations: Observation[]}>('GET',
+        `/api/v1/experiments/${exp}/observations`)).body.observations).map(o => o.observation_id);
+      const events = (await sup<{events: Array<{type: string; payload: Record<string, unknown>}>}>('GET',
+        `/supervisor/v1/sessions/${created.session_id}/events?after_seq=0&format=json&limit=10000`)).events;
+      const wakes = events.filter(e => e.type === 'wake.fired' && e.payload.kind === 'sim_time');
+      const noOps = events.filter(e => e.type === 'message.appended'
+        && String((e.payload as {message?: {content?: string}}).message?.content ?? '').includes('No operation needed'));
+      check(criteria, 'task completed through the supervisor contract', true, `task_id=${task.task_id}`);
+      check(criteria, '≥3 monitor wakes in 26 simulated hours', wakes.length >= 3, `wakes=${wakes.length}`);
+      check(criteria, '≥1 maintenance (media.add) executed', actions.filter(a => a.capability === 'media.add').length >= 1,
+        `media.add=${actions.filter(a => a.capability === 'media.add').length}`);
+      check(criteria, '≥1 no-operation decision recorded', noOps.length >= 1, `noOps=${noOps.length}`);
+      check(criteria, 'model calls bounded (stub requests)', stub.requests().length <= 80,
+        `requests=${stub.requests().length}`);
+      // conservation: reservoir used == Σ media.add draws; row A deltas match effects - evaporation
+      const finalState = await client.state(exp);
+      let reservoirUsed = 0;
+      const wellEffects = new Map<string, number>();
+      for (const a of (await client.actions(exp)).actions.filter(x => x.principal.kind === 'service')) {
+        reservoirUsed += Math.abs(a.summary.reservoir_delta_ul);
+        for (const [well, d] of Object.entries(a.summary.wells)) wellEffects.set(well, (wellEffects.get(well) ?? 0) + d.added_ul - d.removed_ul);
+      }
+      const remaining = finalState.reservoirs.find(r => r.id === 'media-01')!.remaining_ul;
+      check(criteria, 'reservoir conservation', Math.abs(50_000 - reservoirUsed - remaining) <= 1,
+        `used=${reservoirUsed} remaining=${remaining}`);
+      const initial = loadScenario('routine_maintenance').initial.plates
+        .find(pl => pl.id === 'plate-01')!.wells_volume_ul.A as number[];
+      const hours = finalState.experiment.sim_time_s / 3600;
+      let wellsOk = true;
+      const plate = finalState.plates.find(pl => pl.plate_id === 'plate-01')!;
+      initial.forEach((v0, i) => {
+        const well = `A${i + 1}`;
+        const got = plate.wells.find(w => w.well_id === well)!.volume_ul;
+        const expected = v0 + (wellEffects.get(well) ?? 0) - 4 * hours;
+        if (Math.abs(got - expected) > 2) wellsOk = false;
+      });
+      check(criteria, 'per-well conservation (effects − evaporation)', wellsOk,
+        `checked ${initial.length} wells over ${hours.toFixed(1)} sim h`);
+    } finally {
+      await withModel.stop();
+    }
+  } catch (e) {
+    check(criteria, 'session demo completed without error', false, e instanceof Error ? e.message : String(e));
+  } finally {
+    await stub.close();
+    await stack.stop();
+  }
+  return {demo: 'session_monitor', scenario: 'routine_maintenance (realtime session)', seed: 42,
+    outcome: criteria.every(c => c.pass) ? 'pass' : 'fail', run_id: runId, experiment_id: exp,
+    criteria, commands, actions, observations, agent_report: null};
+}
+
 // -- main ----------------------------------------------------------------------------
 
-const demoNames = only ? [only] : ['routine_maintenance', 'exchange_and_mix', 'environment_drift', 'anomaly_recovery'];
+const demoNames = only ? [only] : ['routine_maintenance', 'exchange_and_mix', 'environment_drift', 'anomaly_recovery', 'session_monitor'];
 const results: DemoResult[] = [];
 for (const name of demoNames) {
   process.stdout.write(`\n=== demo: ${name} ===\n`);
-  const result = name === 'anomaly_recovery' ? await runAnomalyDemo() : await runScenarioDemo(name);
+  const result = name === 'anomaly_recovery' ? await runAnomalyDemo()
+    : name === 'session_monitor' ? await runSessionDemo() : await runScenarioDemo(name);
   results.push(result);
   for (const c of result.criteria) {
     process.stdout.write(`  ${c.pass ? 'PASS' : 'FAIL'}  ${c.name} — ${c.detail}\n`);

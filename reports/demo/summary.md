@@ -1,6 +1,6 @@
 # OSCAR demo results (npm run demo:all)
 
-Generated: 2026-09-29T21:03:03.523Z
+Generated: 2026-09-30T14:07:37.144Z
 
 | demo | outcome | run | failed criteria |
 | --- | --- | --- | --- |
@@ -8,6 +8,7 @@ Generated: 2026-09-29T21:03:03.523Z
 | exchange_and_mix | PASS | run-001-1 | — |
 | environment_drift | PASS | run-001-1 | — |
 | anomaly_recovery | PASS | run-001-1 | — |
+| session_monitor | PASS | — | — |
 
 ## Criteria detail
 
@@ -76,4 +77,19 @@ Generated: 2026-09-29T21:03:03.523Z
 - [x] run ended and completed — status=ended reason=completed
 - [x] determinism not broken — determinism_broken=false
 - [x] final report present on the Runtime — GET /api/v1/runs/{id}/report 200
+
+### session_monitor (pass)
+
+- run: null / experiment: exp-001
+- actions: act-001-01 imaging.scan succeeded, act-001-02 imaging.scan succeeded, act-001-03 imaging.scan succeeded, act-001-04 imaging.scan succeeded, act-001-05 media.add succeeded, act-001-06 imaging.scan succeeded, act-001-07 imaging.scan succeeded, act-001-08 media.add succeeded, act-001-09 imaging.scan succeeded, act-001-10 imaging.scan succeeded
+- observations: obs-001-001, obs-001-002, obs-001-003, obs-001-004, obs-001-005, obs-001-006, obs-001-007, obs-001-008
+
+- [x] supervisor delegation returned task_id immediately — task_id=task-a52e35d5-1e6
+- [x] task completed through the supervisor contract — task_id=task-a52e35d5-1e6
+- [x] ≥3 monitor wakes in 26 simulated hours — wakes=5
+- [x] ≥1 maintenance (media.add) executed — media.add=2
+- [x] ≥1 no-operation decision recorded — noOps=5
+- [x] model calls bounded (stub requests) — requests=22
+- [x] reservoir conservation — used=393.6 remaining=49606.4
+- [x] per-well conservation (effects − evaporation) — checked 6 wells over 26.4 sim h
 

@@ -125,5 +125,33 @@ export function createApi({fetchImpl = null, onUnauthorized = null, origin = ''}
     agentRunControl(runId, action) { return request('POST', `/api/v1/agent/runs/${encodeURIComponent(runId)}/control`, {body: {action}}); },
     agentRun(runId) { return request('GET', `/api/v1/agent/runs/${encodeURIComponent(runId)}`); },
     agentEventsUrl(runId) { return `${origin}/api/v1/agent/runs/${encodeURIComponent(runId)}/events`; },
+    // ---- long-lived culture sessions (same gateway, operator session) ----
+    agentSessions() { return request('GET', '/api/v1/agent/sessions'); },
+    agentCreateSession(body) { return request('POST', '/api/v1/agent/sessions', {body}); },
+    agentSession(sessionId) { return request('GET', `/api/v1/agent/sessions/${encodeURIComponent(sessionId)}`); },
+    agentSessionStatus(sessionId) {
+      return request('GET', `/api/v1/agent/sessions/${encodeURIComponent(sessionId)}/status`);
+    },
+    agentSessionMessage(sessionId, content, requestId) {
+      return request('POST', `/api/v1/agent/sessions/${encodeURIComponent(sessionId)}/messages`,
+        {body: {content, request_id: requestId}});
+    },
+    agentSessionTask(sessionId, body) {
+      return request('POST', `/api/v1/agent/sessions/${encodeURIComponent(sessionId)}/tasks`, {body});
+    },
+    agentTask(taskId) { return request('GET', `/api/v1/agent/tasks/${encodeURIComponent(taskId)}`); },
+    agentTaskControl(taskId, action) {
+      return request('POST', `/api/v1/agent/tasks/${encodeURIComponent(taskId)}/control`, {body: {action}});
+    },
+    agentSessionControl(sessionId, action) {
+      return request('POST', `/api/v1/agent/sessions/${encodeURIComponent(sessionId)}/control`, {body: {action}});
+    },
+    agentSessionEventsUrl(sessionId, afterSeq = 0) {
+      return `${origin}/api/v1/agent/sessions/${encodeURIComponent(sessionId)}/events?after_seq=${afterSeq}`;
+    },
+    agentSessionEvents(sessionId, afterSeq, limit = 1000) {
+      return request('GET', `/api/v1/agent/sessions/${encodeURIComponent(sessionId)}/events`
+        + `?after_seq=${afterSeq}&limit=${limit}&format=json`);
+    },
   };
 }

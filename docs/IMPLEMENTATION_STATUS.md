@@ -1,10 +1,8 @@
-# B 实施状态（C0–C3 主要框架检查点）
+# B 实施状态（C0–C3 框架 + D0–D5 长期培养会话）
 
-**下一阶段设计，尚未实施：** [长期培养会话与选型](LONG_LIVED_AGENT_DESIGN.md)及[实施 Prompt](LONG_LIVED_AGENT_IMPLEMENTATION_PROMPT.md)。MVP 为一个实验一个长期会话，pi 领域 Agent、事件驱动 realtime、持久任务/记忆，以及未来总助手契约；下文已实现状态不因此改变。
+**D0–D5 已实施（2026-10-01）：** 长期培养会话 MVP 完成——一个实验一个长期会话（SQLite schema v2：sessions/messages/tasks/plan_steps/wakes/inbox/session_intents/memory_checkpoints）、事件驱动 realtime 调度（SSE 收件箱去重+游标、动作终态/观测/阈值条件/定时唤醒、fencing generation + goal_revision 写防护）、pi 0.84.0 真实模型后端（OpenAI 兼容 wire、真实工具调用、有限回合）、任务记忆与强制压缩、版本化总助手契约 `/api/v1/agent/supervisor/v1/*` 与独立 HTTP 契约客户端、Agent 面板会话 UI（持续对话/任务计划/等待原因/证据/记忆、暂停 Agent ≠ 取消任务 ≠ 暂停 Runtime）。**真实 LLM 提供商（如 DeepSeek）已适配但未验证（无凭证）；端到端验收通过显式标注的 HTTP 模型桩（OpenAI wire + 工具协议）完成。** 详细结果见 [长期会话检查点报告](../reports/long_lived_agent_checkpoint.md)。
 
-上下文切换后先读本文件。契约细节见 [API_CONTRACT.md](API_CONTRACT.md)，执行要求见 [B_IMPLEMENTATION_PROMPT.md](B_IMPLEMENTATION_PROMPT.md)。
-
-**最新接续入口（2026-09-30）：** [下一阶段实施交接](NEXT_IMPLEMENTATION_HANDOFF.md) 列出实际尚未修复的 Runtime 异常恢复问题、Agent 测试竞争问题及可选功能。本文各检查点的原验收结果是历史记录；最近复核与限制见 [改动审查](../reports/runtime_changes_review.md)。scripted 已实现，但只支持 lockstep、按当前场景运行；LLM 适配器尚未接入。
+上下文切换后先读本文件。契约细节见 [API_CONTRACT.md](API_CONTRACT.md)（§10 为会话/总助手契约），D 阶段执行要求见 [LONG_LIVED_AGENT_IMPLEMENTATION_PROMPT.md](LONG_LIVED_AGENT_IMPLEMENTATION_PROMPT.md)、设计依据 [LONG_LIVED_AGENT_DESIGN.md](LONG_LIVED_AGENT_DESIGN.md)。最新接续入口：[NEXT_IMPLEMENTATION_HANDOFF.md](NEXT_IMPLEMENTATION_HANDOFF.md)。C0–C3 的历史验收记录保留在下文。
 
 分支：`feat/b-framework`（基于 main `1a956f9`；A 的未提交/untracked 交付已先拆分为 6 个提交保留）。
 
@@ -155,4 +153,30 @@
 
 C0–C3 主要框架检查点已达成，记录见 [reports/framework_checkpoint.md](../reports/framework_checkpoint.md)。干净克隆中：`npm ci` ✓、`npm run typecheck` ✓、`npm test` 139/139、`npm run test:e2e` 8/8、`npm run demo:all` 4/4、`npm run dev` 就绪且无孤儿进程。
 
-后续可选 P2（未开始）：真实 LLM 适配器（工具表已装配）、有限视觉工作集与会话压缩、Agent realtime 支持、取头几何与实机参数确认。
+后续可选 P2（未开始）：取头几何与实机参数确认（真实 LLM 适配器、会话压缩与 Agent realtime 已在 D0–D5 完成）。
+
+## D 阶段（2026-10-01）：长期培养会话 — 完成
+
+### 已实现（按 D0–D5）
+
+- **D0 异常恢复修复**（`95d49ae`）：环境等待不再清空别的移液载液；摇床运行中 Runtime SIGKILL 后恢复终结残留 shake；reset 一致收尾旧世界/头内液体/废液/归档；Agent close/restart 结束旧循环且在途响应不落库；失败测试清理进程与数据库。真实进程 + HTTP 回归、逐孔与库存对账（`services/runtime/test/d0-recovery.test.ts` 5 项）。
+- **D1 会话与任务持久化**：`SessionStore`（同一 `agent.sqlite`，schema v2 幂等迁移，`agent_meta.schema_version`）；`(runtime_instance_id, experiment_id)` 唯一绑定 CultureSession（create 幂等，归档单向只读）；messages 独立 seq + request_id 幂等；tasks（goal_text/goal_spec/goal_revision CAS/status/budget 跨重启累计，状态含 running/waiting_device/waiting_condition/needs_input/paused/终态）；plan_steps；wakes（dedupe_key）；inbox（(source,seq) 去重且与游标同事务）；session_intents（HTTP 前持久化 + by-key 对账）；memory_checkpoints（generation CAS）。Runtime 侧：`GET /api/v1/health` 返回稳定 `instance_id`（meta 表）。
+- **D2 事件驱动单写者调度**：`SessionScheduler` 每活跃会话一个；唤醒源=用户消息/自有意图的动作终态/观测就绪/阈值条件（去抖+滞回+冷却）/sim 定时/恢复；clock 帧与普通 environment.sampled 采样**从不**唤醒模型（调度器内评估条件，仅真实越界触发回合）；realtime 产品路径（模型思考时设备继续，写前重查 lifecycle/generation/goal_revision/scope/budget）；自动为异步动作登记 action_terminal 唤醒；SSE 断线 JSON 补齐 + inbox 游标持久化；重启恢复顺序=claim ownership→读状态→意图 by-key 对账→补消费错过的终态→再允许新决策；watchdog 归档被 reset 停摆的会话。lockstep run/lease 路径保持原样（确定性回归不受影响）。
+- **D3 真实模型后端**：`PiAgentBackend`（pi-agent-core/pi-ai **0.84.0 成对锁定**，Node 24 验证）——OpenAI 兼容 `streamSimple`、sequential 工具执行、`shouldStopAfterTurn` 有限回合（纯文本回合即结束决策过程）、接受写操作后 terminate 提示；工具=manifest JSON Schema 机械生成（imaging_scan/media_add/media_exchange/plate_shake/environment_*）+ agent 工具（update_plan/record_step_result/update_goal(CAS)/register_wake/request_input/complete_task/fail_task）+ device_read_state（按 goal 范围裁剪投影）；`SessionExecutor` 写串行化、范围/预算/修订/围栏校验、意图先落库；模型配置 `OSCAR_MODEL_BASE_URL/API_KEY(_FILE)/NAME[/PROVIDER]`（显式，无静默回退：不可用→loop unavailable + model.unavailable 事件，绝不转 scripted）；记忆 checkpoint（generation CAS、只压缩上下文不删原始消息，强制压缩 API + 阈值自动压缩）。**HTTP 模型桩**（`services/culture-agent/test/model-stub.ts`）：真实 OpenAI wire + tool_calls 协议、目标导向（从同一上下文解析 GoalSpec/状态/唤醒），显式测试夹具非 LLM。
+- **D4 UI 与总助手契约**：Agent 面板升级——会话列表（当前+归档只读）、持续对话、任务/计划/证据、等待原因+下次唤醒、记忆检查点、设备与 Agent loop 各自新鲜度、sim_time/在途动作；暂停 Agent/取消任务/暂停 Runtime 三控制分离；切换会话先关旧 SSE（无串流）；保留原 scripted run 区（e2e 兼容）。`/api/v1/agent/supervisor/v1/*` 版本化契约（overview/sessions/messages/tasks/status/events/tasks 更新与控制），delegated_principal 服务端记录、request_id/expected_revision 强制、长任务立即返回 task_id、订阅断开不取消；独立 HTTP 契约客户端测试（无 DOM/无 DB）。
+- **D5 验收**：见下方命令结果与 [检查点报告](../reports/long_lived_agent_checkpoint.md)。
+
+### D 阶段实际通过的命令（2026-10-01）
+
+- `npm run typecheck`：0 错误。
+- `npm test`：**174/174**（并行相 164 + 串行重进程相 10：long-session 2、session-faults 7、supervisor-contract 1；`scripts/run-tests.mjs` 将进程密集验收串行执行避免互相争抢墙钟预算）。
+- `npm run test:e2e`：**17/17**（agent 面板新 UI 兼容既有断言；DOM 稳定性/无假错误/SSE 30s+ 不断流保持）。
+- `npm run demo:all`：**5/5**（新增 `session_monitor`：26 模拟小时、5 次监测唤醒、2 次维护、5 次无需操作、模型桩 22 次请求、储液/逐孔守恒）。
+- 故障注入（真实进程，隔离临时数据目录）：Agent SIGKILL+重启（会话/对话/预算延续、无重复幂等键、守恒）；Runtime SIGKILL+重启（重连+补齐错过事件、无重复提交）；受理后响应丢失（by-key 恢复、恰好一次 media.add）；goal_revision/ownership/archived 写围栏（执行器级确定性断言）；强制压缩（计划/证据/约束保留）。
+
+### D 阶段已知限制
+
+- **真实 LLM 未验证**：后端按 DeepSeek 等 OpenAI 兼容端点实现（`OSCAR_MODEL_*`），但本机无凭证未实测；全部端到端验收使用显式 HTTP 模型桩（真实 wire/工具协议）。配置真实凭证后按报告“真实模型演示”一节验证。
+- 模型桩为确定性 FSM：验证调度/账目/恢复机制，不代表自然语言理解（那是真实模型的职责）；needs_input 的多轮补参在桩上未走自然语言路径（API 层已实现并测试 CAS/状态机）。
+- 视觉上下文物化（图片进模型上下文）未启用（pi 后端 `images:false`）；观测以结构化 estimates + 证据引用进入上下文，摄像头证据仍走 camera 面板。
+- 上层总助手为契约+客户端验证，未实现完整 DSH 插件/多 Agent 协商（按 prompt 明确暂缓）。

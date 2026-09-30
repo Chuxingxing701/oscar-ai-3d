@@ -207,3 +207,15 @@ a.obsref{color:#1d5bb1;cursor:pointer;text-decoration:underline}
   #pane-resources,#pane-scene,#pane-timeline{display:flex}
   #right-col{display:flex}
 }
+
+/* Long-lived session conversation log (agent panel) */
+.chat-log {
+  border: 1px solid var(--border, #d0d7de);
+  border-radius: 6px;
+  padding: 6px;
+  background: var(--bg, #fafbfc);
+  margin-bottom: 4px;
+}
+.session-log{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:38vh;overflow-y:auto}
+.session-log li{border:1px solid #e0e7ef;border-left:3px solid #0e7a4a;border-radius:8px;background:#fff;padding:6px 9px;font-size:12px;line-height:1.6}
+.session-log li.err{border-left-color:#b3261e}
