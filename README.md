@@ -176,6 +176,8 @@ npm run dev                             # 启动 Runtime(8780) 与 Agent(8781)�
 
 **远程端口转发**：如果浏览器访问 `http://localhost:62273`，转发保留该 Host，而 Runtime 监听的是另一端口，启动时追加 `--allow-host localhost:62273`，例如 `npm run dev -- --allow-host localhost:62273`。参数可重复指定，值应为浏览器地址栏中的准确 `主机:端口`（不带 `http://`）；转发端口改变后需更新参数并重启。打开配对链接时使用转发地址，保留完整的 `/pair#code=…`；页面后续 API 请求使用同源相对路径。仅为本机端口转发时无需 `--lan`。
 
+Codex 自动转发时，打开服务器原始配对链接（如 `http://127.0.0.1:8780/pair#code=…`），由应用转换为本地转发地址；不要把转换后的随机端口再次作为服务器地址打开。Host 报错时允许错误中的准确地址，再刷新当前标签页。scripted Agent 只支持 lockstep，按当前实验场景执行；启动前切换 lockstep 并恢复 Runtime，自由文本 goal 仅供尚未接入的 LLM 模式使用。下一阶段待办见 [实施交接](docs/NEXT_IMPLEMENTATION_HANDOFF.md)。
+
 **运行演示**：在操作台「Agent」页选择 scripted 并启动；或在终端运行 `npm run demo:all`，报告写入 `reports/demo/`。默认 lockstep 时钟：Agent 通过 Runtime 建立的决策屏障推进，没有 run 时用顶栏「单步 / 推进至空闲」手动推进。「冻结画面」只冻结 3D 显示，「暂停 Runtime」才暂停模拟。
 
 **LAN**：`npm run runtime -- --lan --access-code-file <file>`（访问码至少 16 个字符，否则拒绝启动），登录页 `/login`。这是可信局域网内的演示级保护，明文 HTTP，不是生产鉴权。

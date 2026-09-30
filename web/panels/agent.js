@@ -13,6 +13,7 @@ export function mountAgent(root, ctx) {
   let agentUnavailable = false;
   let source = null;
   let activeRunId = null;
+  let logRevision = 0, renderedLogRevision = -1, lastReport = null, lastStatusKey = '';
 
   // Persistent skeleton: live renders update contents in place so the goal
   // input never loses focus while the store streams.
@@ -24,8 +25,10 @@ export function mountAgent(root, ctx) {
   const goalInput = h('input', {type: 'text', id: 'agent-goal', style: {width: '200px'}, placeholder: '如：维持 A 排培养液'});
   const startSubmit = h('button', {type: 'submit', class: 'primary'}, '启动 Agent run');
   const startHint = h('span', {class: 'muted'});
+  const policyHint = h('p', {class: 'muted', id: 'agent-policy-hint'});
   const startForm = h('form', {}, h('div', {class: 'row'},
-    h('label', {}, '模式', modeSel), h('label', {}, '任务目标（goal）', goalInput)), startSubmit, ' ', startHint);
+    h('label', {}, '模式', modeSel), h('label', {}, '任务目标（goal）', goalInput)), policyHint, startSubmit, ' ', startHint);
+  modeSel.addEventListener('change', () => render(ctx.getState()));
   const unavailableBox = h('div', {class: 'card', hidden: true, style: {borderColor: '#d9a02b'}});
   const hintEl = h('p', {class: 'muted', style: {'font-size': '10px'}}, '');
   const logList = h('ul', {class: 'decision-log', 'aria-live': 'polite', 'aria-label': '决策日志'});
@@ -43,11 +46,15 @@ export function mountAgent(root, ctx) {
     agentUnavailable = false;
     try {
       const state = ctx.getState();
+      if (state.clock?.clock_mode !== 'lockstep' || state.clock?.paused) {
+        ctx.showError('Agent 目前只支持已恢复的 lockstep 时钟；请先在顶栏切换并恢复 Runtime。');
+        return;
+      }
       const response = await ctx.api.startAgentRun({experiment_id: state.experimentId,
-        mode: modeSel.value, goal: goalInput.value || undefined});
-      entries = [];
+        mode: modeSel.value, goal: modeSel.value === 'llm' ? goalInput.value || undefined : undefined});
+      entries = []; logRevision++;
       const runId = response?.run?.run_id || response?.run_id || null;
-      if (runId) connectEvents(runId);
+      if (runId) {activeRunId = runId; connectEvents(runId);}
       ctx.setStatus(`Agent run 已启动：${runId || '（未知 id）'}`);
       ctx.refreshNow();
     } catch (error) {
@@ -69,17 +76,21 @@ export function mountAgent(root, ctx) {
     source = new EventSource(ctx.api.agentEventsUrl(runId));
     for (const name of SSE_EVENT_NAMES) {
       source.addEventListener(name, event => {
+        // Native transport errors have no data; they are not Agent log entries.
+        if (typeof event.data !== 'string') return;
         let entry;
         try { entry = JSON.parse(event.data); } catch { entry = {type: name, text: event.data}; }
         // Agent session events are {seq, run_id, type, payload}; flatten the payload for display.
         if (entry && entry.payload && typeof entry.payload === 'object') entry = {...entry.payload, ...entry, payload: undefined};
         if (entry && entry.seq != null && entries.some(e => e.seq === entry.seq)) return;
         entries.push({...entry, type: entry?.type || name});
+        logRevision++;
         if (entries.length > 300) entries = entries.slice(-300);
         renderLog();
         renderReport();
       });
     }
+    source.onopen = () => logHint('Agent 事件流已连接');
     source.onerror = () => logHint('Agent 事件流断开，EventSource 正以 Last-Event-ID 自动重连…');
   }
 
@@ -97,7 +108,7 @@ export function mountAgent(root, ctx) {
       .filter(ref => typeof ref === 'string');
     const str = v => (typeof v === 'string' ? v : '');
     const statusText = entry.status ? `状态 ${entry.status}${entry.partial ? '（部分效果）' : ''}${entry.error?.code ? ` · ${entry.error.code}` : ''}` : '';
-    const text = str(entry.summary) || str(entry.message) || str(entry.reason) || str(entry.description) || statusText
+    const text = str(entry.summary) || str(entry.message) || str(entry.reason) || str(entry.description) || str(entry.code) || statusText
       || entry.text || (entry.tool_call ? `${entry.tool_call.name || ''} ${JSON.stringify(entry.tool_call.arguments || {})}` : '')
       || (entry.type ? '' : JSON.stringify(entry).slice(0, 140));
     return h('li', {class: entry.level === 'error' || entry.type === 'error' ? 'err' : ''},
@@ -116,11 +127,15 @@ export function mountAgent(root, ctx) {
   }
 
   function renderLog() {
+    if (renderedLogRevision === logRevision) return;
+    renderedLogRevision = logRevision;
     logList.replaceChildren(...entries.slice(-80).reverse().map(entryNode));
   }
 
   function renderReport() {
     const report = [...entries].reverse().find(e => /report|finish/.test(String(e.type || '')));
+    if (report === lastReport) return;
+    lastReport = report;
     if (!report) { reportBox.hidden = true; return; }
     reportBox.hidden = false;
     reportBox.replaceChildren(h('h3', {}, '报告'),
@@ -165,19 +180,32 @@ export function mountAgent(root, ctx) {
   }
 
   function render(state) {
-    renderStatus(state);
-    renderControls(state);
+    const statusKey = JSON.stringify([state.run, ctx.isReplay()]);
+    if (statusKey !== lastStatusKey) {
+      lastStatusKey = statusKey; renderStatus(state); renderControls(state);
+    }
     unavailableBox.hidden = !agentUnavailable;
     if (agentUnavailable) {
       unavailableBox.replaceChildren(h('p', {},
         h('b', {}, 'Agent 不可用'), '（网关返回 503 agent_unavailable）。人工操作不受影响，可继续在「操作」页使用设备。'));
     }
-    startSubmit.disabled = ctx.isReplay() || Boolean(state.run && state.run.status !== 'ended');
-    startHint.textContent = state.run && state.run.status !== 'ended' ? '（已有活跃 run；先取消或结束）' : '';
+    const unsupportedClock = state.clock?.clock_mode !== 'lockstep';
+    const active = Boolean(state.run && state.run.status !== 'ended');
+    startSubmit.disabled = ctx.isReplay() || active || unsupportedClock || Boolean(state.clock?.paused);
+    startHint.textContent = ctx.isReplay() ? '只读回放' : active ? '（已有活跃 run；先取消或结束）'
+      : unsupportedClock ? '请先在顶栏切换到 lockstep；当前 Agent 不支持 realtime。'
+      : state.clock?.paused ? '请先恢复 Runtime。' : '';
+    goalInput.disabled = ctx.isReplay() || modeSel.value === 'scripted';
+    policyHint.textContent = modeSel.value === 'scripted'
+      ? `按当前场景 ${state.experiment?.scenario_id || '—'} 执行已实现的确定性策略；不解析自由文本目标。`
+      : 'LLM 适配器尚未接入；此模式会暂停为 model_unavailable，不会自动改用确定性策略。';
     const runId = state.run?.run_id;
-    if (runId && runId !== activeRunId) { activeRunId = runId; entries = []; connectEvents(runId); }
+    if (runId && runId !== activeRunId) { activeRunId = runId; entries = []; logRevision++; connectEvents(runId); }
     else if (runId && !source) connectEvents(runId);
-    else if (!runId && source) { try { source.close(); } catch { /* noop */ } source = null; }
+    else if (!runId && activeRunId) {
+      if (source) {try { source.close(); } catch { /* noop */ }}
+      source = null; activeRunId = null; entries = []; logRevision++;
+    }
     renderLog();
     renderReport();
   }

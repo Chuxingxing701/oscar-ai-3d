@@ -75,11 +75,12 @@ export function mountScene(container, options = {}) {
     const target = mode === 'interior' ? new THREE.Vector3(mobile ? -.43 : -.55, 1.23, 0) : new THREE.Vector3(0, .9, 0);
     controls.autoRotate = false; fly(position, target, immediate); notify();
   }
+  let renderWidth = 0, renderHeight = 0, pendingSize = null, resizeCount = 0;
   function resize() {
     if (disposed) return;
     const width = Math.max(1, container.clientWidth), height = Math.max(1, container.clientHeight);
-    renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix();
-    dirty = true;
+    pendingSize = width !== renderWidth || height !== renderHeight ? {width, height} : null;
+    if (pendingSize) dirty = true;
   }
   const observer = new ResizeObserver(resize); observer.observe(container); resize(); resetView(false, true);
   const events = new AbortController();
@@ -176,7 +177,7 @@ export function mountScene(container, options = {}) {
       experimentId: snapshot?.experiment_id ?? null, simTime: snapshot?.sim_time_s ?? null,
       renderedSimTime: renderedTime,
       paused: snapshot?.paused ?? false, time: mixer?.time ?? 0, animationCount: actions.length,
-      exteriorVisible: exterior?.visible, autoRotate: controls.autoRotate, transitioning: !!transition, frameCount,
+      exteriorVisible: exterior?.visible, autoRotate: controls.autoRotate, transitioning: !!transition, frameCount, resizeCount,
       drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
       renderer: {...renderer.info.memory}, selection: rig?.selection() ?? null,
       motion: rig?.axes.map(axis => axis.position.toArray()),
@@ -206,7 +207,18 @@ export function mountScene(container, options = {}) {
     }
     controls.update();
     // Paused/lockstep views need no redraw until state, camera or size changes.
-    if (dirty) {renderer.render(scene, camera); frameCount++; dirty = false;}
+    if (dirty) {
+      // Resize clears WebGL's drawing buffer. Resize and redraw together,
+      // before paint, so ResizeObserver never leaves a blank intermediate frame.
+      if (pendingSize) {
+        const {width, height} = pendingSize; pendingSize = null;
+        if (width !== renderWidth || height !== renderHeight) {
+          renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix();
+          renderWidth = width; renderHeight = height; resizeCount++;
+        }
+      }
+      renderer.render(scene, camera); frameCount++; dirty = false;
+    }
   }
   raf = requestAnimationFrame(tick);
   const readyPromise = (async () => {

@@ -2,6 +2,8 @@
 
 上下文切换后先读本文件。契约细节见 [API_CONTRACT.md](API_CONTRACT.md)，执行要求见 [B_IMPLEMENTATION_PROMPT.md](B_IMPLEMENTATION_PROMPT.md)。
 
+**最新接续入口（2026-09-30）：** [下一阶段实施交接](NEXT_IMPLEMENTATION_HANDOFF.md) 列出实际尚未修复的 Runtime 异常恢复问题、Agent 测试竞争问题及可选功能。本文各检查点的原验收结果是历史记录；最近复核与限制见 [改动审查](../reports/runtime_changes_review.md)。scripted 已实现，但只支持 lockstep、按当前场景运行；LLM 适配器尚未接入。
+
 分支：`feat/b-framework`（基于 main `1a956f9`；A 的未提交/untracked 交付已先拆分为 6 个提交保留）。
 
 ## 环境基线（2026-09-30）
