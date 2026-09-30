@@ -1,5 +1,7 @@
 # C0–C3 独立审查与演示（2026-09-30）
 
+> **D0 修复状态（2026-09-30 后续）：** 以下三个缺陷已修复。`reproduce.mjs` 现断言**正确行为**（退出 0 = 行为正确），正式回归为 `services/runtime/test/d0-recovery.test.ts`（真实进程 + HTTP，逐孔/库存对账，另含“头内有液时 SIGKILL”和“振荡中 reset”）。下文为 `9bb67ab` 时的历史审查记录。
+
 审查对象：本地 `feat/b-framework`，HEAD `9bb67ab`。结论：主流程可演示；发现两个 P1 和一个 P2，异常恢复与归档一致性暂不通过完整验收。本轮未修改业务代码、未提交、未推送、未合并。
 
 依据：`agent.md`、`docs/WORK_ALLOCATION.md`、`docs/OSCAR_VIRTUAL_CULTURE_DESIGN.md`、`docs/API_CONTRACT.md` 和实际实现。重点审查整排移液、动作取消、重启恢复、reset、状态同步与访问控制；不代表穷尽审计。

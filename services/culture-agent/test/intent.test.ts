@@ -35,16 +35,19 @@ test('intent persisted before the HTTP call survives a crashing submit and is re
   const runtime = new FakeRuntime(makeSnapshot('routine_maintenance', 0, [400, 380, 410, 420, 395, 405]));
   runtime.lease = fakeLease(5, RUN.run_id, 0);
   const runtimeUrl = await runtime.start();
-
+  let agent1: CultureAgent | null = null;
+  let agent2: CultureAgent | null = null;
+  let store1: AgentStore | null = null;
+  try {
   // 1. first agent life: submits crash (network death AFTER the intent persist)
-  const agent1 = await startAgent(runtimeUrl, crashingSubmitFetch(globalThis.fetch) as typeof fetch);
+  agent1 = await startAgent(runtimeUrl, crashingSubmitFetch(globalThis.fetch) as typeof fetch);
   const accept = await fetch(`http://127.0.0.1:${(agent1.server.address() as {port: number}).port}/runs`,
     {method: 'POST', headers: {'x-service-token': SERVICE_TOKEN, 'content-type': 'application/json'},
       body: JSON.stringify({...RUN, lease: runtime.lease})});
   assert.equal(accept.status, 202);
 
   // wait until the intent row exists with no action_id
-  const store1 = new AgentStore(dataDir);
+  store1 = new AgentStore(dataDir);
   const deadline = Date.now() + 15_000;
   let intent = null as null | {key: string; action_id: string | null};
   while (Date.now() < deadline) {
@@ -58,7 +61,17 @@ test('intent persisted before the HTTP call survives a crashing submit and is re
   const submitAttempts = runtime.requests.filter(r => r.method === 'POST' && r.path.endsWith('/actions')).length;
   assert.equal(submitAttempts, 0, 'the crashing fetch never reached the runtime');
   await agent1.close();
+  // close() waited for the loop: nothing may be written afterwards
+  const eventsAtClose = store1.eventsAfter(RUN.run_id, 0, 10_000).length;
+  const intentsAtClose = store1.listIntents(RUN.run_id).length;
+  await new Promise(r => setTimeout(r, 800));
+  assert.equal(store1.eventsAfter(RUN.run_id, 0, 10_000).length, eventsAtClose, 'no late events after close()');
+  assert.equal(store1.listIntents(RUN.run_id).length, intentsAtClose, 'no late intents after close()');
+  assert.equal(store1.getRun(RUN.run_id)!.status, 'active', 'shutdown is not a crash: the run is not ended');
+  agent1.store.close();
+  agent1 = null;
   store1.close();
+  store1 = null;
 
   // 2. the runtime actually HAS the action (the request was lost after acceptance)
   runtime.actionsByKey.set(intent.key, fakeAction('act-001-01', 'imaging.scan', 'succeeded',
@@ -66,7 +79,7 @@ test('intent persisted before the HTTP call survives a crashing submit and is re
     {result: {observation_id: 'obs-001-001'}, ended: 12}));
 
   // 3. second agent life on the SAME data dir: reconcile by key, no resubmit
-  const agent2 = await startAgent(runtimeUrl);
+  agent2 = await startAgent(runtimeUrl);
   await agent2.reconcileOnStartup();
   const store2 = agent2.store;
   const row = store2.getRun(RUN.run_id)!;
@@ -85,6 +98,12 @@ test('intent persisted before the HTTP call survives a crashing submit and is re
     && (e.payload as {recovered?: string}).recovered === 'by_key_on_restart'));
   const agentStatusPosts = runtime.requests.filter(r => r.method === 'POST' && r.path.endsWith('/agent-status'));
   assert.ok(agentStatusPosts.length >= 1, 'the restart pause was reported to the Runtime');
-  await agent2.close();
-  await runtime.close();
+  } finally {
+    await agent1?.close().catch(() => undefined);
+    await agent2?.close().catch(() => undefined);
+    try { agent1?.store.close(); } catch { /* already closed */ }
+    try { agent2?.store.close(); } catch { /* already closed */ }
+    try { store1?.close(); } catch { /* already closed */ }
+    await runtime.close();
+  }
 });

@@ -1,4 +1,7 @@
 // Real HTTP/process review reproductions. No production data touched.
+// History: on 9bb67ab these assertions proved the defects existed. Since the
+// D0 fixes they assert the CORRECT behavior; the formal regression suite is
+// services/runtime/test/d0-recovery.test.ts.
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
 import {writeFileSync} from 'node:fs';
@@ -20,7 +23,7 @@ async function loaded(h,e){for(let i=0;i<60;i++){await h.client.control(e,{step:
  await h.client.control(e,{step:{until_idle:true}});
  const end=await h.client.action(e,a.action.action_id);
  const final=(await truth(h,e)).head;
- assert.equal(cancelled.summary.waste_delta_ul,600);
+ assert.equal(cancelled.summary.waste_delta_ul,0);assert.deepEqual(after,before);assert.equal(end.status,'succeeded');assert.ok(final.load_ul.every(v=>v===0));
  results.cancel_unrelated={before,after,final,wait_waste:cancelled.summary.waste_delta_ul,add_status:end.status,add_summary:end.summary};
  }finally{await h.stop();}
 }
@@ -29,7 +32,7 @@ async function loaded(h,e){for(let i=0;i<60;i++){await h.client.control(e,{step:
  const e=await currentExperimentId(h);const a=await h.client.submit(e,add);await loaded(h,e);
  await h.client.control(e,{reset:{}});
  const old=await h.client.state(e), action=await h.client.action(e,a.action.action_id), head=(await truth(h,e)).head;
- assert.equal(action.summary.waste_delta_ul,600);assert.equal(old.wastes[0].used_ul,0);
+ assert.equal(action.summary.waste_delta_ul,600);assert.ok(Math.abs(old.wastes[0].used_ul-600)<0.05);assert.ok(head.load_ul.every(v=>v===0));assert.equal(head.has_tips,false);
  results.reset_archive={status:old.experiment.status,action_status:action.status,claimed_waste:action.summary.waste_delta_ul,stored_waste:old.wastes[0].used_ul,head};
  }finally{await h.stop();}
 }
@@ -45,7 +48,7 @@ async function loaded(h,e){for(let i=0;i<60;i++){await h.client.control(e,{step:
  const c=new DeviceClient({baseUrl:`http://127.0.0.1:${ready.port}`,token:h.operatorToken});
  await c.control(e,{resume:true});let error;try{await c.submit(e,add);}catch(err){error={code:err.code,message:err.message};}
  const snap=await c.state(e), action=await c.action(e,a.action.action_id);
- assert.equal(error?.code,'resource_busy');assert.equal(snap.active_actions.length,0);
+ assert.equal(error,undefined);assert.equal(snap.plates[0].shake.active,false);
  results.restart_shake={action_status:action.status,action_error:action.error,active_actions:snap.active_actions.length,shake:snap.plates[0].shake,add_error:error};
  }finally{if(child){const exit=new Promise(r=>child.once('exit',r));child.kill('SIGTERM');await exit;}await h.stop();}
 }

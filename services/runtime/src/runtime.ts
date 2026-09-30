@@ -703,6 +703,10 @@ export class Runtime {
       }
       return;
     }
+    // Only the action holding the shared head owns its tips and carried liquid;
+    // head-free actions (environment waits, set_targets) run in parallel with
+    // pipetting and must never touch another action's load.
+    if (!action.resources.includes('head')) return;
     const load = world.head.load_ul.reduce((a, b) => a + b, 0);
     if (load > 0) {
       const {effect} = liquidHeadDiscard(world);
@@ -1668,6 +1672,9 @@ export class Runtime {
           partial: row.action.partial, summary: row.action.summary}, {action_id: row.id});
         this.saveAction(row);
       }
+      // The archived snapshot must reflect the wind-down effects just recorded
+      // (head discarded to waste, tips dropped, shake stopped).
+      this.saveWorld(experimentId, world);
       // Archive and create the successor (same scenario/seed unless overridden).
       const scenarioId = opts.scenario_id ?? old.scenario_id;
       const seed = opts.seed ?? old.seed;
@@ -1719,7 +1726,10 @@ export class Runtime {
         if (exp.status !== 'active') return;
         const world = this.loadWorld(id);
         for (const row of this.nonTerminalActions(id)) {
-          // Keep committed effects; mark failed(runtime_restarted). Locks are derived from status.
+          // Keep committed effects; wind down the physical state the action
+          // owned (shake, head load, tips) exactly like a cancel, then mark
+          // failed(runtime_restarted). Locks are derived from status.
+          this.discardUncommitted(row, world, 'runtime_restarted', exp);
           row.action.status = 'failed';
           row.action.ended_at_sim_s = world.sim_time_s;
           row.action.error = {code: 'runtime_restarted',
@@ -1729,6 +1739,7 @@ export class Runtime {
             committed_effects: row.action.effects.length}, {action_id: row.id});
           this.saveAction(row);
         }
+        this.saveWorld(id, world);
         const lease = this.activeLease(id);
         if (lease) {
           lease.state = 'revoked';

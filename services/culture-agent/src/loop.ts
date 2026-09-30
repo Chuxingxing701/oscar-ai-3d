@@ -54,14 +54,23 @@ export class RunLoop {
   private readonly wakeups: Wakeup[] = [];
   private readonly waiters: Array<(w: Wakeup) => void> = [];
   private readonly actionCache = new Map<string, Action>();
+  /** Aborts every in-flight Runtime request of this loop on stop(). */
+  private readonly abort = new AbortController();
+  private donePromise: Promise<void> = Promise.resolve();
 
   constructor(deps: LoopDeps, run: RunRow, initialLease: Lease | null) {
     this.deps = deps;
     this.store = deps.store;
     this.runId = run.run_id;
     this.experimentId = run.experiment_id;
+    const baseFetch = deps.fetchImpl ?? fetch;
+    const signal = this.abort.signal;
+    const guardedFetch = ((input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      if (signal.aborted) return Promise.reject(new DOMException('run loop stopped', 'AbortError'));
+      return baseFetch(input, {...init, signal: init?.signal ? AbortSignal.any([init.signal, signal]) : signal});
+    }) as typeof fetch;
     this.client = new DeviceClient({baseUrl: deps.runtimeUrl, token: run.run_token, timeoutMs: 15_000,
-      fetch: deps.fetchImpl});
+      fetch: guardedFetch});
     this.task = loadScenario(run.scenario_id).task;
     if (initialLease && initialLease.state === 'active') {
       // seeded below the initial lease so the queued grant is not deduped
@@ -73,9 +82,12 @@ export class RunLoop {
   // -- lifecycle --------------------------------------------------------------
 
   start(): void {
-    void this.main().catch(e => {
+    this.donePromise = this.main().catch(async e => {
+      // A stop() aborts in-flight requests; that is shutdown, not a crash, and
+      // must not end the run (a restarted agent pauses and reconciles it).
+      if (this.stopped) return;
       this.deps.log(`[agent] run ${this.runId} loop crashed: ${e instanceof Error ? e.message : String(e)}`);
-      void this.finalizeLocalEnded('aborted', `agent loop crashed: ${e instanceof Error ? e.message : String(e)}`);
+      await this.finalizeLocalEnded('aborted', `agent loop crashed: ${e instanceof Error ? e.message : String(e)}`);
     }).finally(() => {
       this.mainDone = true;
     });
@@ -84,10 +96,14 @@ export class RunLoop {
   /** True when the loop's main() has exited (restart needed to resume). */
   get dead(): boolean { return this.mainDone; }
 
+  /** Resolves once main() and its bookkeeping have fully exited. */
+  get done(): Promise<void> { return this.donePromise; }
+
   stop(): void {
     this.stopped = true;
     this.stopRenew();
     this.watcherAbort?.abort();
+    this.abort.abort();
     this.push({kind: 'stop'});
   }
 
@@ -124,6 +140,10 @@ export class RunLoop {
   }
 
   private emit(type: string, payload: Record<string, unknown>): AgentEvent {
+    if (this.abort.signal.aborted) {
+      // closed loop: in-flight continuations must not write to the store
+      return {seq: 0, run_id: this.runId, created_at_wall: new Date().toISOString(), type, payload};
+    }
     return this.deps.emit(this.runId, type, payload);
   }
 
@@ -339,6 +359,7 @@ export class RunLoop {
   // -- submit (intent persisted BEFORE the HTTP call, §6.4) ----------------------
 
   private async submit(decision: Extract<PolicyDecision, {kind: 'act'}>): Promise<{errors: SubmitErrorRecord[]; stop: boolean}> {
+    if (this.stopped) return {errors: [], stop: true};
     const canonical = canonicalJson({capability: decision.capability, arguments: decision.arguments,
       evidence_refs: decision.evidence_refs, reason: decision.reason, basis: decision.basis});
     const pending = this.store.findPendingIntentByCanonical(this.runId, canonical);

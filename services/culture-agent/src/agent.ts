@@ -74,10 +74,20 @@ export class CultureAgent {
     return this.port;
   }
 
-  close(): Promise<void> {
-    for (const loop of this.loops.values()) loop.stop();
+  /**
+   * Stop every loop, abort their in-flight Runtime requests and wait until
+   * each main() has exited, so no late response can submit or write after
+   * close() resolves. Open SSE connections are closed too.
+   */
+  async close(): Promise<void> {
+    const loops = [...this.loops.values()];
+    for (const loop of loops) loop.stop();
     this.loops.clear();
-    return new Promise(resolvePromise => this.server.close(() => resolvePromise()));
+    await Promise.race([Promise.all(loops.map(l => l.done)), new Promise(r => setTimeout(r, 5000).unref())]);
+    await new Promise<void>(resolvePromise => {
+      this.server.close(() => resolvePromise());
+      this.server.closeAllConnections();
+    });
   }
 
   get boundPort(): number { return this.port; }
