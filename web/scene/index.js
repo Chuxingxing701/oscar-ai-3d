@@ -153,8 +153,13 @@ export function mountScene(container, options = {}) {
     const changedExperiment = snapshot && snapshot.experiment_id !== state.experiment_id;
     snapshot = structuredClone(state);
     if (changedExperiment) {displayPaused = false; select(null);}
-    const animated = snapshot.actions.length || snapshot.plates.some(plate => plate.shake?.active);
-    presentation.update(snapshot, performance.now(), displayPaused || !animated ? {} : presentationOptions);
+    // The snapshot may have released the head while the presentation still
+    // needs to finish the confirmed final park interval.
+    const now = performance.now(), last = presentation.stages.at(-1);
+    const finishingPark = last?.stage === 'moving' && last.target == null &&
+      presentation.sample(now) < last.stage_started_at_sim_s + last.stage_duration_sim_s;
+    const animated = snapshot.actions.length || snapshot.plates.some(plate => plate.shake?.active) || finishingPark;
+    presentation.update(snapshot, now, displayPaused || !animated ? {} : presentationOptions);
     setAnimationMode('controlled');
     if (!displayPaused) {
       const frame = presentation.frame(snapshot, performance.now());

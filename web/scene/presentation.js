@@ -13,13 +13,19 @@ export class PresentationClock {
     const time = state.sim_time_s;
     const stage = state.actions[0];
     const last = this.stages.at(-1);
-    const changedAction = last?.action_id !== stage?.action_id;
+    const lastEnd = last && last.stage_started_at_sim_s + last.stage_duration_sim_s;
+    const park = last?.stage === 'moving' && last.target == null;
+    const completedPark = !stage && park && time >= lastEnd;
+    const joinsFromHome = last && stage && last.action_id !== stage.action_id && park &&
+      lastEnd <= stage.stage_started_at_sim_s;
+    const changedAction = last && stage && last.action_id !== stage.action_id &&
+      !joinsFromHome;
     // If intermediate stages were missed (fast-forward/reconnect), snap to
     // known state rather than inventing a trajectory through the gap.
-    const gap = last && stage && stage.stage_started_at_sim_s >
+    const gap = last && stage && !joinsFromHome && stage.stage_started_at_sim_s >
       last.stage_started_at_sim_s + last.stage_duration_sim_s;
     const immediate = !interpolate || state.paused || this.experiment !== state.experiment_id ||
-      time < this.to || changedAction || gap || (last && !stage);
+      time < this.to || changedAction || gap || (last && !stage && !completedPark);
     if (immediate) this.stages = stage ? [stage] : [];
     else if (stage) {
       if (last?.stage_started_at_sim_s === stage.stage_started_at_sim_s && last?.stage === stage.stage) {
@@ -37,6 +43,8 @@ export class PresentationClock {
   frame(snapshot, now) {
     const time = this.sample(now);
     const stage = this.stages.findLast(stage => stage.stage_started_at_sim_s <= time) ?? this.stages[0];
-    return {...snapshot, sim_time_s: time, actions: snapshot.actions.length && stage ? [stage] : snapshot.actions};
+    const drainingPark = !snapshot.actions.length && stage?.stage === 'moving' && stage.target == null &&
+      time < stage.stage_started_at_sim_s + stage.stage_duration_sim_s;
+    return {...snapshot, sim_time_s: time, actions: stage && (snapshot.actions.length || drainingPark) ? [stage] : snapshot.actions};
   }
 }

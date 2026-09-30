@@ -3,6 +3,29 @@ import assert from 'node:assert/strict';
 import {PresentationClock} from '../../web/scene/presentation.js';
 import {sampleShake} from '../../web/scene/state.js';
 const state = t => ({experiment_id:'e',sim_time_s:t,paused:false,actions:[]});
+test('scan start and successful park completion retain the final confirmed motion interval',()=>{
+ const c=new PresentationClock(),options={interpolate:true,speed:1};
+ const stage=(start,target,from)=>({action_id:'scan',stage:'moving',tool:'camera',target,from_target:from,
+  stage_started_at_sim_s:start,stage_duration_sim_s:3});
+ const well={plate_id:'plate-02',well_id:'D6'};
+ c.update(state(0),0,options);
+ const start={...state(1),actions:[stage(0,well,null)]};
+ c.update(start,1000,options);
+ assert.equal(c.frame(start,1000).sim_time_s,0,'first action must not skip its first second');
+ assert.equal(c.frame(start,1500).sim_time_s,.5);
+ const park={...state(10),actions:[stage(8,null,well)]};
+ c.update(park,10000,options);
+ const complete=state(11);
+ c.update(complete,11000,options);
+ const halfway=c.frame(complete,11500);
+ assert.equal(halfway.sim_time_s,10.5);
+ assert.equal(halfway.actions[0].stage,'moving','finish the confirmed park interval after head is released');
+ assert.deepEqual(c.frame(complete,12000).actions,[]);
+ c.update(state(20),20000,options);
+ const next={...state(21),actions:[{...stage(20,well,null),action_id:'scan-2'}]};
+ c.update(next,21000,options);
+ assert.equal(c.frame(next,21500).sim_time_s,20.5,'a new scan after idle also retains its approach');
+});
 test('integer server ticks yield moving shake frames, bounded by the last confirmed time',()=>{
  const c=new PresentationClock(), options={interpolate:true,speed:1};
  c.update(state(1),0,options);c.update(state(2),1000,options);

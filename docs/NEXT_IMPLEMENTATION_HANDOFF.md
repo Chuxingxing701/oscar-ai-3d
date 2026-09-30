@@ -6,6 +6,8 @@
 
 录屏中运行时设备画面反复缩小的布局问题也已修复：固定桌面时间线行高，canvas 不再参与父布局尺寸计算；真实 scripted 演示逐帧尺寸验证见 [布局跟进](../reports/scene_layout_followup.md)。
 
+扫描出发和正常归位结束时的跳变已补齐：首次动作保留首个确认区间，释放 head 后完成最后一段已确认归位；见 [移动边界跟进](../reports/motion_boundary_followup.md)。
+
 ## 已实现及当前使用方式
 
 - Runtime 和独立 scripted Agent 可通过真实 API 完成扫描、整排移液、混匀、复查和报告。scripted 根据当前实验的 `scenario_id` 和对应 `scenarios/*.json` 任务运行确定性策略，不解释自由文本 goal。
