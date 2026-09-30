@@ -106,8 +106,10 @@ export class SessionManager {
   async status(sessionId: string, deviceClient?: DeviceClient): Promise<SessionStatusView | null> {
     const session = this.deps.store.getSession(sessionId);
     if (!session) return null;
-    const task = this.deps.store.activeTask(sessionId);
     const tasks = this.deps.store.listTasks(sessionId);
+    // the ACTIVE task, or the most recent terminal one (the UI and callers
+    // still want to see what last happened on this session)
+    const task = this.deps.store.activeTask(sessionId) ?? tasks.at(-1) ?? null;
     const wakes = this.deps.store.armedWakes(sessionId);
     const checkpoint = this.deps.store.latestCheckpoint(sessionId);
     const device: SessionStatusView['device'] = {reachable: false};

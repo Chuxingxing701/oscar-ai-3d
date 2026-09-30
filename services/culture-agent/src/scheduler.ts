@@ -14,7 +14,7 @@ import {DeviceClient, DeviceError, isTerminal} from '@oscar/device-contract';
 import type {DeviceEvent, Observation, StateSnapshot} from '@oscar/device-contract';
 import {normalizeGoalSpec, type GoalSpec} from './goal.ts';
 import {SessionExecutor} from './executor.ts';
-import type {AgentBackend, DeviceResultDigest, TurnInput} from './backend.ts';
+import type {AgentBackend, DeviceResultDigest, ToolHost, TurnInput} from './backend.ts';
 import type {LoopState, PlanStepRow, SessionRow, SessionStore, TaskRow, WakeRow} from './session-store.ts';
 
 export interface SchedulerDeps {
@@ -60,6 +60,7 @@ export class SessionScheduler {
   private readonly turnAbort = new AbortController();
   private watcherAbort: AbortController | null = null;
   private timer: NodeJS.Timeout | null = null;
+  private watchdogTimer: NodeJS.Timeout | null = null;
   private turnInFlight: Promise<void> | null = null;
   private turnQueued = false;
   private lastSimTime = 0;
@@ -158,7 +159,6 @@ export class SessionScheduler {
       },
       log: m => this.deps.log(m)});
     this.setLoop('recovering', 'startup reconciliation');
-
     // Recovery (§7.2): state read → archived check → intent reconcile → missed events.
     let state: StateSnapshot | null = null;
     try {
@@ -177,6 +177,7 @@ export class SessionScheduler {
     // device may have produced terminal events while we reconcile; a first
     // catch-up already ran inside recover()/watcher.
     this.setLoop(this.loopStateForTask());
+    this.startWatchdog();
     for (;;) {
       const w = await this.next();
       if (w.kind === 'stop' || this.stopped) break;
@@ -193,6 +194,40 @@ export class SessionScheduler {
     }
     this.watcherAbort?.abort();
     this.stopTimer();
+    if (this.watchdogTimer) clearInterval(this.watchdogTimer);
+  }
+
+  /**
+   * Wall-time staleness check: after a reset the old experiment stops
+   * advancing (the clock only serves the current experiment), so armed wakes
+   * never fire and no device events arrive. Poll the experiment status and
+   * archive the session when its experiment is no longer active. Ordinary
+   * pauses are reported, never archived.
+   */
+  private startWatchdog(): void {
+    if (this.watchdogTimer) return;
+    this.watchdogTimer = setInterval(() => {
+      void (async () => {
+        if (this.stopped) return;
+        const session = this.store.getSession(this.sessionId);
+        if (!session || session.lifecycle !== 'active') return;
+        const armed = this.store.armedWakes(this.sessionId).length;
+        if (!armed && !this.turnInFlight) return;
+        try {
+          const state = await this.readState();
+          if (state.experiment.status !== 'active') {
+            await this.archiveSession(`experiment is ${state.experiment.status} (reset produced ${state.experiment.successor_id ?? 'a successor'})`);
+            return;
+          }
+          if (state.experiment.sim_time_s > this.lastSimTime) {
+            this.lastSimTime = state.experiment.sim_time_s;
+            this.lastSimWall = Date.now();
+            this.speed = state.experiment.speed || 1;
+          }
+        } catch { /* runtime unreachable: SSE watcher already retries */ }
+      })();
+    }, 5000);
+    this.watchdogTimer.unref?.();
   }
 
   private async readState(): Promise<StateSnapshot> {
@@ -307,11 +342,18 @@ export class SessionScheduler {
     const ownAction = ev.action_id ? this.ownsAction(ev.action_id) : false;
     if (TERMINAL_ACTION_EVENTS.has(ev.type)) {
       if (ownAction) {
+        const intent = this.store.listSessionIntents(this.sessionId).find(i => i.action_id === ev.action_id);
         this.emit('action.result', {action_id: ev.action_id,
-          capability: (ev.payload as {capability?: string}).capability, status: ev.type.split('.')[1],
-          ...(ev.payload as Record<string, unknown>)});
+          capability: intent?.capability ?? (ev.payload as {capability?: string}).capability,
+          status: ev.type.split('.')[1], ...(ev.payload as Record<string, unknown>)});
         this.fireActionWakes(String(ev.action_id));
-        this.scheduleTurn('action_terminal', `action ${ev.action_id} ${ev.type.split('.')[1]}`);
+        // A succeeded scan's observation.created event follows immediately and
+        // schedules the assessing turn itself; acting on the terminal first
+        // would risk a duplicate scan.
+        const scanAwaitingObservation = intent?.capability === 'imaging.scan' && ev.type === 'action.succeeded';
+        if (!scanAwaitingObservation) {
+          this.scheduleTurn('action_terminal', `action ${ev.action_id} ${ev.type.split('.')[1]}`);
+        }
       }
       return;
     }
@@ -323,6 +365,9 @@ export class SessionScheduler {
           plate_revision: obs.plate_revision,
           estimates: obs.estimates.map(e => ({well_id: e.well_id, liquid_level_ul: e.liquid_level_ul, quality: e.quality}))});
         this.scheduleTurn('observation', `observation ${obs.observation_id} ready`);
+      } else {
+        // observation unreachable: fall back to the terminal-driven turn
+        this.scheduleTurn('action_terminal', `observation ${String(ev.observation_id)} could not be fetched`);
       }
       return;
     }
@@ -596,7 +641,7 @@ export class SessionScheduler {
         {actions_used: 0, max_actions: 0, model_turns_used: 0, max_model_turns: 0},
     };
     let turnGoalRevision = task?.goal_revision ?? 0;
-    const host = {
+    const host: ToolHost = {
       generation: this.generation,
       submitWrite: async (capability: string, args: Record<string, unknown>, opts:
         {reason?: string; evidence_refs?: string[]}) => {
@@ -610,13 +655,22 @@ export class SessionScheduler {
             spec: freshSpec, capability, args, reason: opts.reason,
             evidence_refs: opts.evidence_refs, turnGoalRevision, generation: this.generation});
           this.setLoop('thinking', `${capability} submitted`);
+          if (r.ok && r.action && !isTerminal(r.action.status)) {
+            // async device action: wake on ITS terminal (bounded, per action)
+            host.armWake({kind: 'action_terminal', predicate: {action_ids: [r.action.action_id]},
+              dedupe_key: `act:${r.action.action_id}`, reason: `terminal of ${r.action.action_id}`});
+          } else if (r.ok && r.action && isTerminal(r.action.status) && r.recovered === 'by_key') {
+            // the terminal event raced past the inbox while the response was
+            // lost (ownAction was still unknown) — continue explicitly
+            this.scheduleTurn('action_terminal', `recovered ${r.action.action_id} already ${r.action.status}`);
+          }
           return r;
         } catch (e) {
           return {ok: false, error: {code: 'internal', message: e instanceof Error ? e.message : String(e), retryable: true}};
         }
       },
-      armWake: (w: {kind: 'sim_time' | 'condition'; at_sim_s?: number | null; predicate?: Record<string, unknown> | null;
-        dedupe_key?: string | null; reason: string}) => {
+      armWake: (w: {kind: 'sim_time' | 'condition' | 'action_terminal'; at_sim_s?: number | null;
+        predicate?: Record<string, unknown> | null; dedupe_key?: string | null; reason: string}) => {
         const t = this.store.activeTask(this.sessionId);
         const wake = this.store.armWake({session_id: this.sessionId, task_id: t?.task_id ?? task?.task_id ?? 'none',
           kind: w.kind, predicate: w.predicate ?? null, target_sim_s: w.at_sim_s ?? null,
@@ -673,11 +727,12 @@ export class SessionScheduler {
       if (freshTask && this.consecutiveModelErrors >= 8) {
         this.store.updateTaskStatus(freshTask.task_id, 'failed', 'model_unavailable');
         this.emit('task.status', {task_id: freshTask.task_id, status: 'failed', reason: 'model_unavailable'});
+        this.setLoop('unavailable', `model errors exceeded the consecutive limit (${this.consecutiveModelErrors})`);
       } else {
         // bounded retry: a later event or a short sim-time wake retries
         this.setLoop('unavailable', `${output.code}: ${output.error ?? ''}`);
         if (freshTask && !this.store.armedWakes(this.sessionId).some(w => w.task_id === freshTask.task_id)) {
-          host.armWake({kind: 'sim_time', at_sim_s: this.lastSimTime + 120,
+          host.armWake({kind: 'sim_time', at_sim_s: state.experiment.sim_time_s + 120,
             dedupe_key: `retry:${freshTask.task_id}:${this.consecutiveModelErrors}`, reason: `model error retry #${this.consecutiveModelErrors}`});
         }
       }
@@ -804,7 +859,7 @@ export class SessionScheduler {
 function summarizeResultEvent(type: string, payload: Record<string, unknown>): string {
   switch (type) {
     case 'action.submitted': return `${String(payload.capability ?? '')} accepted as ${String(payload.action_id ?? '')} (${String(payload.status ?? '')})`;
-    case 'action.result': return `action ${String(payload.action_id ?? '')} ${String(payload.status ?? '')}${payload.error ? ` error=${JSON.stringify(payload.error)}` : ''}`;
+    case 'action.result': return `action ${String(payload.action_id ?? '')} (${String(payload.capability ?? '?')}) ${String(payload.status ?? '')}${payload.error ? ` error=${JSON.stringify(payload.error)}` : ''}`;
     case 'observation.recorded': return `observation ${String(payload.observation_id ?? '')} plate ${String(payload.plate_id ?? '')} quality ${String(payload.quality ?? '')}`;
     case 'wake.fired': return `wake ${String(payload.wake_id ?? '')} (${String(payload.kind ?? '')}) fired`;
     case 'model.unavailable': return `model unavailable: ${String(payload.reason ?? '')}`;

@@ -593,7 +593,7 @@ export class SessionStore {
         .get(sessionId, source, seq) as {inbox_id: number} | undefined;
       if (info) return null;
       const r = this.stmt(`INSERT INTO inbox (session_id, source, source_seq, event_type, payload, state, created_at_wall)
-        VALUES (?,?,?,?,'received',?)`)
+        VALUES (?,?,?,?,?,'received',?)`)
         .run(sessionId, source, seq, eventType, JSON.stringify(payload), new Date().toISOString()) as {changes: number; lastInsertRowid: number | bigint};
       this.stmt('UPDATE sessions SET inbox_cursor=?, updated_at_wall=? WHERE session_id=? AND inbox_cursor<?')
         .run(seq, new Date().toISOString(), sessionId, seq);

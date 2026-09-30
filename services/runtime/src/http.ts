@@ -227,9 +227,13 @@ export class HttpApi {
     const byKey = /^\/actions\/by-key\/(.+)$/.exec(rest);
     if (byKey && method === 'GET') {
       this.requireAuth(ctx);
+      // principal scoping mirrors principalString (runtime.ts): operator |
+      // run:<id> | service — long-lived session intents recover by key as the
+      // service principal, so they must find their own actions.
+      const principal = ctx.principal!.kind === 'operator' ? 'operator'
+        : ctx.principal!.kind === 'run' ? `run:${ctx.principal!.run_id}` : 'service';
       const row = runtime.store.stmt('SELECT * FROM actions WHERE experiment_id=? AND principal=? AND idempotency_key=?')
-        .get(exp.id, ctx.principal!.kind === 'operator' ? 'operator' : `run:${ctx.principal!.run_id}`,
-          decodeURIComponent(byKey[1])) as Record<string, unknown> | undefined;
+        .get(exp.id, principal, decodeURIComponent(byKey[1])) as Record<string, unknown> | undefined;
       if (!row) throw new DeviceError('not_found', 'Unknown idempotency key for this principal');
       return this.sendJson(res, 200, JSON.parse(String(row.response_json)));
     }

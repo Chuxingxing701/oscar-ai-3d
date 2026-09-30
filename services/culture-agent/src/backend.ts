@@ -61,9 +61,9 @@ export interface TurnOutput {
 export interface ToolHost {
   generation: number;
   submitWrite(capability: string, args: Record<string, unknown>, opts:
-    {reason?: string; evidence_refs?: string[]}): Promise<{ok: boolean; action_id?: string; status?: string;
+    {reason?: string; evidence_refs?: string[]}): Promise<{ok: boolean; action?: {action_id: string; status: string};
     error?: {code: string; message: string; retryable: boolean}; recovered?: string}>;
-  armWake(input: {kind: 'sim_time' | 'condition'; at_sim_s?: number | null;
+  armWake(input: {kind: 'sim_time' | 'condition' | 'action_terminal'; at_sim_s?: number | null;
     predicate?: Record<string, unknown> | null; dedupe_key?: string | null; reason: string}): WakeRow;
   updateTaskGoal(patch: {goal_text?: string; goal_spec?: Record<string, unknown>; expected_revision: number}):
     {ok: true; revision: number} | {ok: false; conflict: {actual: number}};
@@ -152,9 +152,12 @@ export class PiAgentBackend implements AgentBackend {
             return errResult(`REFUSED ${r.error?.code}: ${r.error?.message}${r.error?.retryable
               ? ' (retryable)' : ' — re-read the state and adjust the plan; do not repeat the same request.'}`);
           }
-          logAnd(t.name, params, {ok: true, summary: `accepted ${r.action_id} (${r.status})`});
-          return okResult(JSON.stringify({accepted: true, action_id: r.action_id, status: r.status,
-            note: 'The action runs on the device. Its terminal state will arrive as a device event on a later turn; register a wake instead of waiting here.'}), {action_id: r.action_id});
+          const action = r.action!;
+          logAnd(t.name, params, {ok: true, summary: `accepted ${action.action_id} (${action.status})`});
+          // terminate hint: end this decision process right after the write;
+          // the persisted wake (auto for async actions) schedules the next one
+          return {...okResult(JSON.stringify({accepted: true, action_id: action.action_id, status: action.status,
+            note: 'The action runs on the device. Its terminal state will arrive as a device event on a later turn; register a wake instead of waiting here.'}), {action_id: action.action_id}), terminate: true};
         },
       }));
 
@@ -310,13 +313,29 @@ export class PiAgentBackend implements AgentBackend {
       },
       streamFn: (m, c, o) => {
         usage.requests += 1;
+        steps += 1;
         return streamSimple(m as Model<'openai-completions'>, c, {...o, apiKey: this.config!.apiKey});
       },
       toolExecution: 'sequential',
-      shouldStopAfterTurn: () => effects.stopRequested || steps >= MAX_LOOP_STEPS,
+      // One bounded decision process per wake: the turn ends when the model
+      // produced a plain-text conclusion (no tool calls), asked to stop
+      // (wake registered / task ended / input requested) or hit the cap.
+      shouldStopAfterTurn: ctx => effects.stopRequested || steps >= MAX_LOOP_STEPS
+        || !ctx.message.content.some(c => c.type === 'toolCall'),
     });
+    // pi's context estimator reads usage off assistant messages; stored
+    // conversation rows carry no provider usage, so inject a zero usage.
+    const zeroUsage = {input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+      cost: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0}};
     const promptMessages = [
-      ...input.history.map(m => ({role: m.role, content: m.content, timestamp: new Date()})),
+      ...input.history.map(m => ({
+        role: m.role,
+        // pi expects assistant content as content blocks (a bare string would
+        // be iterated block-wise and crash the context estimator)
+        content: m.role === 'assistant' ? [{type: 'text' as const, text: m.content}] : m.content,
+        timestamp: new Date(),
+        ...(m.role === 'assistant' ? {usage: zeroUsage} : {}),
+      })),
       {role: 'user' as const, content: currentTurnBrief(input), timestamp: new Date()},
     ];
     try {
