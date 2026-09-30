@@ -70,11 +70,13 @@ dt{color:#6d7f92}dd{margin:0;color:#21354b;font-variant-numeric:tabular-nums}
 #mobile-tabs button.on{background:#174993;color:#fff}
 
 /* ---- layout ---- */
-#layout{flex:1;display:grid;grid-template-rows:1fr auto;grid-template-columns:300px 1fr 380px;grid-template-areas:"left center right" "timeline timeline timeline";gap:10px;padding:10px;min-height:0;overflow:hidden}
+/* Reserve the timeline track independently of its live contents. An auto
+   track grew with events and repeatedly took height from the scene. */
+#layout{flex:1;display:grid;grid-template-rows:minmax(0,1fr) clamp(130px,26vh,260px);grid-template-columns:300px 1fr 380px;grid-template-areas:"left center right" "timeline timeline timeline";gap:10px;padding:10px;min-height:0;overflow:hidden}
 #pane-resources{grid-area:left;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:0}
 #pane-scene{grid-area:center;display:flex;flex-direction:column;min-height:0;min-width:0;border-radius:12px;overflow:hidden;background:#f7f9fb;border:1px solid #dfe6ee;position:relative}
 #right-col{grid-area:right;display:flex;flex-direction:column;min-height:0;min-width:0}
-#pane-timeline{grid-area:timeline;display:flex;gap:10px;min-height:0;max-height:34vh}
+#pane-timeline{grid-area:timeline;display:flex;gap:10px;min-height:0;overflow:hidden}
 .card{background:#f7f9fbec;border:1px solid #fff;border-radius:12px;box-shadow:0 4px 18px #29436112;padding:10px 12px}
 .card h2{margin-bottom:6px}
 .card-body{font-size:12px}
@@ -82,8 +84,9 @@ dt{color:#6d7f92}dd{margin:0;color:#21354b;font-variant-numeric:tabular-nums}
 /* ---- scene ---- */
 #scene-tools{display:flex;gap:6px;align-items:center;padding:8px 10px;background:#eef2f7;border-bottom:1px solid #dfe6ee;flex:none;flex-wrap:wrap}
 #scene-selection{margin-left:auto;font-size:12px}
-#scene-stage{flex:1;min-height:0}
-#scene-stage canvas{display:block}
+#scene-stage{flex:1;min-height:0;position:relative;overflow:hidden}
+/* Canvas buffer dimensions must not participate in grid/flex sizing. */
+#scene-stage canvas{display:block;position:absolute;inset:0;width:100%!important;height:100%!important}
 .scene-note{margin:0;padding:5px 10px;font-size:10px;color:#8a97a5;background:#eef2f7;border-top:1px solid #dfe6ee;flex:none}
 #scene-error{margin:0;padding:10px;color:#8f2f2f;background:#fbeaea;font-size:12px}
 
