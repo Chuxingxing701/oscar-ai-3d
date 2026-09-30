@@ -70,6 +70,8 @@ export class SessionScheduler {
   private mainDone = false;
   private stopped = false;
   private consecutiveModelErrors = 0;
+  /** Session-event seq already digested into a turn brief (set at collect time). */
+  private resultsCursor = 0;
   private donePromise: Promise<void> = Promise.resolve();
 
   constructor(deps: SchedulerDeps, session: SessionRow) {
@@ -153,8 +155,13 @@ export class SessionScheduler {
       fetch: this.deps.fetchImpl});
     this.executor = new SessionExecutor({store: this.store, client: this.client,
       emit: event => {
-        if (event.kind === 'action.submitted') this.emit('action.submitted', {...event});
-        else if (event.kind === 'action.result') this.emit('action.result', {...event});
+        if (event.kind === 'action.submitted') {
+          this.emit('action.submitted', {...event});
+          // An intent just resolved to an action (submit, by-key recovery or
+          // restart reconcile): observation events that arrived during the
+          // uncertain window were consumed unattributed — replay them now.
+          if (event.action_id) void this.replayAttributedObservations(event.action_id);
+        } else if (event.kind === 'action.result') this.emit('action.result', {...event});
         else this.emit('error', {where: event.where, code: event.code, message: event.message, key: event.key});
       },
       log: m => this.deps.log(m)});
@@ -382,6 +389,34 @@ export class SessionScheduler {
     return this.store.listSessionIntents(this.sessionId).some(i => i.action_id === actionId);
   }
 
+  /**
+   * After an intent resolves to action_id (possibly minutes after acceptance,
+   * e.g. response loss), re-check consumed observation.created rows for that
+   * action and emit the ones never recorded as session evidence.
+   */
+  private async replayAttributedObservations(actionId: string): Promise<void> {
+    try {
+      const already = new Set(this.store.sessionEventsAfter(this.sessionId, 0, 10_000)
+        .filter(e => e.type === 'observation.recorded')
+        .map(e => String((e.payload as {observation_id?: string}).observation_id ?? '')));
+      for (const row of this.store.inboxByType(this.sessionId, 'observation.created')) {
+        let payload: {action_id?: string; observation_id?: string};
+        try {payload = JSON.parse(row.payload) as {action_id?: string; observation_id?: string};} catch {continue;}
+        if (payload.action_id !== actionId || !payload.observation_id) continue;
+        if (already.has(payload.observation_id)) continue;
+        const obs = await this.fetchObservation(payload.observation_id);
+        if (obs) {
+          this.emit('observation.recorded', {observation_id: obs.observation_id, plate_id: obs.plate_id,
+            wells: obs.wells, mode: obs.mode, quality: obs.quality, sampled_at_sim_s: obs.sampled_at_sim_s,
+            plate_revision: obs.plate_revision,
+            estimates: obs.estimates.map(e => ({well_id: e.well_id, liquid_level_ul: e.liquid_level_ul, quality: e.quality})),
+            replayed_for: actionId});
+          this.scheduleTurn('observation', `observation ${obs.observation_id} attributed to ${actionId}`);
+        }
+      }
+    } catch { /* best effort */ }
+  }
+
   private async fetchObservation(observationId: string): Promise<Observation | null> {
     const session = this.store.getSession(this.sessionId)!;
     try {
@@ -576,12 +611,16 @@ export class SessionScheduler {
   }
 
   private collectDeviceResults(): DeviceResultDigest[] {
-    // everything since the last 'turn.completed' marker (durable → restart-safe)
-    const events = this.store.sessionEventsAfter(this.sessionId, 0, 10_000);
-    const lastMarker = [...events].reverse().find(e => e.type === 'turn.completed');
-    const after = lastMarker ? lastMarker.seq : (events.length > 20 ? events[events.length - 20].seq - 1 : 0);
-    return events.filter(e => e.seq > after
-      && ['action.submitted', 'action.result', 'observation.recorded', 'wake.fired', 'model.unavailable', 'error'].includes(e.type))
+    // Everything after the previous turn's collection boundary. The cursor is
+    // advanced AT COLLECT TIME to the current last seq: events emitted while
+    // this turn runs (e.g. the observation of the scan just submitted) keep a
+    // HIGHER seq and are guaranteed to reach the next turn's brief — no
+    // marker-ordering race can hide them.
+    const events = this.store.sessionEventsAfter(this.sessionId, this.resultsCursor, 10_000);
+    const boundary = this.store.getSession(this.sessionId)?.last_event_seq ?? this.resultsCursor;
+    this.resultsCursor = Math.max(this.resultsCursor, boundary);
+    return events.filter(e => ['action.submitted', 'action.result', 'observation.recorded', 'wake.fired',
+      'model.unavailable', 'error'].includes(e.type))
       .slice(-24)
       .map(e => ({source: e.type, summary: summarizeResultEvent(e.type, e.payload),
         data: compactPayload(e.payload)}));
@@ -870,6 +909,9 @@ function summarizeResultEvent(type: string, payload: Record<string, unknown>): s
 
 function compactPayload(payload: Record<string, unknown>): unknown {
   const json = JSON.stringify(payload);
-  if (json.length <= 800) return payload;
-  return {truncated: json.slice(0, 800)};
+  // observation digests with per-well estimates are ~1 kB; truncating them
+  // would make the evidence unparseable for the model. 4 kB keeps the turn
+  // brief bounded while preserving full structured evidence.
+  if (json.length <= 4000) return payload;
+  return {truncated: json.slice(0, 4000)};
 }

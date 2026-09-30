@@ -421,7 +421,7 @@ export class SessionStore {
     budget?: Partial<TaskBudget>; request_id?: string | null}): TaskRow {
     return this.tx(() => {
       if (input.request_id) {
-        const hit = this.stmt('SELECT task_id FROM tasks WHERE session_id=? AND json_extract(goal_spec, "$.request_id")=?')
+        const hit = this.stmt("SELECT task_id FROM tasks WHERE session_id=? AND json_extract(goal_spec, '$.request_id')=?")
           .get(sessionId, input.request_id) as {task_id: string} | undefined;
         if (hit) return this.getTask(hit.task_id)!;
       }
@@ -605,6 +605,13 @@ export class SessionStore {
     const r = this.stmt('SELECT state, event_type FROM inbox WHERE session_id=? AND source=? AND source_seq=?')
       .get(sessionId, source, seq) as {state: string; event_type: string} | undefined;
     return r;
+  }
+
+  /** Consumed inbox rows of a type (payload JSON), oldest first. */
+  inboxByType(sessionId: string, eventType: string): Array<{source_seq: number; state: string; payload: string}> {
+    return (this.stmt('SELECT source_seq, state, payload FROM inbox WHERE session_id=? AND event_type=? ORDER BY source_seq')
+      .all(sessionId, eventType) as Record<string, unknown>[]).map(r => ({source_seq: Number(r.source_seq),
+      state: String(r.state), payload: String(r.payload)}));
   }
 
   markInboxProcessed(sessionId: string, source: string, seq: number, state: 'processed' | 'dropped'): void {

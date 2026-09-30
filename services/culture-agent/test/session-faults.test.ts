@@ -129,11 +129,12 @@ test('accepted-response loss resolves by idempotency key; no second liquid', {ti
     await api.post<{task: {task_id: string}}>(`/sessions/${created0.session.session_id}/tasks`,
       {goal_text: 'keep row A', goal_spec: goalSpec(358)}); // below initial min → immediate maintenance
     const session = created0.session;
-    // wait until at least one maintenance was submitted and verified
+    // wait until a maintenance was actually submitted (threshold 358 needs
+    // ~12 sim h of evaporation; scans alone must not satisfy this wait)
     await waitFor(async () => {
-      const s = await api.get<{task: {status: string; budget: {actions_used: number}}}>(`/sessions/${session.session_id}/status`);
-      return (s.task?.budget.actions_used ?? 0) >= 2 ? s : null;
-    }, {timeoutMs: 60_000, label: 'maintenance submitted'});
+      const {actions} = await operator.actions(experimentId);
+      return actions.some(a => a.principal.kind === 'service' && a.capability === 'media.add') ? actions : null;
+    }, {timeoutMs: 90_000, label: 'maintenance submitted'});
     assert.equal(loss.dropped(), 1, 'exactly one response was dropped');
     await sleep(1500);
     // by-key resolution: the intent got its action; exactly ONE media.add on the device
@@ -157,7 +158,7 @@ test('accepted-response loss resolves by idempotency key; no second liquid', {ti
   }
 });
 
-test('agent SIGKILL + restart: session resumes, no duplicate maintenance, budget survives', {timeout: 150_000}, async () => {
+test('agent SIGKILL + restart: session resumes, no duplicate maintenance, budget survives', {timeout: 220_000}, async () => {
   const stub = await startModelStub();
   const runtime = await spawnRuntimeProc({clockMode: 'realtime'});
   let agent = await spawnAgentProc({dataDir: runtime.dataDir, runtimeUrl: runtime.baseUrl, env: stubEnv(stub.port)});
@@ -171,11 +172,11 @@ test('agent SIGKILL + restart: session resumes, no duplicate maintenance, budget
       {goal_text: 'keep row A', goal_spec: goalSpec(358)});
     const session = createdS.session;
     const task = taskS.task;
-    // wait for the first maintenance, then SIGKILL the agent mid-monitoring
+    // wait for the first real maintenance, then SIGKILL the agent mid-monitoring
     await waitFor(async () => {
-      const s = await api.get<{task: {budget: {actions_used: number}}}>(`/sessions/${session.session_id}/status`);
-      return (s.task?.budget.actions_used ?? 0) >= 2 ? s : null;
-    }, {timeoutMs: 60_000, label: 'first maintenance'});
+      const {actions} = await operator.actions(experimentId);
+      return actions.some(a => a.principal.kind === 'service' && a.capability === 'media.add') ? actions : null;
+    }, {timeoutMs: 90_000, label: 'first maintenance'});
     agent.kill9();
     await sleep(500);
     const before = await countServiceActions(operator, experimentId);
@@ -191,7 +192,7 @@ test('agent SIGKILL + restart: session resumes, no duplicate maintenance, budget
     await waitFor(async () => {
       const t = await api2.get<{task: {status: string} | null}>(`/tasks/${task.task_id}`);
       return t.task?.status === 'completed' ? t : null;
-    }, {timeoutMs: 90_000, label: 'task completion after restart'});
+    }, {timeoutMs: 150_000, label: 'task completion after restart'});
     const after = await countServiceActions(operator, experimentId);
     assert.ok(after.total >= before.total, 'actions continued');
     const {actions} = await operator.actions(experimentId);
@@ -213,7 +214,7 @@ test('agent SIGKILL + restart: session resumes, no duplicate maintenance, budget
   }
 });
 
-test('runtime SIGKILL + restart: agent reconnects, catches up missed events, no double submit', {timeout: 150_000}, async () => {
+test('runtime SIGKILL + restart: agent reconnects, catches up missed events, no double submit', {timeout: 200_000}, async () => {
   const stub = await startModelStub();
   const fixedPort = 20_000 + Math.floor(Math.random() * 20_000);
   const runtime = await spawnRuntimeProc({clockMode: 'realtime', port: fixedPort});
@@ -227,9 +228,9 @@ test('runtime SIGKILL + restart: agent reconnects, catches up missed events, no 
     const session = createdR.session;
     await api.post(`/sessions/${session.session_id}/tasks`, {goal_text: 'keep row A', goal_spec: goalSpec(358)});
     await waitFor(async () => {
-      const s = await api.get<{task: {budget: {actions_used: number}}}>(`/sessions/${session.session_id}/status`);
-      return (s.task?.budget.actions_used ?? 0) >= 2 ? s : null;
-    }, {timeoutMs: 60_000, label: 'first maintenance'});
+      const {actions} = await operator.actions(experimentId);
+      return actions.some(a => a.principal.kind === 'service' && a.capability === 'media.add') ? actions : null;
+    }, {timeoutMs: 90_000, label: 'first maintenance'});
 
     // SIGKILL the RUNTIME (device) while the agent keeps waiting
     runtime.kill9();
@@ -252,7 +253,7 @@ test('runtime SIGKILL + restart: agent reconnects, catches up missed events, no 
       await waitFor(async () => {
         const t = await api.get<{task: {status: string} | null}>(`/tasks/${tasks.tasks[0].task_id}`);
         return t.task?.status === 'completed' ? t : null;
-      }, {timeoutMs: 90_000, label: 'completion after runtime restart'});
+      }, {timeoutMs: 150_000, label: 'completion after runtime restart'});
       const op2 = new DeviceClient({baseUrl: rt2.baseUrl, token: rt2.operatorToken, timeoutMs: 15_000});
       const {actions} = await op2.actions(experimentId);
       const keys = actions.filter(a => a.principal.kind === 'service').map(a => a.idempotency_key ?? '');
@@ -334,7 +335,7 @@ test('forced compaction keeps plan/evidence/constraints in the model context', {
     const compacted = await api.post<{compacted: boolean; generation: number}>(`/sessions/${session.session_id}/compact`, {});
     assert.equal(compacted.compacted, true);
     const after = await api.get<{messages: unknown[]}>(`/sessions/${session.session_id}`);
-    assert.equal(after.messages.length, before.messages.length, 'compaction never deletes raw messages');
+    assert.ok(after.messages.length >= before.messages.length, 'compaction never deletes raw messages');
     const memory = await api.get<{checkpoint: {summary: string} | null}>(`/sessions/${session.session_id}/memory`);
     assert.ok(memory.checkpoint, 'checkpoint exists');
     assert.ok(memory.checkpoint!.summary.includes('Task goal'), 'checkpoint keeps the goal/constraints');

@@ -20,12 +20,23 @@ const filter = process.argv.slice(2);
 let files = [...collect(join(root, 'packages')), ...collect(join(root, 'services')), ...collect(join(root, 'tests')),
   'web/scene/tests/scene.test.mjs'];
 if (filter.length) files = files.filter(f => filter.some(x => f.includes(x)));
-const steps = [
-  ['node', ['scripts/vendor-three.mjs', '--check']],
-  ['python3', ['source/prepare_scene_assets.py', '--check']],
-  ['node', ['--test', '--test-concurrency=4', '--test-timeout=180000', ...files]],
-];
-for (const [cmd, args] of filter.length ? steps.slice(2) : steps) {
+// Process-heavy acceptance suites (real Runtime + Agent + HTTP model stub
+// children with accelerated sim clocks) run SERIALLY in a second phase so
+// they never starve each other's wall-time budgets.
+const serial = files.filter(f => /long-session|session-faults|supervisor-contract/.test(f));
+files = files.filter(f => !serial.includes(f));
+
+const steps = [];
+if (!filter.length) {
+  steps.push(['node', ['scripts/vendor-three.mjs', '--check']]);
+  steps.push(['python3', ['source/prepare_scene_assets.py', '--check']]);
+}
+steps.push(['node', ['--test', '--test-concurrency=4', '--test-timeout=180000', ...files]]);
+steps.push(['node', ['--test', '--test-concurrency=1', '--test-timeout=300000', ...serial]]);
+
+for (const [cmd, args] of steps) {
+  const isTestRun = args.includes('--test');
+  if (isTestRun && args.length === 4) continue; // phase emptied by filters
   console.log(`\n$ ${cmd} ${args.join(' ')}`);
   const r = spawnSync(cmd, args, {cwd: root, stdio: 'inherit', env: {...process.env, OSCAR_TEST: '1'}});
   if (r.status !== 0) process.exit(r.status ?? 1);
