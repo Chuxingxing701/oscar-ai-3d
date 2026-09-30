@@ -8,6 +8,11 @@ import {emptyMemory} from '@oscar/culture-policy';
 import type {AgentConfig} from './config.ts';
 import {AgentStore, type AgentEvent, type RunRow} from './store.ts';
 import {RunLoop, type LoopDeps} from './loop.ts';
+import {SessionStore} from './session-store.ts';
+import {SessionManager} from './session-manager.ts';
+import {SessionApiRouter} from './sessions-api.ts';
+import {SupervisorApiRouter} from './supervisor-api.ts';
+import {PiAgentBackend} from './backend.ts';
 
 export interface RunAcceptPayload {
   run_id: string;
@@ -37,15 +42,28 @@ const MAX_BODY = 2 * 1024 * 1024;
 
 export class CultureAgent {
   readonly store: AgentStore;
+  readonly sessionStore: SessionStore;
+  readonly sessionManager: SessionManager;
   readonly server: Server;
   private readonly opts: AgentOptions;
   private readonly loops = new Map<string, RunLoop>();
   private readonly listeners = new Map<string, Set<() => void>>();
+  private readonly sessionRouter: SessionApiRouter;
+  private readonly supervisorRouter: SupervisorApiRouter;
   private port = 0;
 
   constructor(opts: AgentOptions) {
     this.opts = opts;
     this.store = opts.store;
+    this.sessionStore = new SessionStore(opts.store.db);
+    this.sessionManager = new SessionManager({store: this.sessionStore, runtimeUrl: opts.config.runtimeUrl,
+      getServiceToken: opts.getServiceToken, backend: new PiAgentBackend(process.env),
+      fetchImpl: opts.fetchImpl, log: message => this.log(message)});
+    this.sessionRouter = new SessionApiRouter({manager: this.sessionManager, runtimeUrl: opts.config.runtimeUrl,
+      getServiceToken: opts.getServiceToken, fetchImpl: opts.fetchImpl, log: message => this.log(message)});
+    this.supervisorRouter = new SupervisorApiRouter({manager: this.sessionManager,
+      runtimeUrl: opts.config.runtimeUrl, getServiceToken: opts.getServiceToken, fetchImpl: opts.fetchImpl,
+      log: message => this.log(message)});
     this.server = createServer((req, res) => {
       this.handle(req, res).catch((e: unknown) => {
         if (e instanceof DeviceError && !res.headersSent) {
@@ -83,6 +101,7 @@ export class CultureAgent {
     const loops = [...this.loops.values()];
     for (const loop of loops) loop.stop();
     this.loops.clear();
+    await this.sessionManager.stopAll();
     await Promise.race([Promise.all(loops.map(l => l.done)), new Promise(r => setTimeout(r, 5000).unref())]);
     await new Promise<void>(resolvePromise => {
       this.server.close(() => resolvePromise());
@@ -155,6 +174,22 @@ export class CultureAgent {
     }
     if (path === '/runs' && method === 'GET') {
       return this.sendJson(res, 200, {runs: this.store.listRuns().map(r => this.runSummary(r))});
+    }
+    // -- long-lived sessions & supervisor contract (same service-token auth) ----
+    if (path === '/sessions' || path.startsWith('/sessions/')) {
+      const handled = await this.sessionRouter.handle({req, method, path, url, body: body ?? {}, res});
+      if (!handled) throw new DeviceError('not_found', `No route ${method} ${path}`);
+      return;
+    }
+    if (path.startsWith('/tasks/')) {
+      const handled = await this.sessionRouter.handleTaskRoutes({req, method, path, url, body: body ?? {}, res});
+      if (!handled) throw new DeviceError('not_found', `No route ${method} ${path}`);
+      return;
+    }
+    if (path === '/supervisor' || path.startsWith('/supervisor/')) {
+      const handled = await this.supervisorRouter.handle({req, method, path, url, body: body ?? {}, res});
+      if (!handled) throw new DeviceError('not_found', `No route ${method} ${path}`);
+      return;
     }
     const runMatch = /^\/runs\/([^/]+)(\/[^/]*)?$/.exec(path);
     if (runMatch) {
@@ -332,6 +367,9 @@ export class CultureAgent {
    * explicit operator action (gateway run control resume).
    */
   async reconcileOnStartup(): Promise<void> {
+    // Long-lived sessions: re-claim scheduler ownership, reconcile session
+    // intents, catch up missed device events (design §7.2).
+    this.sessionManager.recoverAll();
     for (const run of this.store.listRuns()) {
       if (run.status === 'ended') continue;
       if (run.status === 'active') {

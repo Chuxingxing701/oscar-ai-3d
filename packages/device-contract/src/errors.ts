@@ -38,6 +38,10 @@ export const ERROR_STATUS = {
   runtime_restarted: 503,
   target_changed: 409,
   timeout: 409,
+  // long-lived culture sessions (D1+): archived sessions are read-only, one
+  // active task per session
+  session_archived: 409,
+  task_already_active: 409,
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_STATUS;

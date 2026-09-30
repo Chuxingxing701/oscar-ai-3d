@@ -76,7 +76,8 @@ export class HttpApi {
 
       // 2. anonymous surface: health, session login, static whitelist
       if (method === 'GET' && path === '/api/v1/health') {
-        return this.sendJson(res, 200, {ok: true, service: 'oscar-runtime', version: '0.1.0'});
+        return this.sendJson(res, 200, {ok: true, service: 'oscar-runtime', version: '0.1.0',
+          instance_id: this.opts.runtime.instanceId});
       }
       if (!path.startsWith('/api/')) {
         return this.serveStatic(req, res, path);

@@ -73,6 +73,8 @@ export class Runtime {
   readonly config: RuntimeConfig;
   readonly operatorToken: string;
   readonly serviceToken: string;
+  /** Stable identity for this Runtime data directory (sessions bind to it). */
+  readonly instanceId: string;
   /** experimentId -> listeners called with the last committed event seq. */
   private readonly listeners = new Map<string, Set<(lastSeq: number) => void>>();
   private readonly aborts = new Map<string, AbortController>();
@@ -82,6 +84,12 @@ export class Runtime {
     this.store = store;
     this.operatorToken = operatorToken;
     this.serviceToken = serviceToken;
+    let instance = store.getMeta('instance_id');
+    if (!instance) {
+      instance = `rt-${randomBytes(8).toString('hex')}`;
+      store.setMeta('instance_id', instance);
+    }
+    this.instanceId = instance;
   }
 
   // -- events ---------------------------------------------------------------
@@ -453,6 +461,12 @@ export class Runtime {
 
   private checkLeaseForWrite(exp: ExpRow, principal: Principal, capability: string, leaseId: number | null): void {
     if (capability === 'action.cancel') return; // reads/cancel always available
+    // Service-principal writes (long-lived session scheduler) exist only in
+    // realtime; lockstep keeps its run/lease discipline unchanged.
+    if (principal.kind === 'service' && exp.clock_mode === 'lockstep') {
+      throw new DeviceError('clock_mode_mismatch',
+        'Service writes are realtime-only; lockstep experiments use run tokens with decision leases');
+    }
     if (exp.clock_mode !== 'lockstep' || principal.kind !== 'run') return;
     if (leaseId == null) throw new DeviceError('lease_required', 'lockstep run writes require the Lease-Id header');
     const lease = this.leaseById(leaseId);

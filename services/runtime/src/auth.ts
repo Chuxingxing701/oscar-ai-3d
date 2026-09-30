@@ -65,6 +65,10 @@ export class Auth {
     if (authorization?.startsWith('Bearer ')) {
       const token = authorization.slice(7).trim();
       if (constantTimeEqual(token, this.runtime.operatorToken)) return {kind: 'operator', id: 'operator'};
+      // The Culture Agent's service token: durable read + realtime write
+      // access for long-lived sessions. It is only known to processes that
+      // can read <data>/secrets/ (mode 0700, Runtime + Agent).
+      if (constantTimeEqual(token, this.runtime.serviceToken)) return {kind: 'service', id: `runtime:${this.runtime.instanceId}`};
       const run = this.runtime.resolveRunToken(token);
       if (run) return {kind: 'run', id: `run:${run.run_id}`, run_id: run.run_id};
       return null; // invalid bearer: do not fall through to cookies
