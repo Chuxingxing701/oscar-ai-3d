@@ -1,5 +1,7 @@
 # 下一阶段实施交接（2026-09-30）
 
+**新一轮目标（设计已整理，代码尚未实施）：** 用户确认一个培养实验一个长期会话，预留上层总助手接口。技术选型、状态/记忆与事件驱动设计见 [长期会话设计](LONG_LIVED_AGENT_DESIGN.md)，可直接交给下一位编码 Agent 的任务见 [实施 Prompt](LONG_LIVED_AGENT_IMPLEMENTATION_PROMPT.md)。该阶段将真实模型与 realtime 调度纳入 MVP；下文“可选功能”是此前检查点的历史范围。
+
 先读 `agent.md`、`docs/WORK_ALLOCATION.md`、v0.4 主设计、`docs/API_CONTRACT.md`，再读 [最近改动审查](../reports/runtime_changes_review.md) 和 [异常复现](../reports/review/README.md)。C0–C3 是主要框架基线；不要将正常演示通过理解为所有异常恢复路径通过。
 
 最近的 Agent 入口、SSE 和画布闪白修复及针对性验证见 [跟进记录](../reports/agent_ui_followup.md)。

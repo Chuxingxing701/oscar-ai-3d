@@ -1,5 +1,7 @@
 # B 实施状态（C0–C3 主要框架检查点）
 
+**下一阶段设计，尚未实施：** [长期培养会话与选型](LONG_LIVED_AGENT_DESIGN.md)及[实施 Prompt](LONG_LIVED_AGENT_IMPLEMENTATION_PROMPT.md)。MVP 为一个实验一个长期会话，pi 领域 Agent、事件驱动 realtime、持久任务/记忆，以及未来总助手契约；下文已实现状态不因此改变。
+
 上下文切换后先读本文件。契约细节见 [API_CONTRACT.md](API_CONTRACT.md)，执行要求见 [B_IMPLEMENTATION_PROMPT.md](B_IMPLEMENTATION_PROMPT.md)。
 
 **最新接续入口（2026-09-30）：** [下一阶段实施交接](NEXT_IMPLEMENTATION_HANDOFF.md) 列出实际尚未修复的 Runtime 异常恢复问题、Agent 测试竞争问题及可选功能。本文各检查点的原验收结果是历史记录；最近复核与限制见 [改动审查](../reports/runtime_changes_review.md)。scripted 已实现，但只支持 lockstep、按当前场景运行；LLM 适配器尚未接入。
