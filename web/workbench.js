@@ -178,17 +178,16 @@ function updateScene(state) {
   if (!sceneReady || !scene) return;
   const display = projectDisplay(state, state.clock?.sim_time_s);
   // Push a new display snapshot only when something observable changed.
-  // Head motion depends on sim time only, so quantise it to 4 Hz: paused or
-  // lockstep-idle worlds stop re-rendering entirely (the scene never
-  // extrapolates on its own), realtime still moves smoothly.
+  // Render intermediate confirmed times on RAF, without extrapolating beyond
+  // this authoritative snapshot. Replay remains an exact seek.
   const key = JSON.stringify([display.experiment_id, display.paused,
-    Math.floor(display.sim_time_s / 0.25), display.plates, display.actions]);
+    display.sim_time_s, state.clock?.speed, Boolean(replay), display.plates, display.actions]);
   const now = performance.now();
   if (key === lastSceneKey && now - lastSceneAt < 1000) return; // 1 Hz keep-alive
   lastSceneKey = key;
   lastSceneAt = now;
   try {
-    scene.update(display);
+    scene.update(display, {interpolate: !replay, speed: state.clock?.speed ?? 1});
   } catch (error) {
     sceneUpdateErrors.push(error.message);
     showError(`场景更新失败：${error.message}`);
@@ -228,8 +227,11 @@ function startFeed(experimentId) {
     // event stream after event_seq converges any action that moved on since.
     fetchSnapshot: async () => {
       const snapshot = await api.state(experimentId);
-      const list = await api.actions(experimentId);
-      return {...snapshot, all_actions: list?.actions ?? []};
+      const [list, history] = await Promise.all([
+        api.actions(experimentId),
+        api.eventsPage(experimentId, {afterSeq: Math.max(0, snapshot.event_seq - 400), limit: 400}),
+      ]);
+      return {...snapshot, all_actions: list?.actions ?? [], timeline_events: history.events};
     },
     subscribe: afterSeq => new EventSource(`/api/v1/experiments/${experimentId}/events?after_seq=${afterSeq}`),
     onState(state, meta) {

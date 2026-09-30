@@ -89,7 +89,7 @@ export function mountTimeline(root, ctx) {
     const key = JSON.stringify([
       filter, state.head?.action_id, state.head?.stage?.stage, Math.round(stageProgress(state.head?.stage, now) * 20),
       (state.actions?.values ? [...state.actions.values()] : []).map(a => [a.action_id, a.status]).sort(),
-      (state.events || []).length, Math.round(now),
+      state.experimentId, state.events?.at(-1)?.seq, (state.events || []).length, Math.round(now),
       (state.plates || []).filter(p => p.shake?.active).map(p => p.plate_id), ctx.isReplay(), replaySeqOf(state),
     ]);
     if (key === lastKey) return;

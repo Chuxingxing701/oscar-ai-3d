@@ -136,6 +136,12 @@ export function applySnapshot(state, snapshot) {
   const next = {...state};
   next.experimentId = snapshot.experiment?.experiment_id ?? next.experimentId;
   next.eventSeq = snapshot.event_seq ?? next.eventSeq;
+  if (Array.isArray(snapshot.timeline_events)) {
+    // History is for display only: reapplying effects would corrupt snapshot
+    // inventory. Events newer than the snapshot arrive normally via SSE.
+    next.events = clone(snapshot.timeline_events.filter(ev =>
+      ev.experiment_id === next.experimentId && ev.seq <= next.eventSeq)).slice(-400);
+  }
   next.experiment = clone(snapshot.experiment) ?? null;
   next.device = clone(snapshot.device) ?? null;
   next.chamber = clone(snapshot.chamber) ?? null;
@@ -304,17 +310,19 @@ export function applyEvent(state, ev) {
       }
       if (effect.reservoir?.id && Number.isFinite(effect.reservoir.delta_ul)) {
         next.reservoirs = next.reservoirs.map(r => r.id === effect.reservoir.id
-          ? {...r, remaining_ul: Math.max(0, r.remaining_ul - effect.reservoir.delta_ul)} : r);
+          ? {...r, remaining_ul: Math.max(0, r.remaining_ul + effect.reservoir.delta_ul)} : r);
       }
       if (effect.waste?.id && Number.isFinite(effect.waste.delta_ul)) {
         next.wastes = next.wastes.map(w => w.id === effect.waste.id
-          ? {...w, used_ul: Math.max(0, w.used_ul - effect.waste.delta_ul)} : w);
+          ? {...w, used_ul: Math.max(0, w.used_ul + effect.waste.delta_ul)} : w);
       }
       if (effect.tips?.id && Number.isFinite(effect.tips.delta)) {
         next.tips = next.tips.map(t => t.id === effect.tips.id
-          ? {...t, remaining: t.remaining - effect.tips.delta} : t);
+          ? {...t, remaining: t.remaining + effect.tips.delta} : t);
       }
-      if (effect.shake === 'started' || effect.shake === 'stopped') next = applyShakeFlag(next, plateIdOf(p, merged), effect.shake === 'started', p, ev);
+      // plate.shake_started/stopped carry authoritative motion parameters.
+      // The following audit effect has no duration/speed/revision; projecting
+      // it again erased those fields and incremented the revision twice.
       break;
     }
     case 'action.succeeded':
@@ -460,7 +468,8 @@ function applyShakeFlag(state, plateId, active, payload, ev) {
       }
     : {active: false, started_at_sim_s: plate.shake?.started_at_sim_s ?? 0, duration_sim_s: plate.shake?.duration_sim_s ?? 0,
        ended_at_sim_s: payload.ended_at_sim_s ?? ev.sim_time_s, action_id: plate.shake?.action_id ?? null};
-  if (next.plates[index].revision != null) plate.revision += 1;
+  if (payload.revision != null) plate.revision = payload.revision;
+  else if (plate.revision != null) plate.revision += 1;
   return next;
 }
 
@@ -613,10 +622,10 @@ export function replayAt(finalSnapshot, events, seq) {
 
   const reservoirs = (finalSnapshot.reservoirs || []).map(r => {
     const total = inventory.reservoir.get(r.id) || 0;
-    let volume = r.remaining_ul + total; // deltas consume the reservoir
+    let volume = r.remaining_ul - total; // rewind signed committed deltas
     for (const ev of upTo) {
       const effect = ev.type === 'action.effect_committed' ? stepEffect(ev.payload || {}) : null;
-      if (effect?.reservoir?.id === r.id) volume -= effect.reservoir.delta_ul;
+      if (effect?.reservoir?.id === r.id) volume += effect.reservoir.delta_ul;
     }
     return {...r, remaining_ul: Math.max(0, Math.round(volume * 1000) / 1000)};
   });
@@ -631,10 +640,10 @@ export function replayAt(finalSnapshot, events, seq) {
   });
   const tips = (finalSnapshot.tips || []).map(t => {
     const total = inventory.tips.get(t.id) || 0;
-    let remaining = t.remaining + total; // initial
+    let remaining = t.remaining - total; // initial
     for (const ev of upTo) {
       const effect = ev.type === 'action.effect_committed' ? stepEffect(ev.payload || {}) : null;
-      if (effect?.tips?.id === t.id) remaining -= effect.tips.delta;
+      if (effect?.tips?.id === t.id) remaining += effect.tips.delta;
     }
     return {...t, remaining: Math.max(0, remaining)};
   });

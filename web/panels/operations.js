@@ -30,8 +30,11 @@ export function mountOperations(root, ctx) {
     scanGrid, h('p', {class: 'muted', style: {'font-size': '10px'}}, scanCount, '（单孔/多孔扫描；液体操作永远作用于整排）'), scanSubmit);
   const scanWells = new Set();
   let scanPlateBuiltFor = null;
+  let scanSelectionKey = '';
 
-  scanPlateSel.addEventListener('change', () => { scanWells.clear(); scanPlateBuiltFor = null; });
+  scanPlateSel.addEventListener('change', () => {
+    scanWells.clear(); scanPlateBuiltFor = null; syncScanForm(ctx.getState());
+  });
   scanForm.onsubmit = event => {
     event.preventDefault();
     if (!scanWells.size) return;
@@ -120,8 +123,10 @@ export function mountOperations(root, ctx) {
   };
 
   const messageEl = h('p', {role: 'status', 'aria-live': 'polite', style: {margin: '6px 0'}});
+  const clockHint = h('p', {class: 'muted'});
   const actionsList = h('div', {class: 'action-list', 'aria-label': '动作状态'});
   root.append(
+    clockHint,
     h('fieldset', {}, h('legend', {}, '扫描成像（合成图像）'), scanForm),
     h('fieldset', {}, h('legend', {}, '整排加液（排枪 6 通道，演示配置）'), addForm),
     h('fieldset', {}, h('legend', {}, '整排换液'), exchangeForm),
@@ -154,7 +159,12 @@ export function mountOperations(root, ctx) {
   function syncOptions(select, options, {keepSelection = true} = {}) {
     const previous = keepSelection ? select.value : null;
     const values = options.map(o => o.value);
-    if (select.dataset.values === values.join('|')) { ensureValue(select, previous, values); return; }
+    if (select.dataset.values === values.join('|')) {
+      options.forEach((option, index) => {
+        if (select.options[index].textContent !== option.label) select.options[index].textContent = option.label;
+      });
+      ensureValue(select, previous, values); return;
+    }
     select.replaceChildren(...options.map(o => h('option', {value: o.value}, o.label)));
     select.dataset.values = values.join('|');
     ensureValue(select, previous, values);
@@ -190,6 +200,14 @@ export function mountOperations(root, ctx) {
   function syncScanForm(state) {
     const plates = state.plates || [];
     syncOptions(scanPlateSel, plates.map(p => ({value: p.plate_id, label: p.plate_id})));
+    const selection = ctx.getSelection();
+    const selectionKey = JSON.stringify(selection);
+    const selectionChanged = selectionKey !== scanSelectionKey;
+    scanSelectionKey = selectionKey;
+    if (selectionChanged && plates.some(p => p.plate_id === selection?.plate_id)) {
+      scanPlateSel.value = selection.plate_id;
+      scanPlateBuiltFor = null;
+    }
     const plateId = scanPlateSel.value;
     const plate = plates.find(p => p.plate_id === plateId);
     if (!plate) { scanGrid.replaceChildren(); scanSubmit.disabled = true; return; }
@@ -199,15 +217,17 @@ export function mountOperations(root, ctx) {
       scanPlateBuiltFor = plateId;
       scanWells.clear();
       scanGrid.replaceChildren(...plate.wells.map(well => {
-        const box = h('input', {type: 'checkbox', onchange: e => {
+        const selectedWell = selectionChanged && selection?.plate_id === plateId && selection?.well_id === well.well_id;
+        if (selectedWell) scanWells.add(well.well_id);
+        const box = h('input', {type: 'checkbox', checked: selectedWell, onchange: e => {
           if (e.target.checked) scanWells.add(well.well_id); else scanWells.delete(well.well_id);
-          scanCount.textContent = `已选 ${scanWells.size} 孔`;
+          scanCount.textContent = `扫描目标：${plateId} · ${[...scanWells].join('、') || '未选孔'}（${scanWells.size} 孔）`;
           scanSubmit.disabled = ctx.isReplay() || !scanWells.size || Boolean(plate.shake?.active);
         }});
         return h('label', {class: 'inline'}, box, well.well_id);
       }));
     }
-    scanCount.textContent = `已选 ${scanWells.size} 孔`;
+    scanCount.textContent = `扫描目标：${plateId} · ${[...scanWells].join('、') || '未选孔'}（${scanWells.size} 孔）`;
     scanSubmit.disabled = ctx.isReplay() || !scanWells.size || Boolean(plate.shake?.active);
   }
 
@@ -265,6 +285,8 @@ export function mountOperations(root, ctx) {
   }
 
   function render(state) {
+    clockHint.hidden = ctx.isReplay() || state.clock?.clock_mode !== 'lockstep' || state.run?.status === 'active';
+    clockHint.textContent = '当前为步进模式：提交后需单步推进；切换 realtime 可连续执行并观看动画。“推进至空闲”会直接完成动作。';
     syncScanForm(state);
     syncRowForm(addParts, state);
     syncRowForm(exchangeParts, state);

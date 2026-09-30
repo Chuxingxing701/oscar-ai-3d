@@ -54,12 +54,14 @@ scene.dispose();
 ```
 
 - `update` 每次是完整的显示快照；省略的板/孔清空液位覆盖，省略 shake 停止振荡，`actions: []` 清除光效并归待命位。先校验再替换，非法 ID、体积或阶段不会部分修改场景。`capacity_ul` 必须由 B 提供，不在场景中推断设备容量。
-- 受控模式只读取 `sim_time_s`，不按 wall time 擅自推进。暂停时 B 保持此值；B 可按其时钟投影频率发送完整快照。相同快照在任意帧率、重连或倒放后产生相同机械/液位状态。`paused` 是 Runtime 暂停标识；暂停时的显式 step/seek 仍可通过新快照显示。
+- 受控模式以 `sim_time_s` 为权威时间，默认精确投影。实时操作台调用 `update(snapshot, {interpolate: true, speed})`，在已确认时间之间逐帧插值机械位置和振荡；展示时间不超过最新服务器时刻，断线后最多补完当前确认区间即停下。液量始终直接取最新已提交快照，逐帧插值不修改库存/液量。暂停、重连初次快照、Experiment 切换和倒放精确定位；回放不启用平滑。`paused` 是 Runtime 暂停标识；暂停时的显式 step/seek 仍可通过新快照显示。
 - `actions` 表示当前占用移液头的阶段（最多一个），不是 Runtime 的全部活动动作；shake 放在板上，可有多板。支持 `moving/lowering/aspirating/dispensing/raising/scanning/picking_tip/dropping_tip`。
+- 操作台投影同时携带 `action_id`。开启平滑时，场景按显示时刻采样同一动作已接收的阶段，保留尚未显示完的一秒升降，不能在下一阶段到达时直接把显示时间夹到新阶段起点。阶段缺失、动作替换、取消、暂停/回放或切换实验立即以已知快照定位，避免播放旧动作。取头/弃头阶段内以平滑的下降—抬升示意衔接两端高位；不改变 Runtime 原语时长和库存提交点。
 - 移液 `target` / `from_target` 对培养板使用显式 `{plate_id, row_id}`（如 A，作用于 A1–A6）；整排共用一次移液头阶段。单孔 `well_id` 输入会被拒绝，防止把单孔授权静默扩展成整排动作。扫描与选孔仍用 `{plate_id, well_id?}`。储液/废液支持 `{resource_id}`。吸头工位保留映射；原 96 位吸头盒与 6 通道排枪的取头布局仍需 B/A 后续联合确定，不能将示意动作当成取头可达性证明。
 - `moving` 从 `from_target` 到 `target`；缺省源为 home。`tool: 'camera'` 按镜头偏移定位，其他按整排中心和针排深度定位。先升后移应由 Runtime 阶段体现；场景横移固定在高位。
 - `from_pose_m?: [motionX, motionZ, motionY]` 是阶段起始处的 glTF 平移量（等价世界 x、竖直 y、深度 z），用于直接恢复未落在标准端点的阶段。Z 下探限制为 0 至 −0.12 m。不会根据前一次绘制的坐标猜测起点。
 - `shake` 使用 `active/started_at_sim_s/duration_sim_s`，可选 `frequency_hz/amplitude_m`。只做展示，频率上限 4 Hz、半径上限 1.5 mm，结束/取消归零。板、载台、液体和高亮一起移动。
+- Runtime 的 `plate.shake_started/stopped` 事件投影振荡参数；随后到达的 `action.effect_committed` 只记录效果，不能用其中缺失的参数覆盖振荡时长/速度，也不能重复增加 revision。否则实时视图会收到 0 秒振荡，即使刷新后的完整快照是正常的。
 - `setDisplayPaused(true)` 仅冻结当前显示，仍接受并保存后续快照；恢复后立即显示最新状态，不发送 Runtime 暂停命令。切换 Experiment 会清除选择与冻结，避免旧世界残留。只读回放同样调用 `update`，无写接口。
 - `setAnimationMode('idle')` 清空受控覆盖、恢复原 18 秒循环；`setPlaying` 控制待机播放。进入受控模式停止 clip，避免两个动画源写同一节点。
 - `focus({device_id:'oscar-01'})` 聚焦整机，`focus({plate_id, well_id?})` 聚焦板孔；`select(null)` 清除高亮。拾取返回 `{device_id, resource_id, plate_id?, well_id?}`。拖动和多指手势不触发选孔。相机控制不改变设备状态。
@@ -90,3 +92,9 @@ Blender `(x,y,z)` → glTF `(x,z,-y)`。A 行在远端（较小 glTF z）；列�
 ## B 侧需要同步的排枪语义
 
 以本轮用户的整排同时加液要求为准，B 实现时需将液体动作展开为排级阶段，逐孔记录效果与吸头消耗；整排同时开始/结束，库存按全部目标孔实际体积求和。行选择与容量校验必须在 Runtime 确认后再传给场景，不能靠场景动画补齐业务效果。A 此次只更新场景、合成预览及交接，不代为实现 Runtime。
+
+## 扫描几何修正（2026-09-30）
+
+针对用户截图中的左壁穿模，随头相机移至头部左下侧；位姿与可见几何共用 `state.js` 的 `CAMERA_POSITION`，六通道侧框/安装螺栓各向内收 28 mm。扫描锥缩为单孔足迹，并从真实镜头端面生成中心线和目标孔光斑。新增基于原 GLB 的运动网格对舱壁/立柱碰撞采样及光效端点测试，详见 [扫描几何修复记录](../reports/scan_geometry_fix.md)。原 GLB、针轴间距、板孔坐标和 Runtime 参数未改变。
+
+本轮操作台复核、库存/环境时间线补修、实际验证与真实 Runtime 演示见 [改动审查记录](../reports/runtime_changes_review.md)。`action.effect_committed` 的库存增量有符号，实时显示和历史回放均遵循同一语义；从事件补载历史仅用于显示，不重复执行效果。

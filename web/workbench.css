@@ -95,7 +95,7 @@ dt{color:#6d7f92}dd{margin:0;color:#21354b;font-variant-numeric:tabular-nums}
 .tab-panel[hidden]{display:none}
 
 /* ---- resources ---- */
-.wellgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:4px 0 2px}
+.wellgrid{display:grid;grid-template-columns:14px repeat(6,minmax(0,1fr));gap:4px;margin:4px 0 2px}
 .wellgrid .rowlabel{font-size:10px;color:#6d7f92;align-self:center;text-align:center}
 .well{position:relative;border:1px solid #c4cfdb;border-radius:6px;background:#fff;padding:0;height:44px;overflow:hidden;font-size:9px;color:#43596f;display:flex;flex-direction:column;justify-content:flex-end}
 .well .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#7fb7e8,#5a9ad8);opacity:.75}

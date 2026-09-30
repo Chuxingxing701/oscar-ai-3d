@@ -102,6 +102,7 @@ export function projectDisplay(snapshot, simTimeS = null) {
     if (target || head.stage.stage === 'moving') {
       const from = head.stage.from_target ? normalizeTarget(action ?? null, {target: head.stage.from_target}) : undefined;
       actions.push({
+        action_id: head.action_id,
         stage: head.stage.stage,
         target,
         from_target: from ?? undefined,

@@ -23,8 +23,14 @@ async function loadRig() {
   const loader = new GLTFLoader();
   loader.register(() => ({name: 'Headless_skip_textures', loadTexture: () => Promise.resolve(null)}));
   const gltf = await loader.parseAsync(blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength), '');
+  const obstacles = [];
+  gltf.scene.traverse(o => {
+    if (/^Chamber_(left|right|back)_wall$|^Motion_support_column/.test(o.name)) {
+      obstacles.push({name: o.name, box: new THREE.Box3().setFromObject(o)});
+    }
+  });
   const rig = buildSceneModel(gltf.scene, map);
-  return {gltf, rig};
+  return {gltf, rig, obstacles};
 }
 
 test('scene map binds the exact GLB, stable station IDs, counts and actual world coordinates', () => {
@@ -186,4 +192,65 @@ test('preview changes an entire selected row simultaneously and leaves other row
     assert.deepEqual(middle.actions[0].target, {plate_id: 'plate-02', row_id: 'C'});
     validateSnapshot(map, middle);
   }
+});
+
+test('real camera lens and scan cone align to requested wells on either plate', async () => {
+ const {rig,gltf}=await loadRig();
+ for(const plate of map.stations.filter(s=>s.kind==='plate')) for(const well of plate.wells){
+   const state=previewSnapshot(map,'scan',10,plate.id,well.well_id).state;
+   rig.update(state);gltf.scene.updateMatrixWorld(true);
+   const lens=gltf.scene.getObjectByName('Camera_lens').getWorldPosition(new THREE.Vector3());
+   near(lens.x,well.center_m[0]);near(lens.z,well.center_m[2]);
+   near(rig.effects.scan.position.x,well.center_m[0]);near(rig.effects.scan.position.z,well.center_m[2]);
+ }
+});
+
+test('head meshes clear chamber walls and support columns throughout scan and row paths', async () => {
+  const {rig,gltf,obstacles}=await loadRig();
+  const motion=gltf.scene.getObjectByName('Motion');
+  const meshes=[];motion.traverse(o=>{if(o.isMesh&&o.visible)meshes.push(o);});
+  const check=(action,time)=>{
+    rig.update({experiment_id:'clearance',sim_time_s:time,paused:true,plates:[],actions:[action]});
+    gltf.scene.updateMatrixWorld(true);
+    for(const mesh of meshes){
+      const bounds=new THREE.Box3().setFromObject(mesh);
+      for(const obstacle of obstacles) assert.equal(bounds.intersectsBox(obstacle.box),false,
+        `${mesh.name} intersects ${obstacle.name}: ${JSON.stringify(action.target)} / ${action.stage} @ ${time}`);
+    }
+  };
+  for(const station of map.stations.filter(s=>s.kind==='plate')){
+    for(const well of station.wells){
+      const target={plate_id:station.id,well_id:well.well_id};
+      const a={target,tool:'camera',stage_started_at_sim_s:0,stage_duration_sim_s:4};
+      check({...a,stage:'scanning'},2);
+      for(let t=0;t<=4;t+=.25)check({...a,stage:'moving'},t);
+    }
+    for(const row of 'ABCD'){
+      const a={target:{plate_id:station.id,row_id:row},stage_started_at_sim_s:0,stage_duration_sim_s:4};
+      for(const stage of ['moving','lowering','dispensing','raising']){
+        for(let t=0;t<=4;t+=.25)check({...a,stage},t);
+      }
+    }
+  }
+});
+
+test('scan ray and cone apex start at the real lens face and end inside the selected well', async()=>{
+  const {rig,gltf}=await loadRig();
+  for(const plate of map.stations.filter(s=>s.kind==='plate'))for(const well of plate.wells){
+    rig.update(previewSnapshot(map,'scan',10,plate.id,well.well_id).state);
+    gltf.scene.updateMatrixWorld(true);
+    const lens=gltf.scene.getObjectByName('Camera_lens').localToWorld(new THREE.Vector3(0,-.004,0));
+    const end=new THREE.Vector3(...well.center_m);end.y+=.007;
+    const {scan,scanRay,scanSpot}=rig.effects;
+    const apex=scan.localToWorld(new THREE.Vector3(0,.5,0));
+    const base=scan.localToWorld(new THREE.Vector3(0,-.5,0));
+    near(apex.distanceTo(lens),0);near(base.distanceTo(end),0);
+    const positions=scanRay.geometry.attributes.position;
+    near(scanRay.localToWorld(new THREE.Vector3().fromBufferAttribute(positions,0)).distanceTo(lens),0);
+    near(scanRay.localToWorld(new THREE.Vector3().fromBufferAttribute(positions,1)).distanceTo(end),0);
+    near(scanSpot.getWorldPosition(new THREE.Vector3()).distanceTo(end),0);
+    assert.ok(scan.geometry.parameters.radius<=.006,'footprint fits a sample well, not a 70 mm circle');
+  }
+  rig.update({experiment_id:'done',sim_time_s:30,paused:true,plates:[],actions:[]});
+  for(const key of ['scan','scanRay','scanSpot'])assert.equal(rig.effects[key].visible,false);
 });

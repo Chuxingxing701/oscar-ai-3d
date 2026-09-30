@@ -1,4 +1,5 @@
 // Small shared DOM/format helpers for workbench panels (no framework).
+import {parseEnvSample, parseEnvTargets} from '../api/store.js';
 
 export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
@@ -89,11 +90,16 @@ export function eventDetail(ev) {
     case 'action.cancelled': return p.cancel_reason || p.reason || '取消';
     case 'observation.created': return `${p.plate_id || ''} ${Array.isArray(p.wells) ? p.wells.join('、') : ''} ${p.mode === 'stereo' ? '双目' : '单目'}`.trim();
     case 'environment.targets_set': {
-      const targets = p.chamber_targets || p;
+      const targets = parseEnvTargets(p) || {};
       return Object.entries(targets).filter(([k]) => ['temperature_c', 'co2_pct', 'humidity_pct'].includes(k))
         .map(([k, v]) => ({temperature_c: '温度', co2_pct: 'CO₂', humidity_pct: '湿度'}[k] + '=' + v)).join(' ');
     }
-    case 'environment.sampled': return `温度 ${fmtNum(p.temperature_c?.observed ?? p.temperature_c)}°C`;
+    case 'environment.sampled': {
+      const channels = parseEnvSample(p) || {};
+      // Summarize this event's observations, never current values or targets.
+      const reading = key => Number.isFinite(channels[key]?.observed) ? fmtNum(channels[key].observed) : '—';
+      return `温度 ${reading('temperature_c')}°C · CO₂ ${reading('co2_pct')}% · 湿度 ${reading('humidity_pct')}%RH`;
+    }
     case 'plate.shake_started': return `${p.plate_id} ${p.speed_rpm ?? '?'} rpm ${p.duration_sim_s ?? '?'} s`;
     case 'plate.shake_stopped': return p.plate_id || '';
     case 'decision.granted': return `lease#${p.lease?.lease_id ?? '?'} ${(p.lease?.triggers || []).map(t => t.kind).join(',')}`;

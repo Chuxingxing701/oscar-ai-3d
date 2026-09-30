@@ -15,6 +15,7 @@ const {values} = parseArgs({
     'runtime-port': {type: 'string'},
     'agent-port': {type: 'string'},
     'data-dir': {type: 'string'},
+    'allow-host': {type: 'string', multiple: true},
   },
   strict: false,
 });
@@ -104,7 +105,8 @@ function waitReady(child: ChildProcess, prefix: string, timeoutMs = 120_000): Pr
 const agent = spawnChild('agent', ['services/culture-agent/src/main.ts',
   '--port', String(agentPort), '--data-dir', dataDir, '--runtime-url', `http://127.0.0.1:${runtimePort}`]);
 const runtime = spawnChild('runtime', ['services/runtime/src/main.ts',
-  '--port', String(runtimePort), '--data-dir', dataDir, '--agent-url', `http://127.0.0.1:${agentPort}`]);
+  '--port', String(runtimePort), '--data-dir', dataDir, '--agent-url', `http://127.0.0.1:${agentPort}`,
+  ...((values['allow-host'] as string[] | undefined) ?? []).flatMap(host => ['--allow-host', host])]);
 
 const agentReady = waitReady(agent, 'OSCAR_AGENT_READY ');
 const runtimeReady = waitReady(runtime, 'OSCAR_RUNTIME_READY ');

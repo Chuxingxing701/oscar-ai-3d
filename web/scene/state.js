@@ -1,5 +1,8 @@
 // Display projection only: no clock, inventory mutation, networking or completion callbacks.
 export const clamp01 = value => Math.max(0, Math.min(1, value));
+// Camera sits on the left front of the head so reaching the leftmost well
+// keeps the head body inside the chamber. Shared with the visible geometry.
+export const CAMERA_POSITION = [-.07, 1.262, .04];
 export const STAGES = ['moving', 'lowering', 'aspirating', 'dispensing', 'raising',
   'scanning', 'picking_tip', 'dropping_tip'];
 
@@ -43,7 +46,7 @@ function targetPose(map, target, lowered = false, scanning = false) {
   const found = findTarget(map, target);
   if (!found) return [...map.motion.home_m];
   if (!scanning) pipetteLayout(map, target);
-  const offset = scanning ? [.058, 1.325, .083] : [0, map.motion.row_head.tip_height_m, map.motion.row_head.tip_depth_m];
+  const offset = scanning ? CAMERA_POSITION : [0, map.motion.row_head.tip_height_m, map.motion.row_head.tip_depth_m];
   return [found.center[0] - offset[0], lowered ? -map.motion.lowering_m : 0,
     found.center[2] - offset[2]];
 }
@@ -59,11 +62,21 @@ export function sampleMotion(map, action, time) {
       to = targetPose(map, target, false, action.tool === 'camera');
       break;
     case 'lowering':
-      from = targetPose(map, target); to = targetPose(map, target, true); break;
+      from = targetPose(map, target, false, action.tool === 'camera'); to = targetPose(map, target, true, action.tool === 'camera'); break;
     case 'raising':
-      from = targetPose(map, target, true); to = targetPose(map, target); break;
+      from = targetPose(map, target, true, action.tool === 'camera'); to = targetPose(map, target, false, action.tool === 'camera'); break;
     case 'scanning':
       from = to = targetPose(map, target, false, true); break;
+    case 'picking_tip':
+    case 'dropping_tip': {
+      // These primitives include the approach and retract within their own
+      // duration; Runtime does not emit separate lower/raise stages for them.
+      const high = targetPose(map, target), low = targetPose(map, target, true);
+      const approach = t < .5 ? t * 2 : (1 - t) * 2;
+      const eased = approach * approach * (3 - 2 * approach);
+      from = to = high.map((v, i) => v + (low[i] - v) * eased);
+      break;
+    }
     default:
       from = to = targetPose(map, target, true);
   }

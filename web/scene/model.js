@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {findTarget, pipetteLayout, sampleMotion, sampleShake} from './state.js';
+import {CAMERA_POSITION, findTarget, pipetteLayout, sampleMotion, sampleShake} from './state.js';
 
 export function batchStatic(group, protectedPrefixes = []) {
   group.updateWorldMatrix(true, true);
@@ -102,9 +102,19 @@ export function buildSceneModel(model, map) {
     }
   }
   const virtualCamera = new THREE.Group(); virtualCamera.name = 'Virtual_head_camera'; axes[2].add(virtualCamera);
-  mesh('Camera_mount', new THREE.BoxGeometry(.012, .014, .06), metal, virtualCamera, [.058, 1.34, .055]);
-  mesh('Camera_body', new THREE.BoxGeometry(.037, .027, .032), teal, virtualCamera, [.058, 1.34, .083]);
-  mesh('Camera_lens', new THREE.CylinderGeometry(.009, .009, .008, 24), lens, virtualCamera, [.058, 1.322, .083]);
+  const [cx, cy, cz] = CAMERA_POSITION;
+  mesh('Camera_mount', new THREE.BoxGeometry(.012, .014, .024), metal, virtualCamera, [cx, cy + .035, cz]);
+  mesh('Camera_body', new THREE.BoxGeometry(.037, .027, .032), teal, virtualCamera, [cx, cy + .018, cz]);
+  const cameraLens = mesh('Camera_lens', new THREE.CylinderGeometry(.009, .009, .008, 24), lens, virtualCamera, CAMERA_POSITION);
+  // Match the six-channel display head: the original wide orange frames
+  // intersect the left wall even when the needle row itself is aligned.
+  for (const sign of [-1, 1]) {
+    for (const name of [`Orange_frame_${sign}`, `Frame_mount_bolt_${sign}`]) {
+      const part = model.getObjectByName(name);
+      if (!part) throw new Error(`GLB node missing: ${name}`);
+      part.position.x -= sign * .028;
+    }
+  }
   const head = map.motion.row_head;
   // Re-space the actual shafts, connectors and tubes, not just their glow effects.
   // The shipped eight-needle reference is retained in GLB; this six-channel
@@ -132,8 +142,14 @@ export function buildSceneModel(model, map) {
     }));
     currentLayout.tips.forEach((tip, i) => tipLight.children[i].position.fromArray(tip));
   }
-  const scan = mesh('Virtual_scan_cone', new THREE.ConeGeometry(.035, 1, 32, 1, true),
+  const scan = mesh('Virtual_scan_cone', new THREE.ConeGeometry(.0058, 1, 32, 1, true),
     new THREE.MeshBasicMaterial({color: 0x63c9f0, transparent: true, opacity: .12, depthWrite: false, side: THREE.DoubleSide}), overlay);
+  const scanRay = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+    new THREE.LineBasicMaterial({color: 0x169be3, transparent: true, opacity: .85}));
+  scanRay.name = 'Virtual_scan_axis'; scanRay.userData.pickThrough = true; overlay.add(scanRay);
+  const scanSpot = mesh('Virtual_scan_footprint', new THREE.TorusGeometry(.0058, .0004, 6, 32),
+    new THREE.MeshBasicMaterial({color: 0x169be3}), overlay);
+  scanSpot.rotation.x = -Math.PI / 2; scanSpot.userData.pickThrough = true;
   const highlight = mesh('Selection_ring', new THREE.TorusGeometry(.009, .0008, 8, 40),
     new THREE.MeshBasicMaterial({color: 0xffbf47, depthTest: false}), overlay);
   highlight.rotation.x = -Math.PI / 2; highlight.renderOrder = 10;
@@ -162,11 +178,12 @@ export function buildSceneModel(model, map) {
     const marker = well ? highlight : outline;
     marker.visible = true; marker.position.copy(position); marker.position.y += well ? .009 : .015;
   }
-  function update(state) {
+  function update(state, {motionOnly = false} = {}) {
     const time = state?.sim_time_s ?? 0;
     for (const station of map.stations.filter(s => s.kind === 'plate')) {
       const plate = state?.plates.find(p => p.plate_id === station.id);
       plates.get(station.id).position.fromArray(sampleShake(plate?.shake, time));
+      if (motionOnly) continue; // liquid matrices change only with authoritative snapshots
       const liquid = instances.get(station.id);
       station.wells.forEach((w, i) => {
         const value = plate?.wells.find(v => v.well_id === w.well_id);
@@ -178,7 +195,7 @@ export function buildSceneModel(model, map) {
       });
       liquid.instanceMatrix.needsUpdate = true;
     }
-    flow.visible = scan.visible = tipLight.visible = false;
+    flow.visible = scan.visible = scanRay.visible = scanSpot.visible = tipLight.visible = false;
     const action = state?.actions[0];
     configureHead(action && action.stage !== 'scanning' && action.tool !== 'camera' ? action.target : null);
     if (state) {
@@ -194,8 +211,19 @@ export function buildSceneModel(model, map) {
           effect.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), start.clone().sub(target).normalize());
         }
         if (scanning) {
-          beam(scan, [.058, 1.318, .083], selectionPosition(action.target).position);
-          scan.visible = true;
+          // Read the actual lens face transform rather than a second hard-coded
+          // camera offset. Cone apex, centre line and footprint share endpoints.
+          const start = overlay.worldToLocal(cameraLens.localToWorld(new THREE.Vector3(0, -.004, 0)));
+          const end = selectionPosition(action.target).position;
+          end.y += .007;
+          scan.position.copy(start).add(end).multiplyScalar(.5);
+          scan.scale.y = start.distanceTo(end);
+          scan.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), start.clone().sub(end).normalize());
+          const points = scanRay.geometry.attributes.position;
+          points.setXYZ(0, ...start.toArray()); points.setXYZ(1, ...end.toArray()); points.needsUpdate = true;
+          scanRay.geometry.computeBoundingSphere();
+          scanSpot.position.copy(end);
+          scan.visible = scanRay.visible = scanSpot.visible = true;
         } else {
           currentLayout.tips.forEach((local, i) => {
             const well = currentLayout.wells[i];
@@ -217,5 +245,5 @@ export function buildSceneModel(model, map) {
   return {axes, plates, instances, pickables, update, select, selectionPosition,
     rowHeadStatus: () => ({channels: head.channels, wellIds: currentLayout.wells.map(w => w.well_id),
       tipsLocal: currentLayout.tips.map(t => [...t]), activeFlows: flow.visible ? flow.children.length : 0}),
-    selection: () => selected ? {...selected} : null, effects: {flow, scan, tipLight}, virtualCamera};
+    selection: () => selected ? {...selected} : null, effects: {flow, scan, scanRay, scanSpot, tipLight}, virtualCamera};
 }

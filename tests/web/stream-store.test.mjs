@@ -45,6 +45,21 @@ function snapshotFixture({eventSeq = 3, simTime = 100, volume = 500} = {}) {
   };
 }
 
+test('snapshot timeline history never reapplies effects or includes events ahead of the snapshot', () => {
+  const snapshot = snapshotFixture({eventSeq: 3, volume: 500});
+  snapshot.timeline_events = [
+    {experiment_id: 'exp-01', seq: 2, type: 'action.effect_committed', payload: {
+      plate_id: 'plate-01', effect: {wells: [{well_id: 'A1', volume_ul: 900}]},
+    }},
+    {experiment_id: 'exp-01', seq: 4, type: 'environment.sampled', payload: {}},
+    {experiment_id: 'another-experiment', seq: 1, type: 'environment.sampled', payload: {}},
+  ];
+  const state = applySnapshot(initialState(), snapshot);
+  assert.deepEqual(state.events.map(e => e.seq), [2]);
+  assert.equal(state.eventSeq, 3);
+  assert.equal(state.plates[0].wells[0].volume_ul, 500);
+});
+
 test('applySnapshot is authoritative; applyEvent merges actions and effects', () => {
   let state = initialState();
   state = applySnapshot(state, snapshotFixture());
@@ -66,7 +81,7 @@ test('applySnapshot is authoritative; applyEvent merges actions and effects', ()
 
   state = applyEvent(state, {seq: 7, experiment_id: 'exp-01', sim_time_s: 106, type: 'action.effect_committed', action_id: 'act-1',
     payload: {effect: {step_index: 6, stage: 'dispensing', committed_at_sim_s: 106,
-      wells: [{well_id: 'A1', delta_ul: 200}], reservoir: {id: 'media-01', delta_ul: 1200}, tips: {id: 'tips-01', delta: 6}},
+      wells: [{well_id: 'A1', delta_ul: 200}], reservoir: {id: 'media-01', delta_ul: -1200}, tips: {id: 'tips-01', delta: -6}},
       plate_id: 'plate-01', wells: [{well_id: 'A1', volume_ul: 700}, {well_id: 'A2', volume_ul: 700}]}});
   const plate = state.plates[0];
   assert.equal(plate.wells.find(w => w.well_id === 'A1').volume_ul, 700, 'post-commit volume wins');
@@ -87,8 +102,9 @@ test('delta-only effect payloads still update volumes', () => {
   let state = applySnapshot(initialState(), snapshotFixture());
   state = applyEvent(state, {seq: 4, experiment_id: 'exp-01', sim_time_s: 101, type: 'action.effect_committed', action_id: 'act-1',
     payload: {plate_id: 'plate-01', effect: {step_index: 3, stage: 'aspirating', committed_at_sim_s: 101,
-      wells: [{well_id: 'A2', delta_ul: -120}]}}});
+      wells: [{well_id: 'A2', delta_ul: -120}], waste: {id: 'waste-01', delta_ul: 120}}}});
   assert.equal(state.plates[0].wells.find(w => w.well_id === 'A2').volume_ul, 380);
+  assert.equal(state.wastes[0].used_ul, 1120, 'positive waste delta increases used volume');
 });
 
 test('shake, environment, run, lease and clock events update state', () => {
@@ -146,7 +162,7 @@ test('runtime payload shapes: scope-only accepted, record wells, sample/targets 
   state = applyEvent(state, {seq: 5, experiment_id: 'exp-01', sim_time_s: 103, type: 'action.effect_committed', action_id: 'act-9',
     payload: {action_id: 'act-9', effect: {step_index: 6, stage: 'dispensing', committed_at_sim_s: 103,
       wells: [{well_id: 'A1', delta_ul: 200}, {well_id: 'A2', delta_ul: 200}],
-      reservoir: {id: 'media-01', delta_ul: 1200}}, wells: {A1: 700, A2: 700}}});
+      reservoir: {id: 'media-01', delta_ul: -1200}}, wells: {A1: 700, A2: 700}}});
   assert.equal(state.plates[0].wells.find(w => w.well_id === 'A1').volume_ul, 700, 'record-form wells parsed');
   assert.equal(state.plates[0].wells.find(w => w.well_id === 'A3').volume_ul, 500);
 
@@ -173,7 +189,7 @@ test('runtime payload shapes: scope-only accepted, record wells, sample/targets 
       payload: {capability: 'media.add', scope: {plate_id: 'plate-01', row_id: 'A', wells: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6']}}},
     {seq: 5, experiment_id: 'exp-01', sim_time_s: 103, type: 'action.effect_committed', action_id: 'act-9',
       payload: {effect: {step_index: 6, stage: 'dispensing', committed_at_sim_s: 103,
-        wells: [{well_id: 'A1', delta_ul: 200}, {well_id: 'A2', delta_ul: 200}], reservoir: {id: 'media-01', delta_ul: 1200}},
+        wells: [{well_id: 'A1', delta_ul: 200}, {well_id: 'A2', delta_ul: 200}], reservoir: {id: 'media-01', delta_ul: -1200}},
         wells: {A1: 700, A2: 700}}},
     {seq: 6, experiment_id: 'exp-01', sim_time_s: 104, type: 'action.succeeded', action_id: 'act-9', payload: {summary: {wells: {}}}},
   ];
@@ -329,7 +345,7 @@ function replayEvents() {
     {seq: 6, experiment_id: 'exp-old', sim_time_s: 23, type: 'action.effect_committed', action_id: 'act-1',
       payload: {plate_id: 'plate-01', effect: {step_index: 6, stage: 'dispensing', committed_at_sim_s: 23,
         wells: [{well_id: 'A1', delta_ul: 200}, {well_id: 'A2', delta_ul: 200}],
-        reservoir: {id: 'media-01', delta_ul: 1200}, tips: {id: 'tips-01', delta: 6}},
+        reservoir: {id: 'media-01', delta_ul: -1200}, tips: {id: 'tips-01', delta: -6}},
         wells: [{well_id: 'A1', volume_ul: 700}, {well_id: 'A2', volume_ul: 700}]}},
     {seq: 7, experiment_id: 'exp-old', sim_time_s: 26, type: 'action.succeeded', action_id: 'act-1', payload: {partial: false}},
     {seq: 8, experiment_id: 'exp-old', sim_time_s: 30, type: 'plate.shake_started',
@@ -408,4 +424,19 @@ test('overlapping resyncs: only the newest snapshot applies and subscribes', asy
   await tick();
   assert.equal(feed.state.eventSeq, 20);
   assert.match(source.url, /after_seq=20$/);
+});
+
+test('shake audit effects preserve motion parameters and do not double count revision', () => {
+  let s = applySnapshot(initialState('exp-01'), snapshotFixture());
+  const ev = (seq, type, payload) => ({experiment_id:'exp-01', seq, sim_time_s:100, action_id:'shake-1', type, payload});
+  s = applyEvent(s, ev(4, 'action.accepted', {action_id:'shake-1', capability:'plate.shake', arguments:{plate_id:'plate-01'}, scope:{plate_id:'plate-01'}}));
+  s = applyEvent(s, ev(5, 'plate.shake_started', {plate_id:'plate-01', action_id:'shake-1', speed_rpm:300, duration_sim_s:60, revision:3}));
+  s = applyEvent(s, ev(6, 'action.effect_committed', {effect:{shake:'started', stage:'shaking', step_index:0}}));
+  assert.equal(s.plates[0].shake.duration_sim_s,60);
+  assert.equal(s.plates[0].shake.speed_rpm,300);
+  assert.equal(s.plates[0].revision,3);
+  s = applyEvent(s, ev(7, 'plate.shake_stopped', {plate_id:'plate-01', ended_at_sim_s:160, revision:4}));
+  s = applyEvent(s, ev(8, 'action.effect_committed', {effect:{shake:'stopped', stage:'shaking', step_index:0}}));
+  assert.equal(s.plates[0].shake.active,false);
+  assert.equal(s.plates[0].revision,4);
 });

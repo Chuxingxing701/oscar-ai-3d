@@ -4,6 +4,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
 import {buildSceneModel} from './model.js';
 import {validateSnapshot} from './state.js';
+import {PresentationClock} from './presentation.js';
 
 const DEFAULT_MAP = new URL('./scene-map.json', import.meta.url);
 
@@ -42,6 +43,8 @@ export function mountScene(container, options = {}) {
   let ready = false, disposed = false, mode = 'exterior', animationMode = 'idle';
   let playing = true, displayPaused = false, frameCount = 0, raf = 0, transition = null, dirty = true;
   let previousFrame = performance.now();
+  const presentation = new PresentationClock();
+  let renderedTime = null;
   const ownedGeometries = new Set(), ownedMaterials = new Set(), ownedTextures = new Set();
   function collect(root) {
     root.traverse(o => {
@@ -143,31 +146,43 @@ export function mountScene(container, options = {}) {
     } else rig?.update(snapshot ?? {sim_time_s: 0, plates: [], actions: []});
     notify();
   }
-  function update(state) {
+  function update(state, presentationOptions = {}) {
     if (disposed || !ready) throw new Error('Await scene.ready before update');
     validateSnapshot(map, state);
     const changedExperiment = snapshot && snapshot.experiment_id !== state.experiment_id;
     snapshot = structuredClone(state);
     if (changedExperiment) {displayPaused = false; select(null);}
+    const animated = snapshot.actions.length || snapshot.plates.some(plate => plate.shake?.active);
+    presentation.update(snapshot, performance.now(), displayPaused || !animated ? {} : presentationOptions);
     setAnimationMode('controlled');
-    if (!displayPaused) {rig.update(snapshot); dirty = true;}
+    if (!displayPaused) {
+      const frame = presentation.frame(snapshot, performance.now());
+      renderedTime = frame.sim_time_s;
+      rig.update(frame); dirty = true;
+    }
     notify();
   }
   function setDisplayPaused(value) {
     displayPaused = Boolean(value);
-    if (!displayPaused && snapshot) {rig.update(snapshot); dirty = true;}
+    if (!displayPaused && snapshot) {
+      presentation.update(snapshot, performance.now());
+      renderedTime = snapshot.sim_time_s; rig.update(snapshot); dirty = true;
+    }
     notify();
   }
   function setPlaying(value) {playing = Boolean(value); notify();}
   function getStatus() {
     return {ready, disposed, mode, playing, displayPaused, animationMode,
       experimentId: snapshot?.experiment_id ?? null, simTime: snapshot?.sim_time_s ?? null,
+      renderedSimTime: renderedTime,
       paused: snapshot?.paused ?? false, time: mixer?.time ?? 0, animationCount: actions.length,
       exteriorVisible: exterior?.visible, autoRotate: controls.autoRotate, transitioning: !!transition, frameCount,
       drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
       renderer: {...renderer.info.memory}, selection: rig?.selection() ?? null,
       motion: rig?.axes.map(axis => axis.position.toArray()),
       rowHead: rig?.rowHeadStatus() ?? null,
+      headTarget: snapshot?.actions[0]?.target ?? null,
+      cameraLens: rig?.virtualCamera.getObjectByName('Camera_lens').getWorldPosition(new THREE.Vector3()).toArray() ?? null,
       shakes: rig ? Object.fromEntries([...rig.plates].map(([id, group]) => [id, group.position.toArray()])) : {},
       effects: rig ? Object.fromEntries(Object.entries(rig.effects).map(([id, mesh]) => [id, mesh.visible])) : {}};
   }
@@ -176,6 +191,13 @@ export function mountScene(container, options = {}) {
     raf = requestAnimationFrame(tick);
     const dt = Math.min((now - previousFrame) / 1000, .08); previousFrame = now;
     if (mixer && animationMode === 'idle' && playing && !displayPaused && mode === 'interior') {mixer.update(dt); dirty = true;}
+    if (rig && snapshot && animationMode === 'controlled' && !displayPaused) {
+      const time = presentation.sample(now);
+      if (time !== renderedTime) {
+        renderedTime = time;
+        rig.update(presentation.frame(snapshot, now), {motionOnly: true}); dirty = true;
+      }
+    }
     if (transition) {
       let t = Math.min((now - transition.start) / 850, 1); t = t * t * (3 - 2 * t);
       camera.position.lerpVectors(transition.from, transition.to, t);
