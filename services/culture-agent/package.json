@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "OSCAR Culture Agent: independent process, scripted/LLM adapters, lease-driven control loop, own SQLite session store",
+  "description": "OSCAR Culture Agent: independent process, long-lived culture sessions (pi backend), legacy scripted run loop, own SQLite store",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
     "@oscar/device-contract": "0.1.0",
     "@oscar/simulator": "0.1.0",
-    "@oscar/culture-policy": "0.1.0"
+    "@oscar/culture-policy": "0.1.0",
+    "@earendil-works/pi-agent-core": "0.84.0",
+    "@earendil-works/pi-ai": "0.84.0"
   }
 }
