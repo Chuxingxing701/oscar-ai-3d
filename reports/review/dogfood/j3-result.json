@@ -1,0 +1,286 @@
+{
+  "sid": "cs-001-01e36bf5",
+  "t1": {
+    "status": "ready",
+    "contract_version": "1.1.0",
+    "task_id": "task-e3867fbc-ae9",
+    "queued": false,
+    "queue_position": null,
+    "accepted": true
+  },
+  "t2": {
+    "status": "queued",
+    "contract_version": "1.1.0",
+    "task_id": "task-21fdec29-51a",
+    "queued": true,
+    "queue_position": 1,
+    "accepted": true
+  },
+  "uiNotes": {
+    "queueText": "QUEUE NOT SHOWN",
+    "promotedSeen": true,
+    "errors": []
+  },
+  "kinds": [
+    {
+      "seq": 6,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "running",
+        "reason": "task_created"
+      }
+    },
+    {
+      "seq": 13,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 23,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 33,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 43,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 53,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 62,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 72,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 81,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 91,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 100,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-84699c43-9f3",
+        "status": "completed",
+        "summary": "Monitoring window finished at sim 2912s; minimum level 375.06 µL stays ≥ 330 µL target.",
+        "evidence_refs": [
+          "obs-001-005"
+        ]
+      }
+    },
+    {
+      "seq": 103,
+      "type": "task.handoff_cleared",
+      "payload": {
+        "reason": "turn finished"
+      }
+    },
+    {
+      "seq": 116,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-e3867fbc-ae9",
+        "status": "running",
+        "reason": "task_created"
+      }
+    },
+    {
+      "seq": 124,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-e3867fbc-ae9",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 143,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-e3867fbc-ae9",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 154,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-e3867fbc-ae9",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 164,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-e3867fbc-ae9",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 175,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-e3867fbc-ae9",
+        "status": "waiting_device"
+      }
+    },
+    {
+      "seq": 190,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-e3867fbc-ae9",
+        "status": "running"
+      }
+    },
+    {
+      "seq": 196,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-e3867fbc-ae9",
+        "status": "completed",
+        "summary": "Monitoring window finished at sim 103835s; minimum level 439.41 µL stays ≥ 420 µL target.",
+        "evidence_refs": [
+          "obs-001-008"
+        ]
+      }
+    },
+    {
+      "seq": 199,
+      "type": "task.handoff_cleared",
+      "payload": {
+        "reason": "turn finished"
+      }
+    },
+    {
+      "seq": 200,
+      "type": "task.promoted",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "ready",
+        "reason": "turn finished",
+        "queue_position_before": 1
+      }
+    },
+    {
+      "seq": 201,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "ready",
+        "reason": "promoted from queue (turn finished)"
+      }
+    },
+    {
+      "seq": 204,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "running",
+        "reason": "task_promoted"
+      }
+    },
+    {
+      "seq": 207,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 214,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 221,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 228,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 235,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 242,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "waiting_condition"
+      }
+    },
+    {
+      "seq": 249,
+      "type": "task.status",
+      "payload": {
+        "task_id": "task-21fdec29-51a",
+        "status": "waiting_condition"
+      }
+    }
+  ]
+}

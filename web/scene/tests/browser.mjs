@@ -1,0 +1,108 @@
+// Run the local static server first. Playwright stays external to B's dependencies.
+// PLAYWRIGHT_MODULE=file:///path/to/playwright/index.mjs node web/scene/tests/browser.mjs
+import assert from 'node:assert/strict';
+import {mkdir, writeFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const root = fileURLToPath(new URL('../../../', import.meta.url));
+const browser = await chromium.launch({channel: 'chromium', headless: true, args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']});
+const page = await browser.newPage({viewport: {width: 1440, height: 1080}});
+const errors = [], checks = [];
+page.on('pageerror', e => errors.push(e.message));
+page.on('console', m => {if (m.type() === 'error') errors.push(m.text());});
+page.on('response', r => {if (r.status() >= 400) errors.push(`${r.status()} ${r.url()}`);});
+await mkdir(root + '/previews', {recursive: true}); await mkdir(root + '/reports', {recursive: true});
+const base = process.env.OSCAR_URL || 'http://127.0.0.1:8765';
+async function screenshot(name) {await page.screenshot({path: `${root}/previews/${name}.png`, timeout: 60000}); console.log('Saved', name);}
+async function seek(t) {await page.locator('#timeline').evaluate((e, v) => {e.value = v; e.dispatchEvent(new Event('input'));}, t);}
+try {
+  await page.goto(base + '/web/');
+  await page.waitForFunction(() => window.oscarStatus?.().ready, {timeout: 60000});
+  await screenshot('scene_exterior'); checks.push('Original page loads full model and embedded textures');
+  await page.locator('#toggle').click(); await page.waitForFunction(() => !oscarStatus().transitioning, null, {timeout: 60000});
+  const before = await page.evaluate(() => oscarStatus().time);
+  await page.waitForFunction(t => oscarStatus().time > t, before, {timeout: 30000});
+  await page.locator('#play').click();
+  const stopped = await page.evaluate(() => oscarStatus().time);
+  await page.waitForTimeout(200); assert.equal(await page.evaluate(() => oscarStatus().time), stopped);
+  checks.push('Original idle clip pauses and view switches without animation ownership conflict');
+  await screenshot('scene_interior');
+  await page.locator('#toggle').click(); await page.waitForFunction(() => !(window.scenePreview ?? window.oscarScene).getStatus().transitioning, null, {timeout: 60000});
+  await page.mouse.move(760, 480); await page.mouse.down(); await page.mouse.move(860, 490, {steps: 5}); await page.mouse.up();
+  assert.equal(await page.evaluate(() => oscarStatus().mode), 'exterior'); checks.push('Drag does not trigger click-to-interior');
+  await page.goto(base + '/web/scene/preview.html');
+  await page.waitForFunction(() => window.scenePreview?.getStatus().ready, {timeout: 60000});
+  await page.locator('#deck').click(); await page.waitForFunction(() => !(window.scenePreview ?? window.oscarScene).getStatus().transitioning, null, {timeout: 60000});
+  await seek(0); await screenshot('scene_plate_numbering');
+  await page.locator('#focus').click(); await page.waitForFunction(() => !(window.scenePreview ?? window.oscarScene).getStatus().transitioning, null, {timeout: 60000});
+  await page.evaluate(() => scenePreview.select(null));
+  const canvas = await page.locator('canvas').first().boundingBox();
+  await page.mouse.click(canvas.x + canvas.width / 2, canvas.y + canvas.height / 2);
+  assert.equal(await page.evaluate(() => scenePreview.getStatus().selection?.well_id), 'A1');
+  checks.push('Focus and real raycast select A1 through transparent annotations');
+  await seek(12);
+  const controlled = await page.evaluate(() => scenePreview.getStatus());
+  assert.equal(controlled.effects.flow, true); assert.equal(controlled.animationMode, 'controlled');
+  assert.equal(controlled.rowHead.activeFlows, 6);
+  assert.deepEqual(controlled.rowHead.wellIds, ['A1', 'A2', 'A3', 'A4', 'A5', 'A6']);
+  await page.waitForTimeout(200);
+  assert.deepEqual((await page.evaluate(() => scenePreview.getStatus())).motion, controlled.motion);
+  await page.locator('#deck').click();
+  await page.waitForFunction(() => !scenePreview.getStatus().transitioning, null, {timeout: 60000});
+  await screenshot('scene_dispensing'); checks.push('Six parallel flows cover the entire row; controlled pose freezes at fixed sim time');
+  await page.locator('#well').selectOption('B4');
+  const nextRow = await page.evaluate(() => scenePreview.getStatus().rowHead);
+  assert.equal(nextRow.activeFlows, 6);
+  assert.deepEqual(nextRow.wellIds, ['B1', 'B2', 'B3', 'B4', 'B5', 'B6']);
+  assert.match(await page.locator('#active-row').textContent(), /B1–B6/);
+  await page.locator('#well').selectOption('A1');
+  checks.push('Selecting B4 drives the full B row and explicitly labels six simultaneous wells');
+  await page.evaluate(async () => {
+    const map = await (await fetch('./scene-map.json')).json();
+    const {previewSnapshot} = await import('./fixtures.js');
+    scenePreview.setDisplayPaused(true);
+    window.oldPose = scenePreview.getStatus().motion;
+    scenePreview.update(previewSnapshot(map, 'dispense', 20).state);
+  });
+  assert.deepEqual(await page.evaluate(() => scenePreview.getStatus().motion), await page.evaluate(() => oldPose));
+  await page.evaluate(() => scenePreview.setDisplayPaused(false));
+  assert.notDeepEqual(await page.evaluate(() => scenePreview.getStatus().motion), controlled.motion);
+  checks.push('Display pause holds pose, resumes latest snapshot');
+  await page.locator('#action').selectOption('scan'); await seek(12);
+  assert.equal(await page.evaluate(() => scenePreview.getStatus().effects.scan), true);
+  await page.locator('#deck').click(); await page.waitForFunction(() => !(window.scenePreview ?? window.oscarScene).getStatus().transitioning, null, {timeout: 60000}); await screenshot('scene_scanning');
+  await page.locator('#action').selectOption('shake'); await seek(5.125);
+  assert.notDeepEqual((await page.evaluate(() => scenePreview.getStatus())).shakes['plate-01'], [0, 0, 0]);
+  await screenshot('scene_shake'); await seek(24);
+  assert.deepEqual((await page.evaluate(() => scenePreview.getStatus())).shakes['plate-01'], [0, 0, 0]);
+  checks.push('Camera scan effect and original-station shake start/complete restore');
+  await page.evaluate(async () => {
+    const map = await (await fetch('./scene-map.json')).json();
+    const {previewSnapshot} = await import('./fixtures.js');
+    const state = previewSnapshot(map, 'shake', 5.125).state;
+    scenePreview.update(state); scenePreview.setDisplayPaused(true);
+    scenePreview.update({experiment_id: 'new-world', sim_time_s: 0, paused: true, plates: [], actions: []});
+  });
+  const reset = await page.evaluate(() => scenePreview.getStatus());
+  assert.equal(reset.selection, null); assert.equal(reset.displayPaused, false);
+  assert.deepEqual(reset.shakes['plate-01'], [0, 0, 0]); checks.push('Experiment reset clears old effects, selection and display pause');
+  await page.evaluate(() => scenePreview.setAnimationMode('idle'));
+  assert.equal(await page.evaluate(() => scenePreview.getStatus().animationMode), 'idle');
+  await page.setViewportSize({width: 390, height: 844});
+  await page.locator('#action').selectOption('dispense'); await seek(12);
+  await page.locator('#deck').click(); await page.waitForFunction(() => !(window.scenePreview ?? window.oscarScene).getStatus().transitioning, null, {timeout: 60000}); await screenshot('scene_mobile');
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  checks.push('390x844 mobile container resizes, controls remain reachable, no horizontal overflow');
+  const diagnostics = await page.evaluate(() => scenePreview.getStatus());
+  await page.evaluate(() => scenePreview.dispose());
+  const count = await page.evaluate(() => scenePreview.getStatus().frameCount);
+  await page.waitForTimeout(200);
+  assert.equal(await page.evaluate(() => scenePreview.getStatus().frameCount), count);
+  assert.equal(await page.locator('#stage canvas').count(), 0);
+  checks.push('Dispose stops RAF and removes renderer canvas');
+  assert.deepEqual(errors, []);
+  const report = {date: new Date().toISOString(), browser: await browser.version(), checks, errors, diagnostics,
+    limits: 'Desktop Chromium SwiftShader; mobile viewport emulation, no physical phone or Blender run.'};
+  await writeFile(root + '/reports/scene_browser_checks.json', JSON.stringify(report, null, 2) + '\n');
+  console.log(JSON.stringify(report, null, 2));
+} catch (error) {console.error('Browser errors:', errors); console.error(await page.evaluate(() => window.oscarStatus?.() ?? window.scenePreview?.getStatus())); throw error;} finally {await browser.close();}

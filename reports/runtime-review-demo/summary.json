@@ -1,0 +1,37 @@
+{
+  "generated_at_wall": "2026-09-30T02:18:20.708Z",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "speed": 600,
+  "demos": [
+    {
+      "demo": "routine_maintenance",
+      "outcome": "pass",
+      "run_id": "run-001-1",
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    },
+    {
+      "demo": "exchange_and_mix",
+      "outcome": "pass",
+      "run_id": "run-001-1",
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    },
+    {
+      "demo": "environment_drift",
+      "outcome": "pass",
+      "run_id": "run-001-1",
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    },
+    {
+      "demo": "anomaly_recovery",
+      "outcome": "pass",
+      "run_id": "run-001-1",
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    }
+  ]
+}

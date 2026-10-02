@@ -1,0 +1,112 @@
+{
+  "cancel_unrelated": {
+    "before": {
+      "load_ul": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "has_tips": true,
+      "tip_rack_id": "tips-01",
+      "medium_id": "medium-a"
+    },
+    "after": {
+      "load_ul": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ],
+      "has_tips": true,
+      "tip_rack_id": "tips-01",
+      "medium_id": "medium-a"
+    },
+    "final": {
+      "load_ul": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "has_tips": false,
+      "tip_rack_id": null,
+      "medium_id": "medium-a"
+    },
+    "wait_waste": 0,
+    "add_status": "succeeded",
+    "add_summary": {
+      "wells": {
+        "A1": {
+          "removed_ul": 0,
+          "added_ul": 100
+        },
+        "A2": {
+          "removed_ul": 0,
+          "added_ul": 100
+        },
+        "A3": {
+          "removed_ul": 0,
+          "added_ul": 100
+        },
+        "A4": {
+          "removed_ul": 0,
+          "added_ul": 100
+        },
+        "A5": {
+          "removed_ul": 0,
+          "added_ul": 100
+        },
+        "A6": {
+          "removed_ul": 0,
+          "added_ul": 100
+        }
+      },
+      "reservoir_delta_ul": -600,
+      "waste_delta_ul": 0,
+      "tips_used": 6
+    }
+  },
+  "reset_archive": {
+    "status": "archived",
+    "action_status": "cancelled",
+    "claimed_waste": 600,
+    "stored_waste": 600,
+    "head": {
+      "load_ul": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "has_tips": false,
+      "tip_rack_id": null,
+      "medium_id": null
+    }
+  },
+  "restart_shake": {
+    "action_status": "failed",
+    "action_error": {
+      "code": "runtime_restarted",
+      "message": "Runtime restarted before the action reached a terminal state",
+      "retryable": false
+    },
+    "active_actions": 1,
+    "shake": {
+      "active": false,
+      "started_at_sim_s": 0,
+      "duration_sim_s": 60,
+      "speed_rpm": 300,
+      "ended_at_sim_s": 10,
+      "action_id": "act-001-01"
+    }
+  }
+}

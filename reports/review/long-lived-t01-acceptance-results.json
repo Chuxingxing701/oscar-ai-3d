@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-03",
+  "scope": "T01 targeted independent reacceptance",
+  "typecheck_exit_code": 0,
+  "skills_tests": {
+    "exit_code": 0,
+    "parallel_pass": 28,
+    "serial_pass": 13,
+    "total_pass": 41,
+    "commands": [
+      "npm test -- skills (13 integration tests)",
+      "node --test services/culture-agent/test/skills.test.ts (28 unit tests)"
+    ]
+  },
+  "s03_exit_code": 0,
+  "s03_pass": 2,
+  "other_review_scripts": [
+    {
+      "check": "long-lived-q04-review-reproduce",
+      "exit_code": 0
+    },
+    {
+      "check": "long-lived-n05-review-reproduce",
+      "exit_code": 0
+    },
+    {
+      "check": "long-lived-r08-review-reproduce",
+      "exit_code": 0
+    },
+    {
+      "check": "long-lived-reacceptance-reproduce",
+      "exit_code": 0
+    },
+    {
+      "check": "long-lived-reacceptance-ui-reproduce",
+      "exit_code": 0
+    },
+    {
+      "check": "long-lived-reproduce",
+      "exit_code": 0
+    },
+    {
+      "check": "long-lived-http-reproduce",
+      "exit_code": 0
+    },
+    {
+      "check": "long-lived-ui-reproduce",
+      "exit_code": 0
+    }
+  ],
+  "source_sha256": {
+    "services/culture-agent/src/scheduler.ts": "740de73fcd0bd5282d358d9cb7503b3ca0987b9cfa7f9b134050c796e8a6d2c0",
+    "services/culture-agent/src/skills.ts": "8e6deadadb267e27ede8480e3dacf9d560b5e12837e505110a3e219be5b74cec",
+    "services/culture-agent/test/skills.test.ts": "ac35244c279b700a522cde863d7222b3d8a1cd508afde364329e3356c9b50589",
+    "reports/review/long-lived-s03-review-reproduce.mjs": "2fa55efd45cf39fbd28fe689a786b2bf653897be2d30953143a2db76696d8bf5"
+  },
+  "full_suite_this_round": false,
+  "e2e_this_round": false,
+  "demo_this_round": false,
+  "product_code_modified_by_reviewer": false,
+  "test_runner_single_file_filter_skip_note": true
+}

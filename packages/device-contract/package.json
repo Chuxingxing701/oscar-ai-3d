@@ -1,0 +1,13 @@
+{
+  "name": "@oscar/device-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "oscar-mhs-demo/0.1 device contract: IDs, units, profile limits, manifest/JSON Schema, errors, API types and DeviceClient",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "ajv": "8.20.0"
+  }
+}

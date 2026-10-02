@@ -1,0 +1,119 @@
+{
+  "demo": "session_monitor",
+  "scenario": "routine_maintenance (realtime session)",
+  "seed": 42,
+  "outcome": "pass",
+  "run_id": null,
+  "experiment_id": "exp-001",
+  "criteria": [
+    {
+      "name": "supervisor delegation returned task_id immediately",
+      "pass": true,
+      "detail": "task_id=task-a52e35d5-1e6"
+    },
+    {
+      "name": "task completed through the supervisor contract",
+      "pass": true,
+      "detail": "task_id=task-a52e35d5-1e6"
+    },
+    {
+      "name": "≥3 monitor wakes in 26 simulated hours",
+      "pass": true,
+      "detail": "wakes=5"
+    },
+    {
+      "name": "≥1 maintenance (media.add) executed",
+      "pass": true,
+      "detail": "media.add=2"
+    },
+    {
+      "name": "≥1 no-operation decision recorded",
+      "pass": true,
+      "detail": "noOps=5"
+    },
+    {
+      "name": "model calls bounded (stub requests)",
+      "pass": true,
+      "detail": "requests=22"
+    },
+    {
+      "name": "reservoir conservation",
+      "pass": true,
+      "detail": "used=393.6 remaining=49606.4"
+    },
+    {
+      "name": "per-well conservation (effects − evaporation)",
+      "pass": true,
+      "detail": "checked 6 wells over 26.4 sim h"
+    }
+  ],
+  "commands": [
+    "node services/runtime/src/main.ts --scenario routine_maintenance --clock-mode realtime (speed 1200)",
+    "node services/culture-agent/src/main.ts (OSCAR_MODEL_* -> local HTTP model stub on the OpenAI wire)",
+    "POST /api/v1/agent/supervisor/v1/sessions + /tasks (delegated_principal, task_id returned at once)",
+    "simulated 26 h: monitor wake every 6 h, media.add below 330 µL, verify scan, complete at deadline"
+  ],
+  "actions": [
+    {
+      "action_id": "act-001-01",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-02",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-03",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-04",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-05",
+      "capability": "media.add",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-06",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-07",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-08",
+      "capability": "media.add",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-09",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-10",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    }
+  ],
+  "observations": [
+    "obs-001-001",
+    "obs-001-002",
+    "obs-001-003",
+    "obs-001-004",
+    "obs-001-005",
+    "obs-001-006",
+    "obs-001-007",
+    "obs-001-008"
+  ],
+  "agent_report": null
+}

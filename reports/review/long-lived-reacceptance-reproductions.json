@@ -1,0 +1,162 @@
+[
+  {
+    "name": "compaction_preserves_non_marker_constraint",
+    "pass": true,
+    "actual": {
+      "summary": "No task was created yet.\nUser instructions and standing facts (carried across checkpoints):\n- user: 储液限定为 media-01，作用范围限定为 B 排。\nConversation compressed: 1 messages (raw messages remain stored).",
+      "facts": [
+        "user: 储液限定为 media-01，作用范围限定为 B 排。"
+      ],
+      "open_questions": []
+    },
+    "expected": {
+      "retains": "储液限定为 media-01，作用范围限定为 B 排。"
+    }
+  },
+  {
+    "name": "compaction_carries_previous_facts",
+    "pass": true,
+    "actual": {
+      "summary": "No task was created yet.\nUser instructions and standing facts (carried across checkpoints):\n- fact: media-02 是本实验的保留对照液。\n- user: 继续监测\nConversation compressed: 1 messages (raw messages remain stored).",
+      "facts": [
+        "fact: media-02 是本实验的保留对照液。",
+        "user: 继续监测"
+      ],
+      "open_questions": []
+    },
+    "expected": {
+      "retains": "media-02 是本实验的保留对照液。"
+    }
+  },
+  {
+    "name": "revoke_during_state_read:agent_pause",
+    "pass": true,
+    "actual": {
+      "ok": false,
+      "error": "agent_paused",
+      "actions_added": 0
+    },
+    "expected": {
+      "ok": false,
+      "actions_added": 0
+    }
+  },
+  {
+    "name": "revoke_during_state_read:executor_close",
+    "pass": true,
+    "actual": {
+      "ok": false,
+      "error": "scheduler_stopped",
+      "actions_added": 0
+    },
+    "expected": {
+      "ok": false,
+      "actions_added": 0
+    }
+  },
+  {
+    "name": "revoke_during_state_read:task_cancel",
+    "pass": true,
+    "actual": {
+      "ok": false,
+      "error": "task_not_active",
+      "actions_added": 0
+    },
+    "expected": {
+      "ok": false,
+      "actions_added": 0
+    }
+  },
+  {
+    "name": "revoke_during_state_read:task_pause",
+    "pass": true,
+    "actual": {
+      "ok": false,
+      "error": "task_paused",
+      "actions_added": 0
+    },
+    "expected": {
+      "ok": false,
+      "actions_added": 0
+    }
+  },
+  {
+    "name": "revoke_during_state_read:goal_edit",
+    "pass": true,
+    "actual": {
+      "ok": false,
+      "error": "goal_revision_stale",
+      "actions_added": 0
+    },
+    "expected": {
+      "ok": false,
+      "actions_added": 0
+    }
+  },
+  {
+    "name": "revoke_during_state_read:owner_change",
+    "pass": true,
+    "actual": {
+      "ok": false,
+      "error": "stale_owner",
+      "actions_added": 0
+    },
+    "expected": {
+      "ok": false,
+      "actions_added": 0
+    }
+  },
+  {
+    "name": "revoke_during_state_read:archive",
+    "pass": true,
+    "actual": {
+      "ok": false,
+      "error": "session_archived",
+      "actions_added": 0
+    },
+    "expected": {
+      "ok": false,
+      "actions_added": 0
+    }
+  },
+  {
+    "name": "unresolved_previous_task_blocks_new_write",
+    "pass": true,
+    "actual": {
+      "ok": false,
+      "actions_added": 0,
+      "unresolved_old_intents": 1
+    },
+    "expected": {
+      "ok": false,
+      "actions_added": 0,
+      "reason": "old accepted outcome cannot be reconciled"
+    }
+  },
+  {
+    "name": "needs_input_parameters_complete_continues",
+    "pass": true,
+    "actual": {
+      "calls": 19,
+      "status": "waiting_device",
+      "submitted": true,
+      "armed_wakes": 1
+    },
+    "expected": {
+      "follow_up_turn": true,
+      "submits_without_another_user_message": true
+    }
+  },
+  {
+    "name": "conversation_message_queued_during_turn_is_processed",
+    "pass": true,
+    "actual": {
+      "calls": 2,
+      "second_message_seen_by_model": true,
+      "stored_user_messages": 2
+    },
+    "expected": {
+      "second_message_seen_by_model": true
+    }
+  }
+]

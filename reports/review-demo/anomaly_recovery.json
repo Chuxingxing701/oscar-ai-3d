@@ -1,0 +1,379 @@
+{
+  "demo": "anomaly_recovery",
+  "scenario": "routine_maintenance",
+  "seed": 42,
+  "outcome": "pass",
+  "run_id": "run-001-1",
+  "experiment_id": "exp-001",
+  "criteria": [
+    {
+      "name": "media.add was running when the agent was killed",
+      "pass": true,
+      "detail": "act-001-02 status=running"
+    },
+    {
+      "name": "run paused(agent_restarted) after agent restart",
+      "pass": true,
+      "detail": "status reason 'agent_restarted'"
+    },
+    {
+      "name": "no new actions while the agent is paused",
+      "pass": true,
+      "detail": "actions 2 -> 2"
+    },
+    {
+      "name": "exactly one media.* action with effects (no repeat after reconcile)",
+      "pass": true,
+      "detail": "act-001-02:succeeded:wells=6"
+    },
+    {
+      "name": "run ended and completed",
+      "pass": true,
+      "detail": "status=ended reason=completed"
+    },
+    {
+      "name": "determinism not broken",
+      "pass": true,
+      "detail": "determinism_broken=false"
+    },
+    {
+      "name": "final report present on the Runtime",
+      "pass": true,
+      "detail": "GET /api/v1/runs/{id}/report 200"
+    }
+  ],
+  "commands": [
+    "node services/runtime/src/main.ts --port <p> --scenario routine_maintenance --seed 42 --clock-mode lockstep",
+    "node services/culture-agent/src/main.ts --port 0 --runtime-url http://127.0.0.1:<p>",
+    "POST /api/v1/agent/runs (operator, scripted) -> kill -9 agent during media.add -> restart agent ->",
+    "POST /api/v1/agent/runs/{id}/control {action:\"resume\"}"
+  ],
+  "actions": [
+    {
+      "action_id": "act-001-01",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-02",
+      "capability": "media.add",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-03",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    }
+  ],
+  "observations": [
+    "obs-001-001",
+    "obs-001-002"
+  ],
+  "agent_report": {
+    "run_id": "run-001-1",
+    "experiment_id": "exp-001",
+    "scenario": "routine_maintenance",
+    "mode": "scripted",
+    "outcome": "completed",
+    "summary": "routine maintenance complete: media.add act-001-02 (371 µL/well, evidence obs obs-001-001) verified by obs obs-001-002: device_estimate 757.2–785.0 µL within band 600–900 µL; reservoir -2226 µL, tips 6",
+    "steps": [
+      {
+        "index": 1,
+        "kind": "act",
+        "capability": "imaging.scan",
+        "basis": "scripted",
+        "reason": "scheduled_policy: first scan of focus row plate-01 A (A1–A6)",
+        "evidence_refs": [],
+        "action_id": "act-001-01",
+        "action_status": "succeeded",
+        "effects": {
+          "wells": {},
+          "reservoir_delta_ul": 0,
+          "waste_delta_ul": 0,
+          "tips_used": 0
+        }
+      },
+      {
+        "index": 2,
+        "kind": "wait",
+        "basis": "scripted",
+        "reason": "imaging.scan act-001-01 in progress",
+        "wake": {
+          "on_actions": [
+            "act-001-01"
+          ]
+        }
+      },
+      {
+        "index": 3,
+        "kind": "act",
+        "capability": "media.add",
+        "basis": "scripted",
+        "reason": "obs obs-001-001 device_estimate liquid_level A2=379.3 µL < band lower 600 µL (scheduled_policy band 600–900): media.add 371 µL/well to whole row A to reach midpoint 750 µL",
+        "evidence_refs": [
+          "obs-001-001"
+        ],
+        "action_id": "act-001-02",
+        "action_status": "succeeded",
+        "effects": {
+          "wells": {
+            "A1": {
+              "removed_ul": 0,
+              "added_ul": 371
+            },
+            "A2": {
+              "removed_ul": 0,
+              "added_ul": 371
+            },
+            "A3": {
+              "removed_ul": 0,
+              "added_ul": 371
+            },
+            "A4": {
+              "removed_ul": 0,
+              "added_ul": 371
+            },
+            "A5": {
+              "removed_ul": 0,
+              "added_ul": 371
+            },
+            "A6": {
+              "removed_ul": 0,
+              "added_ul": 371
+            }
+          },
+          "reservoir_delta_ul": -2226,
+          "waste_delta_ul": 0,
+          "tips_used": 6
+        }
+      },
+      {
+        "index": 4,
+        "kind": "wait",
+        "basis": "scripted",
+        "reason": "media.add act-001-02 in progress",
+        "wake": {
+          "on_actions": [
+            "act-001-02"
+          ]
+        }
+      },
+      {
+        "index": 5,
+        "kind": "act",
+        "capability": "imaging.scan",
+        "basis": "scripted",
+        "reason": "media.add act-001-02 committed (+371 µL in A2): rescan plate-01 A to verify band 600–900 µL",
+        "evidence_refs": [],
+        "action_id": "act-001-03",
+        "action_status": "succeeded",
+        "effects": {
+          "wells": {},
+          "reservoir_delta_ul": 0,
+          "waste_delta_ul": 0,
+          "tips_used": 0
+        }
+      },
+      {
+        "index": 6,
+        "kind": "wait",
+        "basis": "scripted",
+        "reason": "imaging.scan act-001-03 in progress",
+        "wake": {
+          "on_actions": [
+            "act-001-03"
+          ]
+        }
+      },
+      {
+        "index": 7,
+        "kind": "finish",
+        "basis": "scripted"
+      }
+    ],
+    "observations": [
+      {
+        "observation_id": "obs-001-001",
+        "quality": "ok",
+        "sampled_at_sim_s": 11,
+        "plate_id": "plate-01",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "images": [
+          "53f977be9c74208936f758d962381f153e5edb003fb3b48bf03f050e007fdb1c"
+        ]
+      },
+      {
+        "observation_id": "obs-001-002",
+        "quality": "ok",
+        "sampled_at_sim_s": 54,
+        "plate_id": "plate-01",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "images": [
+          "38d9bba12d7e6bcfea9d219ed1ac4649841aa0ae13b299bc3d4da26f7a5b6af1"
+        ]
+      }
+    ],
+    "inventory": {
+      "reservoirs": [
+        {
+          "id": "media-01",
+          "start_ul": 50000,
+          "end_ul": 47774,
+          "delta_ul": -2226
+        }
+      ],
+      "wastes": [
+        {
+          "id": "waste-01",
+          "start_used_ul": 0,
+          "end_used_ul": 0,
+          "delta_ul": 0
+        }
+      ],
+      "tips": [
+        {
+          "id": "tips-01",
+          "start_remaining": 96,
+          "end_remaining": 90,
+          "used": 6
+        },
+        {
+          "id": "tips-02",
+          "start_remaining": 96,
+          "end_remaining": 96,
+          "used": 0
+        },
+        {
+          "id": "tips-03",
+          "start_remaining": 96,
+          "end_remaining": 96,
+          "used": 0
+        }
+      ],
+      "focus_row": {
+        "plate_id": "plate-01",
+        "row_id": "A",
+        "wells": [
+          {
+            "well_id": "A1",
+            "start_ul": 400,
+            "end_ul": 770.936666666667,
+            "delta_ul": 370.937
+          },
+          {
+            "well_id": "A2",
+            "start_ul": 380,
+            "end_ul": 750.936666666667,
+            "delta_ul": 370.937
+          },
+          {
+            "well_id": "A3",
+            "start_ul": 410,
+            "end_ul": 780.936666666667,
+            "delta_ul": 370.937
+          },
+          {
+            "well_id": "A4",
+            "start_ul": 420,
+            "end_ul": 790.936666666667,
+            "delta_ul": 370.937
+          },
+          {
+            "well_id": "A5",
+            "start_ul": 395,
+            "end_ul": 765.936666666667,
+            "delta_ul": 370.937
+          },
+          {
+            "well_id": "A6",
+            "start_ul": 405,
+            "end_ul": 775.936666666667,
+            "delta_ul": 370.937
+          }
+        ]
+      }
+    },
+    "environment": {
+      "before": {
+        "chamber_id": "chamber-01",
+        "target_revision": 1,
+        "provenance": "synthetic_sensor",
+        "temperature_c": {
+          "target": 37,
+          "observed": 36.983127,
+          "error": -0.016873,
+          "quality": "ok",
+          "sampled_at_sim_s": 0
+        },
+        "co2_pct": {
+          "target": 5,
+          "observed": 4.999642,
+          "error": -0.000358,
+          "quality": "ok",
+          "sampled_at_sim_s": 0
+        },
+        "humidity_pct": {
+          "target": 95,
+          "observed": 95.237212,
+          "error": 0.237212,
+          "quality": "ok",
+          "sampled_at_sim_s": 0
+        },
+        "stable": false
+      },
+      "after": {
+        "chamber_id": "chamber-01",
+        "target_revision": 1,
+        "provenance": "synthetic_sensor",
+        "temperature_c": {
+          "target": 37,
+          "observed": 37.017311,
+          "error": 0.017311,
+          "quality": "ok",
+          "sampled_at_sim_s": 30
+        },
+        "co2_pct": {
+          "target": 5,
+          "observed": 4.990804,
+          "error": -0.009196,
+          "quality": "ok",
+          "sampled_at_sim_s": 30
+        },
+        "humidity_pct": {
+          "target": 95,
+          "observed": 95.481023,
+          "error": 0.481023,
+          "quality": "ok",
+          "sampled_at_sim_s": 30
+        },
+        "stable": false
+      },
+      "tolerances": {
+        "temperature_c": 0.3,
+        "co2_pct": 0.2,
+        "humidity_pct": 3
+      }
+    },
+    "counts": {
+      "decisions": 7,
+      "actions_submitted": 3,
+      "observations_recorded": 2
+    },
+    "determinism_broken": false,
+    "generated_at_wall": "2026-09-30T01:05:44.332Z"
+  }
+}

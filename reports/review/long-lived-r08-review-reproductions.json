@@ -1,0 +1,104 @@
+[
+  {
+    "name": "fifo_new_arrival_during_promotion_gap",
+    "pass": true,
+    "actual": {
+      "older_task_status": "queued",
+      "newer_task_status": "queued"
+    },
+    "expected": {
+      "newer_task_status": "queued",
+      "next_task": "B"
+    }
+  },
+  {
+    "name": "late_plan_validation_preserves_new_goal_plan",
+    "pass": true,
+    "actual": {
+      "tool_ok": false,
+      "live_goal_revision": 2,
+      "plan_revision": 2,
+      "until_sim_s": 2000
+    },
+    "expected": {
+      "tool_ok": false,
+      "plan_revision": 2,
+      "until_sim_s": 2000
+    }
+  },
+  {
+    "name": "late_step_verification_after_goal_edit_is_refused",
+    "pass": true,
+    "actual": {
+      "tool_ok": false,
+      "step_status": "pending",
+      "goal_revision": 2,
+      "plan_revision": 1
+    },
+    "expected": {
+      "tool_ok": false,
+      "step_status": "pending"
+    }
+  },
+  {
+    "name": "failed_verification_does_not_complete_unmet_goal",
+    "pass": true,
+    "actual": {
+      "status": "waiting_condition",
+      "gate_ok": false,
+      "verification_code": "observation_not_from_step_action",
+      "step_status": "pending",
+      "min_actual_volume_ul": 389.7888888888855,
+      "target_ul": 1500
+    },
+    "expected": {
+      "status_not": "completed",
+      "gate_ok": false
+    }
+  },
+  {
+    "name": "different_monitor_condition_cannot_verify_required_condition",
+    "pass": true,
+    "actual": {
+      "verification_ok": false,
+      "fired_condition": {
+        "metric": "temperature_c",
+        "op": "below",
+        "value": 38
+      },
+      "required_condition": {
+        "metric": "temperature_c",
+        "op": "above",
+        "value": 45
+      }
+    },
+    "expected": {
+      "verification_ok": false
+    }
+  },
+  {
+    "name": "wrong_row_maintenance_cannot_verify_requested_row",
+    "pass": true,
+    "actual": {
+      "verification_ok": false,
+      "maintenance_row": "B",
+      "requested_row": "A",
+      "observation_id": "obs-001-004"
+    },
+    "expected": {
+      "verification_ok": false
+    }
+  },
+  {
+    "name": "cancel_query_failure_does_not_suppress_retry",
+    "pass": true,
+    "actual": {
+      "task_status": "cancelled",
+      "device_action_status": "cancelled",
+      "cancel_posts": 1
+    },
+    "expected": {
+      "cancel_posts_at_least": 1
+    }
+  }
+]

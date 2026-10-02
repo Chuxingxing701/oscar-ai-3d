@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-02",
+  "head": "22c3a97",
+  "workspace": "feat/b-framework + uncommitted changes",
+  "typecheck": {
+    "errors": 0,
+    "log": "/tmp/oscar-s03-typecheck.log"
+  },
+  "npm_test": {
+    "exit_code": 0,
+    "first_run": true,
+    "parallel_pass": 208,
+    "serial_pass": 54,
+    "total_pass": 262,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "duration_s": 539.8,
+    "log": "/tmp/oscar-s03-tests.log"
+  },
+  "q04": {
+    "exit_code": 0,
+    "pass": 3,
+    "normalized_sample_control_needed": false
+  },
+  "sequential_checks": [
+    {
+      "check": "long-lived-n05-review-reproduce",
+      "exit_code": 0,
+      "duration_s": 3.55
+    },
+    {
+      "check": "long-lived-r08-review-reproduce",
+      "exit_code": 0,
+      "duration_s": 3.74
+    },
+    {
+      "check": "long-lived-reacceptance-reproduce",
+      "exit_code": 0,
+      "duration_s": 5.68
+    },
+    {
+      "check": "long-lived-reacceptance-ui-reproduce",
+      "exit_code": 0,
+      "duration_s": 0.58
+    },
+    {
+      "check": "long-lived-reproduce",
+      "exit_code": 0,
+      "duration_s": 7.93
+    },
+    {
+      "check": "long-lived-http-reproduce",
+      "exit_code": 0,
+      "duration_s": 11.44
+    },
+    {
+      "check": "long-lived-ui-reproduce",
+      "exit_code": 0,
+      "duration_s": 0.88
+    },
+    {
+      "check": "e2e",
+      "exit_code": 0,
+      "duration_s": 290.41
+    },
+    {
+      "check": "demo",
+      "exit_code": 0,
+      "duration_s": 87.57
+    }
+  ],
+  "new_review": {
+    "exit_code": 1,
+    "pass": 1,
+    "failed": 1,
+    "file": "long-lived-s03-review-reproductions.json"
+  },
+  "source_sha256": {
+    "services/culture-agent/src/scheduler.ts": "61ba275269f137a7d6d8d8f759be50e45c27c2f9e0d5b55cd1a744eaba733aa3",
+    "services/culture-agent/src/skills.ts": "84e29248642fe4aafbc2b39658fd315814e25201e0a0926c3825de4646e3bc7e",
+    "services/culture-agent/src/supervisor-api.ts": "45d45b845a8d1cb7fd11a8e7ef3813531aad2dccfdd0b12a0e0b5e766cd6487a",
+    "services/culture-agent/test/model-stub.ts": "cc0ea1b67070ccc5ed58ca41cff9855cb4a5d02a5a1000ce787aedbef286af51"
+  },
+  "source_hashes_unchanged_at_end": true,
+  "limits": [
+    "real model provider unverified",
+    "image/vision context unverified",
+    "not a clean-clone acceptance",
+    "four low dogfood items retained"
+  ]
+}

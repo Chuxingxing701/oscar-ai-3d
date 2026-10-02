@@ -1,0 +1,13 @@
+{
+  "name": "@oscar/simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic OSCAR device simulator: fixed-step world, row-pipette liquid primitives, environment/culture evolution, synthetic PNG imaging",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@oscar/device-contract": "0.1.0"
+  }
+}

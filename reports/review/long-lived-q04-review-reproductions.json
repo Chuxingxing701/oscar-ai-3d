@@ -1,0 +1,85 @@
+[
+  {
+    "name": "actual_environment_contract_fires_threshold_wake",
+    "pass": true,
+    "actual": {
+      "samples_processed": 1,
+      "sample": {
+        "temperature_c": 37.017311,
+        "co2_pct": 4.990804,
+        "humidity_pct": 95.481023,
+        "quality": "ok",
+        "sampled_at_sim_s": 30
+      },
+      "predicate": {
+        "metric": "temperature_c",
+        "op": "below",
+        "value": 38,
+        "debounce_sim_s": 0,
+        "hysteresis": 0,
+        "cooldown_sim_s": 0
+      },
+      "fired_wakes": 1
+    },
+    "expected": {
+      "fired_wakes_at_least": 1
+    }
+  },
+  {
+    "name": "old_revision_monitor_evidence_cannot_complete_new_goal",
+    "pass": true,
+    "actual": {
+      "before_gate_ok": true,
+      "after_gate": {
+        "ok": false,
+        "code": "goal_unverified",
+        "message": "no done+verified monitor_until step of this task matches the monitoring conditions (temperature_c below 38) at the current goal revision 2; done+verified monitor_until step 0 carries proof of goal revision 1 (step plan_revision 1), but the task is at revision 2; the old-revision wait is history — replace the plan, re-register and verify the wait under revision 2",
+        "reasons": [
+          "no done+verified monitor_until step of this task matches the monitoring conditions (temperature_c below 38) at the current goal revision 2",
+          "done+verified monitor_until step 0 carries proof of goal revision 1 (step plan_revision 1), but the task is at revision 2; the old-revision wait is history — replace the plan, re-register and verify the wait under revision 2"
+        ]
+      },
+      "task_status": "waiting_condition",
+      "normalized_sample_control_needed": false,
+      "goal_revision": 2,
+      "plan_revision": 1,
+      "verification_pass": true,
+      "fired_wake_revisions": [
+        1
+      ],
+      "goal_edited_at_sim_s": 32,
+      "sim_time_s": 53
+    },
+    "expected": {
+      "after_gate_ok": false,
+      "status_not": "completed",
+      "required_evidence_revision": 2
+    }
+  },
+  {
+    "name": "nonexistent_metric_row_cannot_complete_with_zero_checks",
+    "pass": true,
+    "actual": {
+      "complete_gate": {
+        "ok": false,
+        "code": "goal_unverified",
+        "message": "medium_volume_ul (row Z): row 'Z' does not exist on any in-scope plate (plate-01: A/B/C/D); the metric has no verifiable well range — fix the goal target (update_task_goal) or supply the missing parameters; it cannot be skipped silently",
+        "reasons": [
+          "medium_volume_ul (row Z): row 'Z' does not exist on any in-scope plate (plate-01: A/B/C/D); the metric has no verifiable well range — fix the goal target (update_task_goal) or supply the missing parameters; it cannot be skipped silently"
+        ]
+      },
+      "task_status": "waiting_condition",
+      "actual_rows": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "target_row": "Z"
+    },
+    "expected": {
+      "complete_gate_ok": false,
+      "status_not": "completed"
+    }
+  }
+]

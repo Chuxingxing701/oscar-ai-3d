@@ -1,0 +1,108 @@
+{
+  "sid": "cs-001-01e36bf5",
+  "taskId": "task-84699c43-9f3",
+  "statuses": [
+    {
+      "loop": "thinking",
+      "task": "running",
+      "actions": 0,
+      "turns": 1,
+      "wake": null
+    },
+    {
+      "loop": "waiting_condition",
+      "task": "waiting_condition",
+      "actions": 2,
+      "turns": 4,
+      "wake": "sim_time@1614"
+    },
+    {
+      "loop": "waiting_condition",
+      "task": "waiting_condition",
+      "actions": 3,
+      "turns": 6,
+      "wake": "sim_time@2244"
+    },
+    {
+      "loop": "idle",
+      "task": "completed",
+      "actions": 5,
+      "turns": 10,
+      "wake": null
+    }
+  ],
+  "types": {
+    "session.created": 1,
+    "loop.state": 32,
+    "task.created": 1,
+    "task.status": 11,
+    "plan.updated": 1,
+    "action.submitted": 5,
+    "wake.armed": 9,
+    "message.appended": 10,
+    "turn.completed": 10,
+    "observation.recorded": 5,
+    "action.result": 5,
+    "wake.fired": 9,
+    "plan.step": 3,
+    "task.handoff_cleared": 1
+  },
+  "finalTask": {
+    "task_id": "task-84699c43-9f3",
+    "session_id": "cs-001-01e36bf5",
+    "goal_text": "照看 plate-01 A 排液位（supervisor 委托）",
+    "goal_spec": {
+      "description": "维持 plate-01 A 排各孔培养液 ≥ 330 µL（dogfood 委托任务 1）",
+      "scope": {
+        "plates": [
+          "plate-01"
+        ],
+        "rows": [
+          "A"
+        ],
+        "reservoirs": []
+      },
+      "metrics": [
+        {
+          "metric": "medium_volume_ul",
+          "op": ">=",
+          "value": 330,
+          "source": "observation",
+          "row_id": "A"
+        }
+      ],
+      "allowed_operations": [
+        "imaging.scan",
+        "media.add"
+      ],
+      "monitoring": {
+        "interval_sim_s": 600
+      },
+      "deadline_sim_s": 2400,
+      "success": {
+        "description": "监测窗口结束且液位不低于阈值"
+      },
+      "stop": {
+        "description": "预算耗尽或用户取消",
+        "max_corrections": 8
+      },
+      "request_id": "dog-task-1790934567310-jf5z"
+    },
+    "goal_revision": 1,
+    "status": "completed",
+    "reason": null,
+    "queue_index": 1,
+    "budget": {
+      "max_actions": 40,
+      "actions_used": 5,
+      "max_model_turns": 200,
+      "model_turns_used": 10
+    },
+    "create_request_id": "dog-task-1790934567310-jf5z",
+    "create_canonical": "{\"budget\":{\"max_actions\":40,\"max_model_turns\":200},\"goal_spec\":{\"allowed_operations\":[\"imaging.scan\",\"media.add\"],\"deadline_sim_s\":2400,\"description\":\"维持 plate-01 A 排各孔培养液 ≥ 330 µL（dogfood 委托任务 1）\",\"metrics\":[{\"metric\":\"medium_volume_ul\",\"op\":\">=\",\"row_id\":\"A\",\"source\":\"observation\",\"value\":330}],\"monitoring\":{\"interval_sim_s\":600},\"scope\":{\"plates\":[\"plate-01\"],\"reservoirs\":[],\"rows\":[\"A\"]},\"stop\":{\"description\":\"预算耗尽或用户取消\",\"max_corrections\":8},\"success\":{\"description\":\"监测窗口结束且液位不低于阈值\"}},\"goal_text\":\"照看 plate-01 A 排液位（supervisor 委托）\"}",
+    "created_at_wall": "2026-10-02T09:49:27.314Z",
+    "updated_at_wall": "2026-10-02T09:49:31.645Z"
+  },
+  "sseFrames": 103,
+  "reply": "No active task in this session. Create a task (POST /sessions/:id/tasks) and I will drive it."
+}

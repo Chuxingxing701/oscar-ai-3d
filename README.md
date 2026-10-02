@@ -142,3 +142,44 @@ Three.js 许可证仅适用于对应第三方代码。本仓库未为设备品�
 ---
 
 版本：V1 · 制作日期：2026-09-29
+
+## 2026-09-30 场景升级
+
+在原展示页基础上新增受控动画、板孔拾取与聚焦、随头相机、原位 shake 和液位覆盖。运行 `node server.mjs` 后打开 [场景验收页](http://127.0.0.1:8765/web/scene/preview.html)，可播放或拖动合成状态示例。运行时数据接入接口、复现与验证命令见 [场景交接](docs/SCENE_HANDOFF.md)。此页面只验证 A 的 3D 显示，使用合成夹具；受控操作台见下一节。
+
+排枪展示已按用户补充修正：当前 24 孔板每排 6 孔，6 根针以 21.6 mm 间距整排对齐、同时吸排液，示例整排液位同步变化。原 GLB 八针参考保留，网页用场景几何调整为该排枪配置。
+
+## 受控操作台（Runtime + Agent，2026-09-30）
+
+虚拟培养设备 Runtime、独立的 scripted Culture Agent 和浏览器操作台已实现到 C0–C3 主要框架检查点，验收记录见 [reports/framework_checkpoint.md](reports/framework_checkpoint.md)，接口见 [docs/API_CONTRACT.md](docs/API_CONTRACT.md)。
+
+**两个入口的区别**
+
+| 入口 | 启动 | 用途 |
+| --- | --- | --- |
+| 纯展示 | `node server.mjs` → `http://127.0.0.1:8765/web/`（场景验收页 `/web/scene/preview.html`） | 只看模型和合成动画，没有设备 API |
+| 受控操作台 | `npm run dev` → `http://127.0.0.1:8780/web/workbench.html` | Runtime 为唯一状态来源，3D、面板和 Agent 都走同一套 API |
+
+**环境**：Node `>=24.15 <25`（已在 24.21.0 验证）、Python 3（资产校验）。
+
+```bash
+npm ci                                  # 按根锁文件安装固定版本依赖
+npx playwright install chromium         # 仅 e2e 需要：安装 Playwright 1.63.0 对应的 Chromium
+npm run typecheck                       # tsc --noEmit
+npm test                                # 契约/Runtime/确定性/恢复/访问控制/Agent/场景回归
+npm run test:e2e                        # 浏览器验收：真实 Runtime + Agent，隔离临时数据
+npm run demo:all                        # 三条 scripted 演示 + 异常恢复；任一失败则退出非零
+npm run dev                             # 启动 Runtime(8780) 与 Agent(8781)，打印入口和配对链接
+```
+
+**启动与配对**：`npm run dev` 在终端打印一次性配对链接 `http://127.0.0.1:8780/pair#code=…`（5 分钟内有效，只能用一次）。在浏览器打开它即换取 HttpOnly 会话 cookie 并进入操作台；过期后运行 `npm run pair` 重新生成。页面和静态资源中不含任何令牌。端口与数据目录：`npm run dev -- --runtime-port 9000 --agent-port 9001 --data-dir ./data`（或 `OSCAR_RUNTIME_PORT`、`OSCAR_AGENT_PORT`、`OSCAR_DATA_DIR`）。数据目录默认 `./data`，含 SQLite、`operator.token` 与服务令牌（0600），已加入 `.gitignore`。
+
+**远程端口转发**：如果浏览器访问 `http://localhost:62273`，转发保留该 Host，而 Runtime 监听的是另一端口，启动时追加 `--allow-host localhost:62273`，例如 `npm run dev -- --allow-host localhost:62273`。参数可重复指定，值应为浏览器地址栏中的准确 `主机:端口`（不带 `http://`）；转发端口改变后需更新参数并重启。打开配对链接时使用转发地址，保留完整的 `/pair#code=…`；页面后续 API 请求使用同源相对路径。仅为本机端口转发时无需 `--lan`。
+
+Codex 自动转发时，打开服务器原始配对链接（如 `http://127.0.0.1:8780/pair#code=…`），由应用转换为本地转发地址；不要把转换后的随机端口再次作为服务器地址打开。Host 报错时允许错误中的准确地址，再刷新当前标签页。scripted Agent 只支持 lockstep，按当前实验场景执行；启动前切换 lockstep 并恢复 Runtime，自由文本 goal 仅供尚未接入的 LLM 模式使用。下一阶段待办见 [实施交接](docs/NEXT_IMPLEMENTATION_HANDOFF.md)。
+
+**运行演示**：在操作台「Agent」页选择 scripted 并启动；或在终端运行 `npm run demo:all`，报告写入 `reports/demo/`。默认 lockstep 时钟：Agent 通过 Runtime 建立的决策屏障推进，没有 run 时用顶栏「单步 / 推进至空闲」手动推进。「冻结画面」只冻结 3D 显示，「暂停 Runtime」才暂停模拟。
+
+**LAN**：`npm run runtime -- --lan --access-code-file <file>`（访问码至少 16 个字符，否则拒绝启动），登录页 `/login`。这是可信局域网内的演示级保护，明文 HTTP，不是生产鉴权。
+
+**演示假设**：排枪 6 通道、21.6 mm 为匹配 24 孔展示板的配置，不是实机标定；取头为示意阶段加逻辑吸头库存；扫描图像是服务端确定性合成 PNG，设备估计值为 `simulated_onboard_analysis`。LLM 模式仅保留接口，无模型时明确暂停为 `model_unavailable`。

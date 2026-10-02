@@ -1,0 +1,5 @@
+{
+  "selected": "🧬 exp-B",
+  "message": "MESSAGE FROM session-B",
+  "status": "exp-BAgent：空闲设备在线 · realtime · sim 0 s模型未配置（model_unavailable，不会回退 scripted）在途动作 0 · 消息 seq 1 · 事件 seq 1 · inbox 0"
+}

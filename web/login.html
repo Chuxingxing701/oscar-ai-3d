@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- OSCAR LAN login (static, no tokens inside). Exchanges the preconfigured
+     access code for a session cookie. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OSCAR login</title>
+<style>
+  body {font-family: system-ui, sans-serif; background: #14161a; color: #e8e8ea; display: flex;
+    min-height: 100vh; align-items: center; justify-content: center; margin: 0;}
+  .card {background: #1d2026; padding: 2rem 2.5rem; border-radius: 10px; max-width: 26rem;}
+  h1 {font-size: 1.2rem; margin-top: 0;}
+  p {color: #a8acb4; font-size: .85rem; line-height: 1.5;}
+  input {width: 100%; box-sizing: border-box; padding: .55rem .7rem; margin: .6rem 0 1rem;
+    border-radius: 6px; border: 1px solid #3a3f48; background: #14161a; color: inherit;}
+  button {padding: .55rem 1.2rem; border-radius: 6px; border: 0; background: #3d6ea5; color: #fff; cursor: pointer;}
+  #status.ok {color: #7ed491;} #status.err {color: #e0837d;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>OSCAR Runtime 登录（LAN）</h1>
+  <p>可信局域网演示级保护：输入预配置的访问码以获取 12 小时会话。</p>
+  <form id="f">
+    <input id="code" type="password" autocomplete="off" placeholder="Access code" required>
+    <button type="submit">登录</button>
+    <span id="status"></span>
+  </form>
+</div>
+<script>
+document.getElementById('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('status');
+  status.className = '';
+  status.textContent = '…';
+  try {
+    const r = await fetch('/api/v1/session', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({access_code: document.getElementById('code').value}),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    status.textContent = '登录成功';
+    status.className = 'ok';
+    location.href = '/web/workbench.html';
+  } catch (err) {
+    status.textContent = '登录失败（' + err.message + '）';
+    status.className = 'err';
+  }
+});
+</script>
+</body>
+</html>

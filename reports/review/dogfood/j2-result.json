@@ -1,0 +1,11 @@
+{
+  "notes": [
+    "session buttons sample: [\"打开所选实验\",\"刷新列表\",\"刷新列表\",\"🧬 exp-001\",\"exp-001Agent：空闲设备在线 · realtime · sim 18时16分模型 pi-0.84.0等待原因：message: user message · 在途动作 0 · 消息 seq 12 · 事件 seq 108 · inbox 2229\",\"暂停 Agent（停决策）\",\"恢复 Agent\",\"发送\"]",
+    "panel text (first 1200):\n长期培养会话（realtime · 事件驱动）\n\n一个实验一个长期会话；浏览器关闭后任务继续，恢复后回到同一会话。\n\n🧬 exp-001\n为当前实验建立会话\nexp-001\nAgent：空闲\n设备在线 · realtime · sim 18时16分\n模型 pi-0.84.0\n\n等待原因：message: user message · 在途动作 0 · 消息 seq 12 · 事件 seq 108 · inbox 2229\n\n暂停 Agent（停决策）\n恢复 Agent\nnull\n预算：动作 5/40 · 模型回合 10/200\n任务 task-84699c4…\n已完成\ngoal r1\n照看 plate-01 A 排液位（supervisor 委托）\nscan_and_assess — ✓ · 证据 obs-001-001\nexchange_row_and_verify — skipped\nmonitor_until — ✓\nnull创建监测任务（演示协议：A 排 ≥ 330 µL · 每 6 模拟小时检查 · 期限 26 模拟小时）\n持续对话\n（update_plan: 3 steps；imaging_scan: accepted act-001-01 (queued)）\nNo operation needed: minimum 379.07 µL ≥ target 330 µL.\n（imaging_scan: accepted act-001-02 (queued)）\nNo operation needed: minimum 378.85 µL ≥ target 330 µL.\n（imaging_scan: accepted act-001-03 (queued)）\nNo operation needed: minimum 378.29 µL ≥ target 330 µL.\n（imaging_scan: accepted act-001-04 (queued)）\nNo operation needed: minimum 381.54 µL ≥ target 330 µL.\n（imaging_scan: accepted act-001-05 (queued)）\n（record_step_result: step 2 done；complete_task: completed）\n任务完成了，请总结一下这轮维护。\nNo active task in this session. Create a task (POST /sessions/:id/tasks) and I will drive it.\n发送\n记忆检查点（压缩摘要） · 无\n\n会话事件流（独立 seq，断线以 Last-Event-ID 续传）\n\n会话事件流已连接\n\nturn.completed",
+    "chat bubbles after send: [\"任务完成了，请总结一下这轮维护。\",\"No active task in this session. Create a task (POST /sessions/:id/tasks) and I will drive it.\",\"帮我看一下当前 A 排液位怎么样？\",\"No active task in this session. Create a task (POST /sessions/:id/tasks) and I will drive it.\"]",
+    "scene errors: []",
+    "session log first rows: [\"turn.completedseq 113\",\"loop.stateseq 112\",\"message.appendedseq 111No active task in this session. Create a task (POST /sessions/:id/tasks) and I will drive it.\",\"loop.stateseq 110message: user message\",\"message.appendedseq 109\"]"
+  ],
+  "errors": [],
+  "consoleErrors": []
+}

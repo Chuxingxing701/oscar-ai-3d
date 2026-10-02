@@ -1,0 +1,20 @@
+{
+  "armedAtSeq": 1630,
+  "fired": {
+    "seq": 1635,
+    "kind": "condition",
+    "metric": "temperature_c",
+    "value": 35.163067,
+    "threshold": 35.5,
+    "quality": "settling",
+    "sim_time_s": 181800
+  },
+  "turnOnCondition": {
+    "seq": 1640,
+    "trigger": "condition",
+    "ok": true
+  },
+  "inBandNoWake": "turns 1→1 over 241 sim s (8 real samples)",
+  "observedAfterFire": 32.0267,
+  "ackMessage": "温度阈值已触发并确认（wake: condition）。当前由操作者处理，继续守候。"
+}

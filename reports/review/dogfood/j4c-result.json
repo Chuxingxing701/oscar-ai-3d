@@ -1,0 +1,21 @@
+{
+  "pause": {
+    "task": "paused",
+    "loop": "thinking",
+    "deviceInFlight": 1,
+    "uiPausedChip": true
+  },
+  "deviceFinishesAfterPause": "succeeded",
+  "noNewTurnsWhilePaused": true,
+  "resume": "waiting_condition",
+  "cancelDuring": {
+    "capability": "imaging.scan",
+    "status": "cancelled"
+  },
+  "final": {
+    "task": "cancelled",
+    "queueLen": 0,
+    "loop": "idle"
+  },
+  "deviceAlive": true
+}

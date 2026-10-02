@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>OSCAR · 场景验收预览</title><link rel="icon" href="data:,"><link rel="stylesheet" href="preview.css">
+<script type="importmap">{"imports":{"three":"../vendor/three.module.js","three/addons/":"../vendor/addons/"}}</script></head>
+<body>
+<header><a href="../">OSCAR–AI ↗</a><span>3D 场景验收</span><b>SIMULATED · 合成展示状态</b></header>
+<main id="stage" aria-label="三维工作舱"></main>
+<aside>
+<h1>从状态，看见动作。</h1><p>相机随头移动，培养板原位振荡。液位、光束与运动均为示意。</p>
+<label>观察对象<select id="plate"><option>plate-01</option><option>plate-02</option></select></label>
+<label>选孔（加液作用于整排）<select id="well"></select></label>
+<div class="row"><button id="focus">聚焦板孔</button><button id="deck">工位全景</button><button id="exterior">外观</button></div>
+<label>动作示例<select id="action"><option value="dispense">排枪整排加液</option><option value="exchange">整排吸液 / 排液</option><option value="scan">随头相机扫描</option><option value="shake">原位 shake</option><option value="idle">18 秒待机循环</option></select></label>
+<div class="row"><button id="play" aria-pressed="false">播放示意</button><button id="reset">重置示例</button></div>
+<label>示例模拟时刻 <output id="time">0.0 s</output><input id="timeline" type="range" min="0" max="24" step="0.05" value="0"></label>
+<p id="phase" role="status">正在加载模型…</p>
+<dl><dt>选中孔</dt><dd id="selection">plate-01 / A1</dd><dt>加液排</dt><dd id="active-row">A1–A6</dd><dt>单孔示例液量</dt><dd id="volume">—</dd><dt>状态来源</dt><dd>本地预览夹具</dd></dl>
+<p class="note">这里不连接 Runtime、不执行设备指令，也不生成观测证据。滑块可回看同一状态；暂停不改变液量。</p>
+</aside>
+<footer>估算几何 · 米制 · A 行在远端，列从左至右 · 金色环为选中孔 · 绿色/橙色光效为整排同步吸排液</footer>
+<script type="module" src="preview.js"></script></body></html>

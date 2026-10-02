@@ -1,0 +1,530 @@
+{
+  "demo": "exchange_and_mix",
+  "scenario": "exchange_and_mix",
+  "seed": 42,
+  "outcome": "pass",
+  "run_id": "run-001-1",
+  "experiment_id": "exp-001",
+  "criteria": [
+    {
+      "name": "run ended with reason \"completed\"",
+      "pass": true,
+      "detail": "status=ended reason=completed"
+    },
+    {
+      "name": "determinism not broken",
+      "pass": true,
+      "detail": "determinism_broken=false"
+    },
+    {
+      "name": "exchange action succeeded",
+      "pass": true,
+      "detail": "act-001-02 succeeded"
+    },
+    {
+      "name": "waste +Σremoved",
+      "pass": true,
+      "detail": "waste used 2399.913 vs Σremoved 2399.913 µL"
+    },
+    {
+      "name": "reservoir −Σadded (= Σremoved under fraction exchange)",
+      "pass": true,
+      "detail": "reservoir delta 2399.913 vs Σadded 2399.913 µL"
+    },
+    {
+      "name": "row volumes restored (± evaporation tolerance)",
+      "pass": true,
+      "detail": "A1: 810→809.8, A2: 800→799.8, A3: 795→794.8, A4: 805→804.8, A5: 790→789.8, A6: 800→799.8"
+    },
+    {
+      "name": "tips −12 (two pickups)",
+      "pass": true,
+      "detail": "tips used 12"
+    },
+    {
+      "name": "shake succeeded",
+      "pass": true,
+      "detail": "act-001-03 succeeded"
+    },
+    {
+      "name": "shake started/stopped events present",
+      "pass": true,
+      "detail": "shake_started=true shake_stopped=true"
+    },
+    {
+      "name": "post-settle rescan exists",
+      "pass": true,
+      "detail": "obs-001-002 at 137 s (settle until 126 s)"
+    },
+    {
+      "name": "before/after observations comparable with different image hashes",
+      "pass": true,
+      "detail": "obs-001-001 vs obs-001-002 (same wells, hashes differ)"
+    },
+    {
+      "name": "exchange cites fresh scan evidence",
+      "pass": true,
+      "detail": "act-001-02 -> [obs-001-001]"
+    },
+    {
+      "name": "final report present on the Runtime",
+      "pass": true,
+      "detail": "GET /api/v1/runs/{id}/report 200"
+    }
+  ],
+  "commands": [
+    "node services/runtime/src/main.ts --port <p> --scenario exchange_and_mix --seed 42 --clock-mode lockstep",
+    "node services/culture-agent/src/main.ts --port 0 --runtime-url http://127.0.0.1:<p>",
+    "POST /api/v1/agent/runs {experiment_id, mode:\"scripted\"} (operator token, speed 600)"
+  ],
+  "actions": [
+    {
+      "action_id": "act-001-01",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-02",
+      "capability": "media.exchange",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-03",
+      "capability": "plate.shake",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-04",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    }
+  ],
+  "observations": [
+    "obs-001-001",
+    "obs-001-002"
+  ],
+  "agent_report": {
+    "run_id": "run-001-1",
+    "experiment_id": "exp-001",
+    "scenario": "exchange_and_mix",
+    "mode": "scripted",
+    "outcome": "completed",
+    "summary": "exchange_and_mix complete: exchange act-001-02 (fraction 0.5, removed 2399.9 µL, evidence obs obs-001-001), shake act-001-03, settle 30 s; before obs obs-001-001 vs after obs obs-001-002: Δcolor +0.396, Δturbidity -0.260 (fresh medium restored)",
+    "steps": [
+      {
+        "index": 1,
+        "kind": "act",
+        "capability": "imaging.scan",
+        "basis": "scripted",
+        "reason": "scheduled_policy: first scan of focus row plate-01 A for exchange evidence",
+        "evidence_refs": [],
+        "action_id": "act-001-01",
+        "action_status": "succeeded",
+        "effects": {
+          "wells": {},
+          "reservoir_delta_ul": 0,
+          "waste_delta_ul": 0,
+          "tips_used": 0
+        }
+      },
+      {
+        "index": 2,
+        "kind": "wait",
+        "basis": "scripted",
+        "reason": "imaging.scan act-001-01 in progress",
+        "wake": {
+          "on_actions": [
+            "act-001-01"
+          ]
+        }
+      },
+      {
+        "index": 3,
+        "kind": "act",
+        "capability": "media.exchange",
+        "basis": "scripted",
+        "reason": "obs obs-001-001 device_estimate color_index min 0.180, turbidity max 0.835 (spent medium): media.exchange fraction 0.5 of row A per policy_hints",
+        "evidence_refs": [
+          "obs-001-001"
+        ],
+        "action_id": "act-001-02",
+        "action_status": "succeeded",
+        "effects": {
+          "wells": {
+            "A1": {
+              "removed_ul": 404.98555555555606,
+              "added_ul": 404.98555555555606
+            },
+            "A2": {
+              "removed_ul": 399.98555555555606,
+              "added_ul": 399.98555555555606
+            },
+            "A3": {
+              "removed_ul": 397.48555555555606,
+              "added_ul": 397.48555555555606
+            },
+            "A4": {
+              "removed_ul": 402.48555555555606,
+              "added_ul": 402.48555555555606
+            },
+            "A5": {
+              "removed_ul": 394.98555555555606,
+              "added_ul": 394.98555555555606
+            },
+            "A6": {
+              "removed_ul": 399.98555555555606,
+              "added_ul": 399.98555555555606
+            }
+          },
+          "reservoir_delta_ul": -2399.913333333336,
+          "waste_delta_ul": 2399.913333333336,
+          "tips_used": 12
+        }
+      },
+      {
+        "index": 4,
+        "kind": "wait",
+        "basis": "scripted",
+        "reason": "media.exchange act-001-02 in progress",
+        "wake": {
+          "on_actions": [
+            "act-001-02"
+          ]
+        }
+      },
+      {
+        "index": 5,
+        "kind": "act",
+        "capability": "plate.shake",
+        "basis": "scripted",
+        "reason": "scheduled_policy: shake plate-01 at 300 rpm for 30 s after exchange act-001-02",
+        "evidence_refs": [],
+        "action_id": "act-001-03",
+        "action_status": "succeeded",
+        "effects": {
+          "wells": {},
+          "reservoir_delta_ul": 0,
+          "waste_delta_ul": 0,
+          "tips_used": 0
+        }
+      },
+      {
+        "index": 6,
+        "kind": "wait",
+        "basis": "scripted",
+        "reason": "plate.shake act-001-03 in progress",
+        "wake": {
+          "on_actions": [
+            "act-001-03"
+          ]
+        }
+      },
+      {
+        "index": 7,
+        "kind": "wait",
+        "basis": "scripted",
+        "reason": "shake act-001-03 stopped; settle window 30 s (scheduled_policy) — stereo rescan at 126 s",
+        "wake": {
+          "at_sim_s": 126
+        }
+      },
+      {
+        "index": 8,
+        "kind": "act",
+        "capability": "imaging.scan",
+        "basis": "scripted",
+        "reason": "settle window complete after shake act-001-03: stereo rescan of plate-01 A for before/after comparison (baseline obs obs-001-001)",
+        "evidence_refs": [],
+        "action_id": "act-001-04",
+        "action_status": "succeeded",
+        "effects": {
+          "wells": {},
+          "reservoir_delta_ul": 0,
+          "waste_delta_ul": 0,
+          "tips_used": 0
+        }
+      },
+      {
+        "index": 9,
+        "kind": "wait",
+        "basis": "scripted",
+        "reason": "imaging.scan act-001-04 in progress",
+        "wake": {
+          "on_actions": [
+            "act-001-04"
+          ]
+        }
+      },
+      {
+        "index": 10,
+        "kind": "finish",
+        "basis": "scripted"
+      }
+    ],
+    "observations": [
+      {
+        "observation_id": "obs-001-001",
+        "quality": "ok",
+        "sampled_at_sim_s": 11,
+        "plate_id": "plate-01",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "images": [
+          "c2181d51e1796eff43662cd99cdb7413d4ff3dfa41d0098825eaad7ef32e0d70"
+        ]
+      },
+      {
+        "observation_id": "obs-001-002",
+        "quality": "ok",
+        "sampled_at_sim_s": 137,
+        "plate_id": "plate-01",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "images": [
+          "e722053e13bbda1b8b819a6179700980da9fa0042407e02fde71b84fd2b71d03",
+          "b0b1dbe1a8533655707ab7bd2f436f82a97780638929ba2f046b07a8b3229e26"
+        ]
+      }
+    ],
+    "inventory": {
+      "reservoirs": [
+        {
+          "id": "media-01",
+          "start_ul": 50000,
+          "end_ul": 47600.08666666666,
+          "delta_ul": -2399.913
+        }
+      ],
+      "wastes": [
+        {
+          "id": "waste-01",
+          "start_used_ul": 0,
+          "end_used_ul": 2399.913333333336,
+          "delta_ul": 2399.913
+        }
+      ],
+      "tips": [
+        {
+          "id": "tips-01",
+          "start_remaining": 96,
+          "end_remaining": 84,
+          "used": 12
+        },
+        {
+          "id": "tips-02",
+          "start_remaining": 96,
+          "end_remaining": 96,
+          "used": 0
+        },
+        {
+          "id": "tips-03",
+          "start_remaining": 96,
+          "end_remaining": 96,
+          "used": 0
+        }
+      ],
+      "focus_row": {
+        "plate_id": "plate-01",
+        "row_id": "A",
+        "wells": [
+          {
+            "well_id": "A1",
+            "start_ul": 810,
+            "end_ul": 809.8444444444482,
+            "delta_ul": -0.156
+          },
+          {
+            "well_id": "A2",
+            "start_ul": 800,
+            "end_ul": 799.8444444444482,
+            "delta_ul": -0.156
+          },
+          {
+            "well_id": "A3",
+            "start_ul": 795,
+            "end_ul": 794.8444444444482,
+            "delta_ul": -0.156
+          },
+          {
+            "well_id": "A4",
+            "start_ul": 805,
+            "end_ul": 804.8444444444482,
+            "delta_ul": -0.156
+          },
+          {
+            "well_id": "A5",
+            "start_ul": 790,
+            "end_ul": 789.8444444444482,
+            "delta_ul": -0.156
+          },
+          {
+            "well_id": "A6",
+            "start_ul": 800,
+            "end_ul": 799.8444444444482,
+            "delta_ul": -0.156
+          }
+        ]
+      }
+    },
+    "environment": {
+      "before": {
+        "chamber_id": "chamber-01",
+        "target_revision": 1,
+        "provenance": "synthetic_sensor",
+        "temperature_c": {
+          "target": 37,
+          "observed": 36.883127,
+          "error": -0.116873,
+          "quality": "ok",
+          "sampled_at_sim_s": 0
+        },
+        "co2_pct": {
+          "target": 5,
+          "observed": 4.999642,
+          "error": -0.000358,
+          "quality": "ok",
+          "sampled_at_sim_s": 0
+        },
+        "humidity_pct": {
+          "target": 95,
+          "observed": 94.737212,
+          "error": -0.262788,
+          "quality": "ok",
+          "sampled_at_sim_s": 0
+        },
+        "stable": false
+      },
+      "after": {
+        "chamber_id": "chamber-01",
+        "target_revision": 1,
+        "provenance": "synthetic_sensor",
+        "temperature_c": {
+          "target": 37,
+          "observed": 36.962163,
+          "error": -0.037837,
+          "quality": "ok",
+          "sampled_at_sim_s": 120
+        },
+        "co2_pct": {
+          "target": 5,
+          "observed": 4.990074,
+          "error": -0.009926,
+          "quality": "ok",
+          "sampled_at_sim_s": 120
+        },
+        "humidity_pct": {
+          "target": 95,
+          "observed": 94.261005,
+          "error": -0.738995,
+          "quality": "ok",
+          "sampled_at_sim_s": 120
+        },
+        "stable": true
+      },
+      "tolerances": {
+        "temperature_c": 0.3,
+        "co2_pct": 0.2,
+        "humidity_pct": 3
+      }
+    },
+    "counts": {
+      "decisions": 10,
+      "actions_submitted": 4,
+      "observations_recorded": 2
+    },
+    "determinism_broken": false,
+    "generated_at_wall": "2026-09-30T01:05:39.224Z"
+  },
+  "inventory": {
+    "reservoirs": [
+      {
+        "id": "media-01",
+        "start_ul": 50000,
+        "end_ul": 47600.08666666666,
+        "delta_ul": -2399.913
+      }
+    ],
+    "wastes": [
+      {
+        "id": "waste-01",
+        "start_used_ul": 0,
+        "end_used_ul": 2399.913333333336,
+        "delta_ul": 2399.913
+      }
+    ],
+    "tips": [
+      {
+        "id": "tips-01",
+        "start_remaining": 96,
+        "end_remaining": 84,
+        "used": 12
+      },
+      {
+        "id": "tips-02",
+        "start_remaining": 96,
+        "end_remaining": 96,
+        "used": 0
+      },
+      {
+        "id": "tips-03",
+        "start_remaining": 96,
+        "end_remaining": 96,
+        "used": 0
+      }
+    ],
+    "focus_row": {
+      "plate_id": "plate-01",
+      "row_id": "A",
+      "wells": [
+        {
+          "well_id": "A1",
+          "start_ul": 810,
+          "end_ul": 809.8444444444482,
+          "delta_ul": -0.156
+        },
+        {
+          "well_id": "A2",
+          "start_ul": 800,
+          "end_ul": 799.8444444444482,
+          "delta_ul": -0.156
+        },
+        {
+          "well_id": "A3",
+          "start_ul": 795,
+          "end_ul": 794.8444444444482,
+          "delta_ul": -0.156
+        },
+        {
+          "well_id": "A4",
+          "start_ul": 805,
+          "end_ul": 804.8444444444482,
+          "delta_ul": -0.156
+        },
+        {
+          "well_id": "A5",
+          "start_ul": 790,
+          "end_ul": 789.8444444444482,
+          "delta_ul": -0.156
+        },
+        {
+          "well_id": "A6",
+          "start_ul": 800,
+          "end_ul": 799.8444444444482,
+          "delta_ul": -0.156
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "same_session_older_response_cannot_overwrite_newer",
+  "pass": true,
+  "actual": {
+    "message": "earlier_0earlier_1VERSION_2",
+    "status": "exp-AAgent：空闲设备在线 · realtime · sim 2 s模型未配置（model_unavailable，不会回退 scripted）在途动作 0 · 消息 seq 2 · 事件 seq 2 · inbox 0"
+  },
+  "expected": {
+    "visible_version": 2
+  }
+}

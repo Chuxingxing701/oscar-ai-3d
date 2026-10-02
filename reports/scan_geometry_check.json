@@ -1,0 +1,219 @@
+{
+  "errors": [],
+  "results": [
+    {
+      "ready": true,
+      "disposed": false,
+      "mode": "interior",
+      "playing": true,
+      "displayPaused": false,
+      "animationMode": "controlled",
+      "experimentId": "exp-001",
+      "simTime": 4,
+      "renderedSimTime": 4,
+      "paused": false,
+      "time": 0,
+      "animationCount": 1,
+      "exteriorVisible": false,
+      "autoRotate": false,
+      "transitioning": false,
+      "frameCount": 14,
+      "drawCalls": 442,
+      "triangles": 78916,
+      "renderer": {
+        "geometries": 439,
+        "textures": 4
+      },
+      "selection": null,
+      "motion": [
+        [
+          -0.859,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0.024166699999999992
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "rowHead": {
+        "channels": 6,
+        "wellIds": [],
+        "tipsLocal": [
+          [
+            -0.054000000000000006,
+            1.113,
+            0.018
+          ],
+          [
+            -0.0324,
+            1.113,
+            0.018
+          ],
+          [
+            -0.0108,
+            1.113,
+            0.018
+          ],
+          [
+            0.0108,
+            1.113,
+            0.018
+          ],
+          [
+            0.0324,
+            1.113,
+            0.018
+          ],
+          [
+            0.054000000000000006,
+            1.113,
+            0.018
+          ]
+        ],
+        "activeFlows": 0
+      },
+      "headTarget": {
+        "plate_id": "plate-01",
+        "well_id": "B1"
+      },
+      "cameraLens": [
+        -0.929,
+        1.262,
+        0.0641667
+      ],
+      "shakes": {
+        "plate-01": [
+          0,
+          0,
+          0
+        ],
+        "plate-02": [
+          0,
+          0,
+          0
+        ]
+      },
+      "effects": {
+        "flow": false,
+        "scan": true,
+        "scanRay": true,
+        "scanSpot": true,
+        "tipLight": false
+      }
+    },
+    {
+      "ready": true,
+      "disposed": false,
+      "mode": "interior",
+      "playing": true,
+      "displayPaused": false,
+      "animationMode": "controlled",
+      "experimentId": "exp-001",
+      "simTime": 13,
+      "renderedSimTime": 13,
+      "paused": false,
+      "time": 0,
+      "animationCount": 1,
+      "exteriorVisible": false,
+      "autoRotate": false,
+      "transitioning": false,
+      "frameCount": 21,
+      "drawCalls": 442,
+      "triangles": 78916,
+      "renderer": {
+        "geometries": 439,
+        "textures": 4
+      },
+      "selection": null,
+      "motion": [
+        [
+          -0.859,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          -0.11249999999999999
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "rowHead": {
+        "channels": 6,
+        "wellIds": [],
+        "tipsLocal": [
+          [
+            -0.054000000000000006,
+            1.113,
+            0.018
+          ],
+          [
+            -0.0324,
+            1.113,
+            0.018
+          ],
+          [
+            -0.0108,
+            1.113,
+            0.018
+          ],
+          [
+            0.0108,
+            1.113,
+            0.018
+          ],
+          [
+            0.0324,
+            1.113,
+            0.018
+          ],
+          [
+            0.054000000000000006,
+            1.113,
+            0.018
+          ]
+        ],
+        "activeFlows": 0
+      },
+      "headTarget": {
+        "plate_id": "plate-02",
+        "well_id": "A1"
+      },
+      "cameraLens": [
+        -0.929,
+        1.262,
+        -0.07249999999999998
+      ],
+      "shakes": {
+        "plate-01": [
+          0,
+          0,
+          0
+        ],
+        "plate-02": [
+          0,
+          0,
+          0
+        ]
+      },
+      "effects": {
+        "flow": false,
+        "scan": true,
+        "scanRay": true,
+        "scanSpot": true,
+        "tipLight": false
+      }
+    }
+  ]
+}

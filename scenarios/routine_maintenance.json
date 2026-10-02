@@ -1,0 +1,58 @@
+{
+  "id": "routine_maintenance",
+  "version": "1.0.0",
+  "seed": 42,
+  "description": "例行维护（演示）：plate-01 A 排液位偏低，其余孔接近满液；环境已在目标点稳定。Agent/操作者扫描 → 识别 A 排需要补液 → 整排加液 → 复查。所有数值为演示参数。",
+  "initial": {
+    "chamber": {
+      "targets": {"temperature_c": 37.0, "co2_pct": 5.0, "humidity_pct": 95.0},
+      "actual": {"temperature_c": 37.0, "co2_pct": 5.0, "humidity_pct": 95.0}
+    },
+    "plates": [
+      {
+        "id": "plate-01", "station_id": "Station_1_2", "format": "24", "medium_id": "medium-a",
+        "wells_volume_ul": {
+          "A": [400, 380, 410, 420, 395, 405],
+          "B": [800, 810, 795, 805, 800, 815],
+          "C": [800, 790, 805, 800, 810, 795],
+          "D": [805, 800, 800, 795, 810, 800]
+        },
+        "culture": {"nutrient": 0.7, "metabolite": 0.3, "morphology": 0.35}
+      },
+      {
+        "id": "plate-02", "station_id": "Station_1_3", "format": "24", "medium_id": "medium-a",
+        "wells_volume_ul": {
+          "A": [800, 800, 800, 800, 800, 800],
+          "B": [800, 800, 800, 800, 800, 800],
+          "C": [800, 800, 800, 800, 800, 800],
+          "D": [800, 800, 800, 800, 800, 800]
+        },
+        "culture": {"nutrient": 0.8, "metabolite": 0.2, "morphology": 0.3}
+      }
+    ],
+    "reservoirs": [
+      {"id": "media-01", "station_id": "Station_3_3", "medium_id": "medium-a", "remaining_ul": 50000, "capacity_ul": 50000}
+    ],
+    "waste": {"id": "waste-01", "station_id": "Station_3_4", "used_ul": 0, "capacity_ul": 100000},
+    "tip_racks": [
+      {"id": "tips-01", "station_id": "Station_4_1", "remaining": 96, "capacity": 96},
+      {"id": "tips-02", "station_id": "Station_4_2", "remaining": 96, "capacity": 96},
+      {"id": "tips-03", "station_id": "Station_4_3", "remaining": 96, "capacity": 96}
+    ]
+  },
+  "task": {
+    "goal": "照看 plate-01 的培养孔：扫描观察，向液位低于目标带的整排补加培养基，复查并记录结果。",
+    "allowed_capabilities": ["media.add", "media.exchange", "imaging.scan", "environment.set_targets", "environment.read", "environment.await_stable", "plate.shake", "action.get", "action.cancel", "observation.get"],
+    "plates": ["plate-01"],
+    "env_targets": {"temperature_c": 37.0, "co2_pct": 5.0, "humidity_pct": 95.0},
+    "tolerances": {"temperature_c": 0.3, "co2_pct": 0.2, "humidity_pct": 3.0},
+    "budgets": {"max_actions": 40, "max_sim_time_s": 7200},
+    "policy_hints": {
+      "focus": {"plate_id": "plate-01", "row_id": "A"},
+      "target_band_ul": [600, 900],
+      "scan_interval_s": 600,
+      "notes": "Scripted 演示策略提示：A 排低于下沿 → media.add 整排补至带内；补液后复查。"
+    }
+  },
+  "faults": []
+}

@@ -1,0 +1,123 @@
+{
+  "date": "2026-09-29T16:54:33.941Z",
+  "browser": "153.0.8010.12",
+  "checks": [
+    "Original page loads full model and embedded textures",
+    "Original idle clip pauses and view switches without animation ownership conflict",
+    "Drag does not trigger click-to-interior",
+    "Focus and real raycast select A1 through transparent annotations",
+    "Six parallel flows cover the entire row; controlled pose freezes at fixed sim time",
+    "Selecting B4 drives the full B row and explicitly labels six simultaneous wells",
+    "Display pause holds pose, resumes latest snapshot",
+    "Camera scan effect and original-station shake start/complete restore",
+    "Experiment reset clears old effects, selection and display pause",
+    "390x844 mobile container resizes, controls remain reachable, no horizontal overflow",
+    "Dispose stops RAF and removes renderer canvas"
+  ],
+  "errors": [],
+  "diagnostics": {
+    "ready": true,
+    "disposed": false,
+    "mode": "interior",
+    "playing": true,
+    "displayPaused": false,
+    "animationMode": "controlled",
+    "experimentId": "scene-preview-only",
+    "simTime": 12,
+    "paused": true,
+    "time": 0.09660000000000218,
+    "animationCount": 1,
+    "exteriorVisible": false,
+    "autoRotate": false,
+    "transitioning": false,
+    "frameCount": 25,
+    "drawCalls": 96,
+    "triangles": 55404,
+    "renderer": {
+      "geometries": 441,
+      "textures": 4
+    },
+    "selection": {
+      "plate_id": "plate-01"
+    },
+    "motion": [
+      [
+        -0.875,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0.024500000000000004
+      ],
+      [
+        0,
+        -0.12,
+        0
+      ]
+    ],
+    "rowHead": {
+      "channels": 6,
+      "wellIds": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6"
+      ],
+      "tipsLocal": [
+        [
+          -0.05400000000000005,
+          1.113,
+          0.018
+        ],
+        [
+          -0.032399999999999984,
+          1.113,
+          0.018
+        ],
+        [
+          -0.010800000000000032,
+          1.113,
+          0.018
+        ],
+        [
+          0.010800000000000032,
+          1.113,
+          0.018
+        ],
+        [
+          0.032399999999999984,
+          1.113,
+          0.018
+        ],
+        [
+          0.05400000000000005,
+          1.113,
+          0.018
+        ]
+      ],
+      "activeFlows": 6
+    },
+    "shakes": {
+      "plate-01": [
+        0,
+        0,
+        0
+      ],
+      "plate-02": [
+        0,
+        0,
+        0
+      ]
+    },
+    "effects": {
+      "flow": true,
+      "scan": false,
+      "tipLight": true
+    }
+  },
+  "limits": "Desktop Chromium SwiftShader; mobile viewport emulation, no physical phone or Blender run."
+}

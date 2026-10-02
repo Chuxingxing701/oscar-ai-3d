@@ -1,0 +1,14 @@
+{
+  "name": "@oscar/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OSCAR Runtime: stateful device virtual machine, HTTP API, SSE, leases/clock, gateway",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@oscar/device-contract": "0.1.0",
+    "@oscar/simulator": "0.1.0"
+  }
+}

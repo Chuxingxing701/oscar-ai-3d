@@ -1,0 +1,188 @@
+[
+  {
+    "name": "same_revision_shorter_debounce_cannot_complete_longer_goal",
+    "pass": true,
+    "actual": {
+      "goal_condition": {
+        "metric": "temperature_c",
+        "op": "below",
+        "value": 38,
+        "debounce_sim_s": 600,
+        "hysteresis": 0,
+        "cooldown_sim_s": 0
+      },
+      "registration_sim_s": 4,
+      "checked_at_sim_s": 52,
+      "elapsed_sim_s": 48,
+      "verification": {
+        "ok": false,
+        "code": "debounce_shortened",
+        "message": "goal requires temperature_c below 38 to hold for 600 simulated seconds; the fired wake only required 0s. A shorter debounce may still wake the model, but it is not success evidence — re-arm the wake with debounce_sim_s >= 600",
+        "next_skill": "monitor_until",
+        "verification": {
+          "pass": false,
+          "code": "debounce_shortened",
+          "reasons": [
+            "goal requires temperature_c below 38 to hold for 600 simulated seconds; the fired wake only required 0s. A shorter debounce may still wake the model, but it is not success evidence — re-arm the wake with debounce_sim_s >= 600"
+          ],
+          "next_skill": "monitor_until",
+          "evidence": {},
+          "checked_at_wall": "2026-10-02T17:33:31.395Z"
+        }
+      },
+      "completion_gate": {
+        "ok": false,
+        "code": "plan_not_verifiable",
+        "message": "cannot complete the task: step 0 (monitor_until) step is not terminal",
+        "reasons": [
+          "cannot complete the task: step 0 (monitor_until) step is not terminal"
+        ]
+      },
+      "status": "waiting_condition",
+      "fired_wakes": [
+        {
+          "wake_id": "wake-1fdf27c0-c",
+          "session_id": "cs-001-57a464f8",
+          "task_id": "task-963dc485-0da",
+          "kind": "condition",
+          "predicate": {
+            "metric": "temperature_c",
+            "op": "below",
+            "value": 38,
+            "debounce_sim_s": 0,
+            "hysteresis": 0,
+            "cooldown_sim_s": 0
+          },
+          "target_sim_s": null,
+          "source_watermark": 4,
+          "status": "fired",
+          "dedupe_key": null,
+          "goal_revision": 1,
+          "step_id": "step-35351c37-4",
+          "created_at_wall": "2026-10-02T17:33:31.124Z",
+          "fired_at_wall": "2026-10-02T17:33:31.383Z"
+        }
+      ]
+    },
+    "expected": {
+      "completion_gate_ok": false,
+      "status_not": "completed",
+      "required_continuous_sim_s": 600
+    }
+  },
+  {
+    "name": "full_debounce_positive_control",
+    "pass": true,
+    "actual": {
+      "goal_condition": {
+        "metric": "temperature_c",
+        "op": "below",
+        "value": 38,
+        "debounce_sim_s": 600,
+        "hysteresis": 0,
+        "cooldown_sim_s": 0
+      },
+      "registration_sim_s": 55,
+      "checked_at_sim_s": 682,
+      "elapsed_sim_s": 627,
+      "verification": {
+        "ok": true,
+        "step": {
+          "step_id": "step-e58f690f-a",
+          "task_id": "task-5d691be6-7f4",
+          "plan_revision": 1,
+          "index_in_plan": 0,
+          "skill": "monitor_until",
+          "skill_version": "1",
+          "inputs": {
+            "condition": {
+              "metric": "temperature_c",
+              "op": "below",
+              "value": 38
+            }
+          },
+          "postconditions": {
+            "requires": [],
+            "evidence": "a fired wake of this task (sim_time target reached, or condition fired) read back from the persisted wake ledger"
+          },
+          "status": "done",
+          "action_ids": [],
+          "evidence_refs": [],
+          "verification": {
+            "pass": true,
+            "code": null,
+            "reasons": [],
+            "next_skill": null,
+            "evidence": {
+              "wake_id": "wake-59592d22-8",
+              "kind": "condition",
+              "condition": {
+                "metric": "temperature_c",
+                "op": "below",
+                "value": 38
+              },
+              "debounce_sim_s": 600,
+              "required_debounce_sim_s": 600,
+              "sim_time_s": 661,
+              "wake_goal_revision": 1,
+              "wake_step_id": "step-e58f690f-a"
+            },
+            "checked_at_wall": "2026-10-02T17:33:37.689Z"
+          },
+          "updated_at_wall": "2026-10-02T17:33:37.689Z"
+        }
+      },
+      "completion_gate": {
+        "ok": true,
+        "evidence": {
+          "mode": "plan_only",
+          "metrics": [],
+          "note": "verified monitor_until evidence: a done step with a passing verification of the CURRENT goal revision matches the goal success condition",
+          "step_index": 0,
+          "step_skill": "monitor_until",
+          "step_inputs": {
+            "condition": {
+              "metric": "temperature_c",
+              "op": "below",
+              "value": 38
+            }
+          },
+          "goal_revision": 1,
+          "plan_revision": 1,
+          "deadline_sim_s": null,
+          "sim_time_s": 661
+        }
+      },
+      "status": "completed",
+      "fired_wakes": [
+        {
+          "wake_id": "wake-59592d22-8",
+          "session_id": "cs-001-23361a39",
+          "task_id": "task-5d691be6-7f4",
+          "kind": "condition",
+          "predicate": {
+            "metric": "temperature_c",
+            "op": "below",
+            "value": 38,
+            "debounce_sim_s": 600,
+            "hysteresis": 0,
+            "cooldown_sim_s": 0
+          },
+          "target_sim_s": null,
+          "source_watermark": 55,
+          "status": "fired",
+          "dedupe_key": null,
+          "goal_revision": 1,
+          "step_id": "step-e58f690f-a",
+          "created_at_wall": "2026-10-02T17:33:31.640Z",
+          "fired_at_wall": "2026-10-02T17:33:37.679Z"
+        }
+      ]
+    },
+    "expected": {
+      "completion_gate_ok": true,
+      "status": "completed",
+      "minimum_elapsed_sim_s": 600
+    }
+  }
+]

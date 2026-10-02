@@ -1,0 +1,2453 @@
+{
+  "experiment_id": "exp-003",
+  "run": {
+    "run_id": "run-003-1",
+    "experiment_id": "exp-003",
+    "mode": "scripted",
+    "status": "ended",
+    "reason": "completed",
+    "clock_mode": "lockstep",
+    "plates": [
+      "plate-01"
+    ],
+    "capabilities": [
+      "media.add",
+      "media.exchange",
+      "imaging.scan",
+      "environment.set_targets",
+      "environment.read",
+      "environment.await_stable",
+      "plate.shake",
+      "action.get",
+      "action.cancel",
+      "observation.get"
+    ],
+    "budget": {
+      "max_actions": 40,
+      "actions_used": 4
+    },
+    "determinism_broken": false,
+    "created_at_sim_s": 0,
+    "idempotency_key": null
+  },
+  "seen": [
+    {
+      "key": "dispensing",
+      "sim_time_s": 54,
+      "action_id": "act-003-02",
+      "stage": "dispensing"
+    },
+    {
+      "key": "shaking",
+      "sim_time_s": 66,
+      "action_id": "act-003-03"
+    }
+  ],
+  "errors": [],
+  "sceneErrors": [],
+  "before": {
+    "experiment": {
+      "experiment_id": "exp-003",
+      "scenario_id": "exchange_and_mix",
+      "scenario_version": "1.0.0",
+      "simulator_version": "0.1.0",
+      "seed": 42,
+      "status": "active",
+      "sim_time_s": 0,
+      "clock_mode": "lockstep",
+      "paused": false,
+      "speed": 4,
+      "reset_from": "exp-002",
+      "successor_id": null,
+      "determinism_broken": false,
+      "created_at_wall": "2026-09-30T01:11:20.169Z"
+    },
+    "event_seq": 2,
+    "device": {
+      "device_id": "oscar-01",
+      "mode": "simulation",
+      "manifest_version": "0.1.0",
+      "health": "ok"
+    },
+    "chamber": {
+      "chamber_id": "chamber-01",
+      "target_revision": 1,
+      "provenance": "synthetic_sensor",
+      "temperature_c": {
+        "target": 37,
+        "observed": 36.883127,
+        "error": -0.116873,
+        "quality": "ok",
+        "sampled_at_sim_s": 0
+      },
+      "co2_pct": {
+        "target": 5,
+        "observed": 4.999642,
+        "error": -0.000358,
+        "quality": "ok",
+        "sampled_at_sim_s": 0
+      },
+      "humidity_pct": {
+        "target": 95,
+        "observed": 94.737212,
+        "error": -0.262788,
+        "quality": "ok",
+        "sampled_at_sim_s": 0
+      },
+      "stable": false
+    },
+    "plates": [
+      {
+        "plate_id": "plate-01",
+        "station_id": "Station_1_2",
+        "format": "24",
+        "rows": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "columns": 6,
+        "revision": 1,
+        "shake": {
+          "active": false,
+          "started_at_sim_s": 0,
+          "duration_sim_s": 0,
+          "speed_rpm": 0,
+          "ended_at_sim_s": null,
+          "action_id": null
+        },
+        "wells": [
+          {
+            "well_id": "A1",
+            "volume_ul": 810,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A2",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A3",
+            "volume_ul": 795,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A4",
+            "volume_ul": 805,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A5",
+            "volume_ul": 790,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A6",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B1",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B2",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B3",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B4",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B5",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B6",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C1",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C2",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C3",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C4",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C5",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C6",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D1",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D2",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D3",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D4",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D5",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D6",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          }
+        ]
+      },
+      {
+        "plate_id": "plate-02",
+        "station_id": "Station_1_3",
+        "format": "24",
+        "rows": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "columns": 6,
+        "revision": 1,
+        "shake": {
+          "active": false,
+          "started_at_sim_s": 0,
+          "duration_sim_s": 0,
+          "speed_rpm": 0,
+          "ended_at_sim_s": null,
+          "action_id": null
+        },
+        "wells": [
+          {
+            "well_id": "A1",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A2",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A3",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A4",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A5",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A6",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B1",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B2",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B3",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B4",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B5",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B6",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C1",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C2",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C3",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C4",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C5",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C6",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D1",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D2",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D3",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D4",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D5",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D6",
+            "volume_ul": 800,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          }
+        ]
+      }
+    ],
+    "reservoirs": [
+      {
+        "id": "media-01",
+        "station_id": "Station_3_3",
+        "medium_id": "medium-a",
+        "remaining_ul": 50000,
+        "capacity_ul": 50000
+      }
+    ],
+    "wastes": [
+      {
+        "id": "waste-01",
+        "station_id": "Station_3_4",
+        "used_ul": 0,
+        "capacity_ul": 100000
+      }
+    ],
+    "tips": [
+      {
+        "id": "tips-01",
+        "station_id": "Station_4_1",
+        "remaining": 96,
+        "capacity": 96
+      },
+      {
+        "id": "tips-02",
+        "station_id": "Station_4_2",
+        "remaining": 96,
+        "capacity": 96
+      },
+      {
+        "id": "tips-03",
+        "station_id": "Station_4_3",
+        "remaining": 96,
+        "capacity": 96
+      }
+    ],
+    "busy_resources": {},
+    "active_actions": [],
+    "head": null,
+    "lease": null,
+    "run": null,
+    "revisions": {
+      "chamber:chamber-01": 1,
+      "plate:plate-01": 1,
+      "plate:plate-02": 1
+    }
+  },
+  "final": {
+    "experiment": {
+      "experiment_id": "exp-003",
+      "scenario_id": "exchange_and_mix",
+      "scenario_version": "1.0.0",
+      "simulator_version": "0.1.0",
+      "seed": 42,
+      "status": "active",
+      "sim_time_s": 140,
+      "clock_mode": "lockstep",
+      "paused": false,
+      "speed": 4,
+      "reset_from": "exp-002",
+      "successor_id": null,
+      "determinism_broken": false,
+      "created_at_wall": "2026-09-30T01:11:20.169Z"
+    },
+    "event_seq": 81,
+    "device": {
+      "device_id": "oscar-01",
+      "mode": "simulation",
+      "manifest_version": "0.1.0",
+      "health": "ok"
+    },
+    "chamber": {
+      "chamber_id": "chamber-01",
+      "target_revision": 1,
+      "provenance": "synthetic_sensor",
+      "temperature_c": {
+        "target": 37,
+        "observed": 36.962163,
+        "error": -0.037837,
+        "quality": "ok",
+        "sampled_at_sim_s": 120
+      },
+      "co2_pct": {
+        "target": 5,
+        "observed": 4.990074,
+        "error": -0.009926,
+        "quality": "ok",
+        "sampled_at_sim_s": 120
+      },
+      "humidity_pct": {
+        "target": 95,
+        "observed": 94.261005,
+        "error": -0.738995,
+        "quality": "ok",
+        "sampled_at_sim_s": 120
+      },
+      "stable": true
+    },
+    "plates": [
+      {
+        "plate_id": "plate-01",
+        "station_id": "Station_1_2",
+        "format": "24",
+        "rows": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "columns": 6,
+        "revision": 5,
+        "shake": {
+          "active": false,
+          "started_at_sim_s": 66,
+          "duration_sim_s": 30,
+          "speed_rpm": 300,
+          "ended_at_sim_s": 96,
+          "action_id": "act-003-03"
+        },
+        "wells": [
+          {
+            "well_id": "A1",
+            "volume_ul": 809.8444444444482,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A2",
+            "volume_ul": 799.8444444444482,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A3",
+            "volume_ul": 794.8444444444482,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A4",
+            "volume_ul": 804.8444444444482,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A5",
+            "volume_ul": 789.8444444444482,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A6",
+            "volume_ul": 799.8444444444482,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B1",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B2",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B3",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B4",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B5",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B6",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C1",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C2",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C3",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C4",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C5",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C6",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D1",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D2",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D3",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D4",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D5",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D6",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          }
+        ]
+      },
+      {
+        "plate_id": "plate-02",
+        "station_id": "Station_1_3",
+        "format": "24",
+        "rows": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ],
+        "columns": 6,
+        "revision": 1,
+        "shake": {
+          "active": false,
+          "started_at_sim_s": 0,
+          "duration_sim_s": 0,
+          "speed_rpm": 0,
+          "ended_at_sim_s": null,
+          "action_id": null
+        },
+        "wells": [
+          {
+            "well_id": "A1",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A2",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A3",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A4",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A5",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "A6",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B1",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B2",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B3",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B4",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B5",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "B6",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C1",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C2",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C3",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C4",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C5",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "C6",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D1",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D2",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D3",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D4",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D5",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          },
+          {
+            "well_id": "D6",
+            "volume_ul": 799.8444444444499,
+            "capacity_ul": 2000,
+            "medium_id": "medium-a"
+          }
+        ]
+      }
+    ],
+    "reservoirs": [
+      {
+        "id": "media-01",
+        "station_id": "Station_3_3",
+        "medium_id": "medium-a",
+        "remaining_ul": 47600.08666666666,
+        "capacity_ul": 50000
+      }
+    ],
+    "wastes": [
+      {
+        "id": "waste-01",
+        "station_id": "Station_3_4",
+        "used_ul": 2399.913333333336,
+        "capacity_ul": 100000
+      }
+    ],
+    "tips": [
+      {
+        "id": "tips-01",
+        "station_id": "Station_4_1",
+        "remaining": 84,
+        "capacity": 96
+      },
+      {
+        "id": "tips-02",
+        "station_id": "Station_4_2",
+        "remaining": 96,
+        "capacity": 96
+      },
+      {
+        "id": "tips-03",
+        "station_id": "Station_4_3",
+        "remaining": 96,
+        "capacity": 96
+      }
+    ],
+    "busy_resources": {},
+    "active_actions": [],
+    "head": null,
+    "lease": null,
+    "run": {
+      "run_id": "run-003-1",
+      "experiment_id": "exp-003",
+      "mode": "scripted",
+      "status": "ended",
+      "reason": "completed",
+      "clock_mode": "lockstep",
+      "plates": [
+        "plate-01"
+      ],
+      "capabilities": [
+        "media.add",
+        "media.exchange",
+        "imaging.scan",
+        "environment.set_targets",
+        "environment.read",
+        "environment.await_stable",
+        "plate.shake",
+        "action.get",
+        "action.cancel",
+        "observation.get"
+      ],
+      "budget": {
+        "max_actions": 40,
+        "actions_used": 4
+      },
+      "determinism_broken": false,
+      "created_at_sim_s": 0,
+      "idempotency_key": null
+    },
+    "revisions": {
+      "chamber:chamber-01": 1,
+      "plate:plate-01": 5,
+      "plate:plate-02": 1
+    }
+  },
+  "actions": [
+    {
+      "action_id": "act-003-01",
+      "experiment_id": "exp-003",
+      "device_id": "oscar-01",
+      "capability": "imaging.scan",
+      "arguments": {
+        "plate_id": "plate-01",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "mode": "mono",
+        "view": "medium_overview"
+      },
+      "scope": {
+        "plate_id": "plate-01",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "label": "plate-01 A1,A2,A3,A4,A5,A6"
+      },
+      "status": "succeeded",
+      "principal": {
+        "kind": "run",
+        "id": "run:run-003-1",
+        "run_id": "run-003-1"
+      },
+      "run_id": "run-003-1",
+      "basis": "scripted",
+      "reason": "scheduled_policy: first scan of focus row plate-01 A for exchange evidence",
+      "evidence_refs": [],
+      "idempotency_key": "run-003-1-d1",
+      "resources": [
+        "head",
+        "plate:plate-01"
+      ],
+      "accept_seq": 1,
+      "submitted_at_sim_s": 0,
+      "started_at_sim_s": 0,
+      "ended_at_sim_s": 14,
+      "stages": [
+        {
+          "index": 0,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "tool": "camera",
+          "target": {
+            "plate_id": "plate-01",
+            "well_id": "A1"
+          },
+          "from_target": null,
+          "duration_sim_s": 3,
+          "started_at_sim_s": 0,
+          "committed": true
+        },
+        {
+          "index": 1,
+          "stage": "scanning",
+          "primitive": "camera.capture",
+          "tool": "camera",
+          "target": {
+            "plate_id": "plate-01",
+            "well_id": "A1"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "well_id": "A1"
+          },
+          "duration_sim_s": 8,
+          "started_at_sim_s": 3,
+          "committed": true
+        },
+        {
+          "index": 2,
+          "stage": "moving",
+          "primitive": "motion.park",
+          "tool": "camera",
+          "target": null,
+          "from_target": {
+            "plate_id": "plate-01",
+            "well_id": "A1"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 11,
+          "committed": true
+        }
+      ],
+      "current_stage_index": 2,
+      "effects": [],
+      "summary": {
+        "wells": {},
+        "reservoir_delta_ul": 0,
+        "waste_delta_ul": 0,
+        "tips_used": 0
+      },
+      "partial": false,
+      "cancel_reason": null,
+      "error": null,
+      "result": {
+        "observation_id": "obs-003-001",
+        "images": [
+          "ast-003-001"
+        ],
+        "quality": "ok"
+      }
+    },
+    {
+      "action_id": "act-003-02",
+      "experiment_id": "exp-003",
+      "device_id": "oscar-01",
+      "capability": "media.exchange",
+      "arguments": {
+        "plate_id": "plate-01",
+        "row_id": "A",
+        "reservoir_id": "media-01",
+        "fraction": 0.5
+      },
+      "scope": {
+        "plate_id": "plate-01",
+        "row_id": "A",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "label": "plate-01 A1–A6"
+      },
+      "status": "succeeded",
+      "principal": {
+        "kind": "run",
+        "id": "run:run-003-1",
+        "run_id": "run-003-1"
+      },
+      "run_id": "run-003-1",
+      "basis": "scripted",
+      "reason": "obs obs-003-001 device_estimate color_index min 0.180, turbidity max 0.835 (spent medium): media.exchange fraction 0.5 of row A per policy_hints",
+      "evidence_refs": [
+        "obs-003-001"
+      ],
+      "idempotency_key": "run-003-1-d2",
+      "resources": [
+        "head",
+        "plate:plate-01",
+        "reservoir:media-01",
+        "waste:waste-01",
+        "tips"
+      ],
+      "accept_seq": 2,
+      "submitted_at_sim_s": 14,
+      "started_at_sim_s": 14,
+      "ended_at_sim_s": 66,
+      "stages": [
+        {
+          "index": 0,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "target": {
+            "resource_id": "tips-01"
+          },
+          "from_target": null,
+          "duration_sim_s": 3,
+          "started_at_sim_s": 14,
+          "committed": true
+        },
+        {
+          "index": 1,
+          "stage": "picking_tip",
+          "primitive": "pipette.pick_tip",
+          "tool": "pipette",
+          "target": {
+            "resource_id": "tips-01"
+          },
+          "from_target": {
+            "resource_id": "tips-01"
+          },
+          "duration_sim_s": 2,
+          "started_at_sim_s": 17,
+          "committed": true
+        },
+        {
+          "index": 2,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "from_target": {
+            "resource_id": "tips-01"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 19,
+          "committed": true
+        },
+        {
+          "index": 3,
+          "stage": "lowering",
+          "primitive": "motion.lower",
+          "target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "duration_sim_s": 1,
+          "started_at_sim_s": 22,
+          "committed": true
+        },
+        {
+          "index": 4,
+          "stage": "aspirating",
+          "primitive": "pipette.aspirate",
+          "tool": "pipette",
+          "target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 23,
+          "committed": true
+        },
+        {
+          "index": 5,
+          "stage": "raising",
+          "primitive": "motion.raise",
+          "target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "duration_sim_s": 1,
+          "started_at_sim_s": 26,
+          "committed": true
+        },
+        {
+          "index": 6,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "target": {
+            "resource_id": "waste-01"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 27,
+          "committed": true
+        },
+        {
+          "index": 7,
+          "stage": "lowering",
+          "primitive": "motion.lower",
+          "target": {
+            "resource_id": "waste-01"
+          },
+          "from_target": {
+            "resource_id": "waste-01"
+          },
+          "duration_sim_s": 1,
+          "started_at_sim_s": 30,
+          "committed": true
+        },
+        {
+          "index": 8,
+          "stage": "dispensing",
+          "primitive": "pipette.dispense",
+          "tool": "pipette",
+          "target": {
+            "resource_id": "waste-01"
+          },
+          "from_target": {
+            "resource_id": "waste-01"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 31,
+          "committed": true
+        },
+        {
+          "index": 9,
+          "stage": "raising",
+          "primitive": "motion.raise",
+          "target": {
+            "resource_id": "waste-01"
+          },
+          "from_target": {
+            "resource_id": "waste-01"
+          },
+          "duration_sim_s": 1,
+          "started_at_sim_s": 34,
+          "committed": true
+        },
+        {
+          "index": 10,
+          "stage": "dropping_tip",
+          "primitive": "pipette.drop_tip",
+          "tool": "pipette",
+          "target": {
+            "resource_id": "waste-01"
+          },
+          "from_target": {
+            "resource_id": "waste-01"
+          },
+          "duration_sim_s": 2,
+          "started_at_sim_s": 35,
+          "committed": true
+        },
+        {
+          "index": 11,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "target": {
+            "resource_id": "tips-01"
+          },
+          "from_target": {
+            "resource_id": "waste-01"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 37,
+          "committed": true
+        },
+        {
+          "index": 12,
+          "stage": "picking_tip",
+          "primitive": "pipette.pick_tip",
+          "tool": "pipette",
+          "target": {
+            "resource_id": "tips-01"
+          },
+          "from_target": {
+            "resource_id": "tips-01"
+          },
+          "duration_sim_s": 2,
+          "started_at_sim_s": 40,
+          "committed": true
+        },
+        {
+          "index": 13,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "target": {
+            "resource_id": "media-01"
+          },
+          "from_target": {
+            "resource_id": "tips-01"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 42,
+          "committed": true
+        },
+        {
+          "index": 14,
+          "stage": "lowering",
+          "primitive": "motion.lower",
+          "target": {
+            "resource_id": "media-01"
+          },
+          "from_target": {
+            "resource_id": "media-01"
+          },
+          "duration_sim_s": 1,
+          "started_at_sim_s": 45,
+          "committed": true
+        },
+        {
+          "index": 15,
+          "stage": "aspirating",
+          "primitive": "pipette.aspirate",
+          "tool": "pipette",
+          "target": {
+            "resource_id": "media-01"
+          },
+          "from_target": {
+            "resource_id": "media-01"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 46,
+          "committed": true
+        },
+        {
+          "index": 16,
+          "stage": "raising",
+          "primitive": "motion.raise",
+          "target": {
+            "resource_id": "media-01"
+          },
+          "from_target": {
+            "resource_id": "media-01"
+          },
+          "duration_sim_s": 1,
+          "started_at_sim_s": 49,
+          "committed": true
+        },
+        {
+          "index": 17,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "from_target": {
+            "resource_id": "media-01"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 50,
+          "committed": true
+        },
+        {
+          "index": 18,
+          "stage": "lowering",
+          "primitive": "motion.lower",
+          "target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "duration_sim_s": 1,
+          "started_at_sim_s": 53,
+          "committed": true
+        },
+        {
+          "index": 19,
+          "stage": "dispensing",
+          "primitive": "pipette.dispense",
+          "tool": "pipette",
+          "target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 54,
+          "committed": true
+        },
+        {
+          "index": 20,
+          "stage": "raising",
+          "primitive": "motion.raise",
+          "target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "duration_sim_s": 1,
+          "started_at_sim_s": 57,
+          "committed": true
+        },
+        {
+          "index": 21,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "target": {
+            "resource_id": "waste-01"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "row_id": "A"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 58,
+          "committed": true
+        },
+        {
+          "index": 22,
+          "stage": "dropping_tip",
+          "primitive": "pipette.drop_tip",
+          "tool": "pipette",
+          "target": {
+            "resource_id": "waste-01"
+          },
+          "from_target": {
+            "resource_id": "waste-01"
+          },
+          "duration_sim_s": 2,
+          "started_at_sim_s": 61,
+          "committed": true
+        },
+        {
+          "index": 23,
+          "stage": "moving",
+          "primitive": "motion.park",
+          "target": null,
+          "from_target": {
+            "resource_id": "waste-01"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 63,
+          "committed": true
+        }
+      ],
+      "current_stage_index": 23,
+      "effects": [
+        {
+          "step_index": 1,
+          "stage": "picking_tip",
+          "committed_at_sim_s": 19,
+          "tips": {
+            "id": "tips-01",
+            "delta": -6
+          }
+        },
+        {
+          "step_index": 4,
+          "stage": "aspirating",
+          "committed_at_sim_s": 26,
+          "wells": [
+            {
+              "well_id": "A1",
+              "delta_ul": -404.98555555555606
+            },
+            {
+              "well_id": "A2",
+              "delta_ul": -399.98555555555606
+            },
+            {
+              "well_id": "A3",
+              "delta_ul": -397.48555555555606
+            },
+            {
+              "well_id": "A4",
+              "delta_ul": -402.48555555555606
+            },
+            {
+              "well_id": "A5",
+              "delta_ul": -394.98555555555606
+            },
+            {
+              "well_id": "A6",
+              "delta_ul": -399.98555555555606
+            }
+          ],
+          "head_load_ul": [
+            404.98555555555606,
+            399.98555555555606,
+            397.48555555555606,
+            402.48555555555606,
+            394.98555555555606,
+            399.98555555555606
+          ]
+        },
+        {
+          "step_index": 8,
+          "stage": "dispensing",
+          "committed_at_sim_s": 34,
+          "waste": {
+            "id": "waste-01",
+            "delta_ul": 2399.913333333336
+          },
+          "head_load_ul": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step_index": 10,
+          "stage": "dropping_tip",
+          "committed_at_sim_s": 37,
+          "tips": {
+            "id": "tips-01",
+            "delta": 0
+          }
+        },
+        {
+          "step_index": 12,
+          "stage": "picking_tip",
+          "committed_at_sim_s": 42,
+          "tips": {
+            "id": "tips-01",
+            "delta": -6
+          }
+        },
+        {
+          "step_index": 15,
+          "stage": "aspirating",
+          "committed_at_sim_s": 49,
+          "reservoir": {
+            "id": "media-01",
+            "delta_ul": -2399.913333333336
+          },
+          "head_load_ul": [
+            404.98555555555606,
+            399.98555555555606,
+            397.48555555555606,
+            402.48555555555606,
+            394.98555555555606,
+            399.98555555555606
+          ]
+        },
+        {
+          "step_index": 19,
+          "stage": "dispensing",
+          "committed_at_sim_s": 57,
+          "wells": [
+            {
+              "well_id": "A1",
+              "delta_ul": 404.98555555555606
+            },
+            {
+              "well_id": "A2",
+              "delta_ul": 399.98555555555606
+            },
+            {
+              "well_id": "A3",
+              "delta_ul": 397.48555555555606
+            },
+            {
+              "well_id": "A4",
+              "delta_ul": 402.48555555555606
+            },
+            {
+              "well_id": "A5",
+              "delta_ul": 394.98555555555606
+            },
+            {
+              "well_id": "A6",
+              "delta_ul": 399.98555555555606
+            }
+          ],
+          "head_load_ul": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        {
+          "step_index": 22,
+          "stage": "dropping_tip",
+          "committed_at_sim_s": 63,
+          "tips": {
+            "id": "tips-01",
+            "delta": 0
+          }
+        }
+      ],
+      "summary": {
+        "wells": {
+          "A1": {
+            "removed_ul": 404.98555555555606,
+            "added_ul": 404.98555555555606
+          },
+          "A2": {
+            "removed_ul": 399.98555555555606,
+            "added_ul": 399.98555555555606
+          },
+          "A3": {
+            "removed_ul": 397.48555555555606,
+            "added_ul": 397.48555555555606
+          },
+          "A4": {
+            "removed_ul": 402.48555555555606,
+            "added_ul": 402.48555555555606
+          },
+          "A5": {
+            "removed_ul": 394.98555555555606,
+            "added_ul": 394.98555555555606
+          },
+          "A6": {
+            "removed_ul": 399.98555555555606,
+            "added_ul": 399.98555555555606
+          }
+        },
+        "reservoir_delta_ul": -2399.913333333336,
+        "waste_delta_ul": 2399.913333333336,
+        "tips_used": 12
+      },
+      "partial": false,
+      "cancel_reason": null,
+      "error": null,
+      "result": {
+        "summary": "media.exchange completed",
+        "wells": {
+          "A1": {
+            "removed_ul": 404.98555555555606,
+            "added_ul": 404.98555555555606
+          },
+          "A2": {
+            "removed_ul": 399.98555555555606,
+            "added_ul": 399.98555555555606
+          },
+          "A3": {
+            "removed_ul": 397.48555555555606,
+            "added_ul": 397.48555555555606
+          },
+          "A4": {
+            "removed_ul": 402.48555555555606,
+            "added_ul": 402.48555555555606
+          },
+          "A5": {
+            "removed_ul": 394.98555555555606,
+            "added_ul": 394.98555555555606
+          },
+          "A6": {
+            "removed_ul": 399.98555555555606,
+            "added_ul": 399.98555555555606
+          }
+        },
+        "reservoir_delta_ul": -2399.913333333336,
+        "waste_delta_ul": 2399.913333333336,
+        "tips_used": 12
+      }
+    },
+    {
+      "action_id": "act-003-03",
+      "experiment_id": "exp-003",
+      "device_id": "oscar-01",
+      "capability": "plate.shake",
+      "arguments": {
+        "plate_id": "plate-01",
+        "speed_rpm": 300,
+        "duration_sim_s": 30,
+        "pattern": "orbital"
+      },
+      "scope": {
+        "plate_id": "plate-01",
+        "label": "plate-01"
+      },
+      "status": "succeeded",
+      "principal": {
+        "kind": "run",
+        "id": "run:run-003-1",
+        "run_id": "run-003-1"
+      },
+      "run_id": "run-003-1",
+      "basis": "scripted",
+      "reason": "scheduled_policy: shake plate-01 at 300 rpm for 30 s after exchange act-003-02",
+      "evidence_refs": [],
+      "idempotency_key": "run-003-1-d3",
+      "resources": [
+        "plate:plate-01"
+      ],
+      "accept_seq": 3,
+      "submitted_at_sim_s": 66,
+      "started_at_sim_s": 66,
+      "ended_at_sim_s": 96,
+      "stages": [
+        {
+          "index": 0,
+          "stage": "shaking",
+          "primitive": "plate.shake_orbital",
+          "target": {
+            "resource_id": "plate-01"
+          },
+          "from_target": null,
+          "duration_sim_s": 30,
+          "started_at_sim_s": 66,
+          "committed": true
+        }
+      ],
+      "current_stage_index": 0,
+      "effects": [
+        {
+          "step_index": 0,
+          "stage": "shaking",
+          "committed_at_sim_s": 66,
+          "shake": "started"
+        },
+        {
+          "step_index": 0,
+          "stage": "shaking",
+          "committed_at_sim_s": 96,
+          "shake": "stopped"
+        }
+      ],
+      "summary": {
+        "wells": {},
+        "reservoir_delta_ul": 0,
+        "waste_delta_ul": 0,
+        "tips_used": 0
+      },
+      "partial": false,
+      "cancel_reason": null,
+      "error": null,
+      "result": {
+        "summary": "shake completed",
+        "speed_rpm": 300,
+        "duration_sim_s": 30
+      }
+    },
+    {
+      "action_id": "act-003-04",
+      "experiment_id": "exp-003",
+      "device_id": "oscar-01",
+      "capability": "imaging.scan",
+      "arguments": {
+        "plate_id": "plate-01",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "mode": "stereo",
+        "view": "medium_overview"
+      },
+      "scope": {
+        "plate_id": "plate-01",
+        "wells": [
+          "A1",
+          "A2",
+          "A3",
+          "A4",
+          "A5",
+          "A6"
+        ],
+        "label": "plate-01 A1,A2,A3,A4,A5,A6"
+      },
+      "status": "succeeded",
+      "principal": {
+        "kind": "run",
+        "id": "run:run-003-1",
+        "run_id": "run-003-1"
+      },
+      "run_id": "run-003-1",
+      "basis": "scripted",
+      "reason": "settle window complete after shake act-003-03: stereo rescan of plate-01 A for before/after comparison (baseline obs obs-003-001)",
+      "evidence_refs": [],
+      "idempotency_key": "run-003-1-d4",
+      "resources": [
+        "head",
+        "plate:plate-01"
+      ],
+      "accept_seq": 4,
+      "submitted_at_sim_s": 126,
+      "started_at_sim_s": 126,
+      "ended_at_sim_s": 140,
+      "stages": [
+        {
+          "index": 0,
+          "stage": "moving",
+          "primitive": "motion.move_to_station",
+          "tool": "camera",
+          "target": {
+            "plate_id": "plate-01",
+            "well_id": "A1"
+          },
+          "from_target": null,
+          "duration_sim_s": 3,
+          "started_at_sim_s": 126,
+          "committed": true
+        },
+        {
+          "index": 1,
+          "stage": "scanning",
+          "primitive": "camera.capture",
+          "tool": "camera",
+          "target": {
+            "plate_id": "plate-01",
+            "well_id": "A1"
+          },
+          "from_target": {
+            "plate_id": "plate-01",
+            "well_id": "A1"
+          },
+          "duration_sim_s": 8,
+          "started_at_sim_s": 129,
+          "committed": true
+        },
+        {
+          "index": 2,
+          "stage": "moving",
+          "primitive": "motion.park",
+          "tool": "camera",
+          "target": null,
+          "from_target": {
+            "plate_id": "plate-01",
+            "well_id": "A1"
+          },
+          "duration_sim_s": 3,
+          "started_at_sim_s": 137,
+          "committed": true
+        }
+      ],
+      "current_stage_index": 2,
+      "effects": [],
+      "summary": {
+        "wells": {},
+        "reservoir_delta_ul": 0,
+        "waste_delta_ul": 0,
+        "tips_used": 0
+      },
+      "partial": false,
+      "cancel_reason": null,
+      "error": null,
+      "result": {
+        "observation_id": "obs-003-002",
+        "images": [
+          "ast-003-002",
+          "ast-003-003"
+        ],
+        "quality": "ok"
+      }
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": "obs-003-001",
+      "experiment_id": "exp-003",
+      "action_id": "act-003-01",
+      "plate_id": "plate-01",
+      "wells": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6"
+      ],
+      "mode": "mono",
+      "view": "medium_overview",
+      "sampled_at_sim_s": 11,
+      "plate_revision": 1,
+      "quality": "ok",
+      "stereo_pair_id": null,
+      "depth_status": "not_computed",
+      "camera": {
+        "mount": "head_z_axis",
+        "simulated": true,
+        "mode": "mono",
+        "view": "medium_overview",
+        "image_px": {
+          "width": 320,
+          "height": 240
+        }
+      },
+      "images": [
+        {
+          "asset_id": "ast-003-001",
+          "role": "mono",
+          "sha256": "c2181d51e1796eff43662cd99cdb7413d4ff3dfa41d0098825eaad7ef32e0d70",
+          "width": 320,
+          "height": 240,
+          "media_type": "image/png",
+          "provenance": "synthetic_image"
+        }
+      ],
+      "estimates": [
+        {
+          "well_id": "A1",
+          "liquid_level_ul": 803.12,
+          "color_index": 0.184,
+          "turbidity": 0.808,
+          "quality": 0.996,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A2",
+          "liquid_level_ul": 798.6,
+          "color_index": 0.18,
+          "turbidity": 0.824,
+          "quality": 0.996,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A3",
+          "liquid_level_ul": 798.08,
+          "color_index": 0.227,
+          "turbidity": 0.82,
+          "quality": 0.976,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A4",
+          "liquid_level_ul": 801.67,
+          "color_index": 0.188,
+          "turbidity": 0.808,
+          "quality": 0.979,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A5",
+          "liquid_level_ul": 788.04,
+          "color_index": 0.227,
+          "turbidity": 0.82,
+          "quality": 0.995,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A6",
+          "liquid_level_ul": 792.49,
+          "color_index": 0.184,
+          "turbidity": 0.835,
+          "quality": 0.979,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        }
+      ],
+      "source": "synthetic_image"
+    },
+    {
+      "observation_id": "obs-003-002",
+      "experiment_id": "exp-003",
+      "action_id": "act-003-04",
+      "plate_id": "plate-01",
+      "wells": [
+        "A1",
+        "A2",
+        "A3",
+        "A4",
+        "A5",
+        "A6"
+      ],
+      "mode": "stereo",
+      "view": "medium_overview",
+      "sampled_at_sim_s": 137,
+      "plate_revision": 5,
+      "quality": "ok",
+      "stereo_pair_id": "stereo-1",
+      "depth_status": "not_computed",
+      "camera": {
+        "mount": "head_z_axis",
+        "simulated": true,
+        "mode": "stereo",
+        "view": "medium_overview",
+        "image_px": {
+          "width": 320,
+          "height": 240
+        },
+        "baseline_mm": 12,
+        "parallax_px": 6
+      },
+      "images": [
+        {
+          "asset_id": "ast-003-002",
+          "role": "left",
+          "sha256": "e722053e13bbda1b8b819a6179700980da9fa0042407e02fde71b84fd2b71d03",
+          "width": 320,
+          "height": 240,
+          "media_type": "image/png",
+          "provenance": "synthetic_image"
+        },
+        {
+          "asset_id": "ast-003-003",
+          "role": "right",
+          "sha256": "b0b1dbe1a8533655707ab7bd2f436f82a97780638929ba2f046b07a8b3229e26",
+          "width": 320,
+          "height": 240,
+          "media_type": "image/png",
+          "provenance": "synthetic_image"
+        }
+      ],
+      "estimates": [
+        {
+          "well_id": "A1",
+          "liquid_level_ul": 798.69,
+          "color_index": 0.616,
+          "turbidity": 0.541,
+          "quality": 0.981,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A2",
+          "liquid_level_ul": 787.14,
+          "color_index": 0.573,
+          "turbidity": 0.58,
+          "quality": 0.99,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A3",
+          "liquid_level_ul": 793.57,
+          "color_index": 0.608,
+          "turbidity": 0.565,
+          "quality": 0.997,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A4",
+          "liquid_level_ul": 799.46,
+          "color_index": 0.58,
+          "turbidity": 0.51,
+          "quality": 0.991,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A5",
+          "liquid_level_ul": 783.76,
+          "color_index": 0.584,
+          "turbidity": 0.573,
+          "quality": 0.975,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        },
+        {
+          "well_id": "A6",
+          "liquid_level_ul": 798.74,
+          "color_index": 0.608,
+          "turbidity": 0.584,
+          "quality": 0.988,
+          "provenance": "device_estimate",
+          "method": "simulated_onboard_analysis",
+          "uncertainty_ul": 16
+        }
+      ],
+      "source": "synthetic_image"
+    }
+  ],
+  "report": {
+    "run_id": "run-003-1",
+    "reason": "completed",
+    "report": {
+      "run_id": "run-003-1",
+      "experiment_id": "exp-003",
+      "scenario": "exchange_and_mix",
+      "mode": "scripted",
+      "outcome": "completed",
+      "summary": "exchange_and_mix complete: exchange act-003-02 (fraction 0.5, removed 2399.9 µL, evidence obs obs-003-001), shake act-003-03, settle 30 s; before obs obs-003-001 vs after obs obs-003-002: Δcolor +0.396, Δturbidity -0.260 (fresh medium restored)",
+      "steps": [
+        {
+          "index": 1,
+          "kind": "act",
+          "capability": "imaging.scan",
+          "basis": "scripted",
+          "reason": "scheduled_policy: first scan of focus row plate-01 A for exchange evidence",
+          "evidence_refs": [],
+          "action_id": "act-003-01",
+          "action_status": "succeeded",
+          "effects": {
+            "wells": {},
+            "reservoir_delta_ul": 0,
+            "waste_delta_ul": 0,
+            "tips_used": 0
+          }
+        },
+        {
+          "index": 2,
+          "kind": "wait",
+          "basis": "scripted",
+          "reason": "imaging.scan act-003-01 in progress",
+          "wake": {
+            "on_actions": [
+              "act-003-01"
+            ]
+          }
+        },
+        {
+          "index": 3,
+          "kind": "act",
+          "capability": "media.exchange",
+          "basis": "scripted",
+          "reason": "obs obs-003-001 device_estimate color_index min 0.180, turbidity max 0.835 (spent medium): media.exchange fraction 0.5 of row A per policy_hints",
+          "evidence_refs": [
+            "obs-003-001"
+          ],
+          "action_id": "act-003-02",
+          "action_status": "succeeded",
+          "effects": {
+            "wells": {
+              "A1": {
+                "removed_ul": 404.98555555555606,
+                "added_ul": 404.98555555555606
+              },
+              "A2": {
+                "removed_ul": 399.98555555555606,
+                "added_ul": 399.98555555555606
+              },
+              "A3": {
+                "removed_ul": 397.48555555555606,
+                "added_ul": 397.48555555555606
+              },
+              "A4": {
+                "removed_ul": 402.48555555555606,
+                "added_ul": 402.48555555555606
+              },
+              "A5": {
+                "removed_ul": 394.98555555555606,
+                "added_ul": 394.98555555555606
+              },
+              "A6": {
+                "removed_ul": 399.98555555555606,
+                "added_ul": 399.98555555555606
+              }
+            },
+            "reservoir_delta_ul": -2399.913333333336,
+            "waste_delta_ul": 2399.913333333336,
+            "tips_used": 12
+          }
+        },
+        {
+          "index": 4,
+          "kind": "wait",
+          "basis": "scripted",
+          "reason": "media.exchange act-003-02 in progress",
+          "wake": {
+            "on_actions": [
+              "act-003-02"
+            ]
+          }
+        },
+        {
+          "index": 5,
+          "kind": "act",
+          "capability": "plate.shake",
+          "basis": "scripted",
+          "reason": "scheduled_policy: shake plate-01 at 300 rpm for 30 s after exchange act-003-02",
+          "evidence_refs": [],
+          "action_id": "act-003-03",
+          "action_status": "succeeded",
+          "effects": {
+            "wells": {},
+            "reservoir_delta_ul": 0,
+            "waste_delta_ul": 0,
+            "tips_used": 0
+          }
+        },
+        {
+          "index": 6,
+          "kind": "wait",
+          "basis": "scripted",
+          "reason": "plate.shake act-003-03 in progress",
+          "wake": {
+            "on_actions": [
+              "act-003-03"
+            ]
+          }
+        },
+        {
+          "index": 7,
+          "kind": "wait",
+          "basis": "scripted",
+          "reason": "shake act-003-03 stopped; settle window 30 s (scheduled_policy) — stereo rescan at 126 s",
+          "wake": {
+            "at_sim_s": 126
+          }
+        },
+        {
+          "index": 8,
+          "kind": "act",
+          "capability": "imaging.scan",
+          "basis": "scripted",
+          "reason": "settle window complete after shake act-003-03: stereo rescan of plate-01 A for before/after comparison (baseline obs obs-003-001)",
+          "evidence_refs": [],
+          "action_id": "act-003-04",
+          "action_status": "succeeded",
+          "effects": {
+            "wells": {},
+            "reservoir_delta_ul": 0,
+            "waste_delta_ul": 0,
+            "tips_used": 0
+          }
+        },
+        {
+          "index": 9,
+          "kind": "wait",
+          "basis": "scripted",
+          "reason": "imaging.scan act-003-04 in progress",
+          "wake": {
+            "on_actions": [
+              "act-003-04"
+            ]
+          }
+        },
+        {
+          "index": 10,
+          "kind": "finish",
+          "basis": "scripted"
+        }
+      ],
+      "observations": [
+        {
+          "observation_id": "obs-003-001",
+          "quality": "ok",
+          "sampled_at_sim_s": 11,
+          "plate_id": "plate-01",
+          "wells": [
+            "A1",
+            "A2",
+            "A3",
+            "A4",
+            "A5",
+            "A6"
+          ],
+          "images": [
+            "c2181d51e1796eff43662cd99cdb7413d4ff3dfa41d0098825eaad7ef32e0d70"
+          ]
+        },
+        {
+          "observation_id": "obs-003-002",
+          "quality": "ok",
+          "sampled_at_sim_s": 137,
+          "plate_id": "plate-01",
+          "wells": [
+            "A1",
+            "A2",
+            "A3",
+            "A4",
+            "A5",
+            "A6"
+          ],
+          "images": [
+            "e722053e13bbda1b8b819a6179700980da9fa0042407e02fde71b84fd2b71d03",
+            "b0b1dbe1a8533655707ab7bd2f436f82a97780638929ba2f046b07a8b3229e26"
+          ]
+        }
+      ],
+      "inventory": {
+        "reservoirs": [
+          {
+            "id": "media-01",
+            "start_ul": 50000,
+            "end_ul": 47600.08666666666,
+            "delta_ul": -2399.913
+          }
+        ],
+        "wastes": [
+          {
+            "id": "waste-01",
+            "start_used_ul": 0,
+            "end_used_ul": 2399.913333333336,
+            "delta_ul": 2399.913
+          }
+        ],
+        "tips": [
+          {
+            "id": "tips-01",
+            "start_remaining": 96,
+            "end_remaining": 84,
+            "used": 12
+          },
+          {
+            "id": "tips-02",
+            "start_remaining": 96,
+            "end_remaining": 96,
+            "used": 0
+          },
+          {
+            "id": "tips-03",
+            "start_remaining": 96,
+            "end_remaining": 96,
+            "used": 0
+          }
+        ],
+        "focus_row": {
+          "plate_id": "plate-01",
+          "row_id": "A",
+          "wells": [
+            {
+              "well_id": "A1",
+              "start_ul": 810,
+              "end_ul": 809.8444444444482,
+              "delta_ul": -0.156
+            },
+            {
+              "well_id": "A2",
+              "start_ul": 800,
+              "end_ul": 799.8444444444482,
+              "delta_ul": -0.156
+            },
+            {
+              "well_id": "A3",
+              "start_ul": 795,
+              "end_ul": 794.8444444444482,
+              "delta_ul": -0.156
+            },
+            {
+              "well_id": "A4",
+              "start_ul": 805,
+              "end_ul": 804.8444444444482,
+              "delta_ul": -0.156
+            },
+            {
+              "well_id": "A5",
+              "start_ul": 790,
+              "end_ul": 789.8444444444482,
+              "delta_ul": -0.156
+            },
+            {
+              "well_id": "A6",
+              "start_ul": 800,
+              "end_ul": 799.8444444444482,
+              "delta_ul": -0.156
+            }
+          ]
+        }
+      },
+      "environment": {
+        "before": {
+          "chamber_id": "chamber-01",
+          "target_revision": 1,
+          "provenance": "synthetic_sensor",
+          "temperature_c": {
+            "target": 37,
+            "observed": 36.883127,
+            "error": -0.116873,
+            "quality": "ok",
+            "sampled_at_sim_s": 0
+          },
+          "co2_pct": {
+            "target": 5,
+            "observed": 4.999642,
+            "error": -0.000358,
+            "quality": "ok",
+            "sampled_at_sim_s": 0
+          },
+          "humidity_pct": {
+            "target": 95,
+            "observed": 94.737212,
+            "error": -0.262788,
+            "quality": "ok",
+            "sampled_at_sim_s": 0
+          },
+          "stable": false
+        },
+        "after": {
+          "chamber_id": "chamber-01",
+          "target_revision": 1,
+          "provenance": "synthetic_sensor",
+          "temperature_c": {
+            "target": 37,
+            "observed": 36.962163,
+            "error": -0.037837,
+            "quality": "ok",
+            "sampled_at_sim_s": 120
+          },
+          "co2_pct": {
+            "target": 5,
+            "observed": 4.990074,
+            "error": -0.009926,
+            "quality": "ok",
+            "sampled_at_sim_s": 120
+          },
+          "humidity_pct": {
+            "target": 95,
+            "observed": 94.261005,
+            "error": -0.738995,
+            "quality": "ok",
+            "sampled_at_sim_s": 120
+          },
+          "stable": true
+        },
+        "tolerances": {
+          "temperature_c": 0.3,
+          "co2_pct": 0.2,
+          "humidity_pct": 3
+        }
+      },
+      "counts": {
+        "decisions": 10,
+        "actions_submitted": 4,
+        "observations_recorded": 2
+      },
+      "determinism_broken": false,
+      "generated_at_wall": "2026-09-30T01:12:05.008Z"
+    },
+    "created_at_wall": "2026-09-30T01:12:05.011Z"
+  }
+}
