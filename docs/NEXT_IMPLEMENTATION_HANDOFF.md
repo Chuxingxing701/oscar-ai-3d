@@ -1,8 +1,8 @@
-# 下一阶段实施交接（2026-10-01，D0–D5 完成）
+# 下一阶段实施交接（2026-10-03，复验 R01–T01 已关闭）
 
-**D0–D5 长期培养会话 MVP 已完成**（设计 [LONG_LIVED_AGENT_DESIGN.md](LONG_LIVED_AGENT_DESIGN.md)、任务 [LONG_LIVED_AGENT_IMPLEMENTATION_PROMPT.md](LONG_LIVED_AGENT_IMPLEMENTATION_PROMPT.md)、结果 [检查点报告](../reports/long_lived_agent_checkpoint.md)）：一个实验一个长期会话、事件驱动 realtime 调度、pi 0.84.0 真实模型后端（OpenAI 兼容 wire + 真实工具调用）、任务记忆与压缩、总助手契约 v1 与独立客户端、Agent 面板会话 UI。原 P1/P2 异常恢复问题已在 D0 修复并以真实进程回归覆盖。
+**D0–D5 长期培养会话已完成，独立复验没有未关闭的阻塞项。** 设计 [LONG_LIVED_AGENT_DESIGN.md](LONG_LIVED_AGENT_DESIGN.md)，检查点 [报告](../reports/long_lived_agent_checkpoint.md)，复验修复 [long-lived-reacceptance-fixes.md](../reports/review/long-lived-reacceptance-fixes.md)，T01 关闭 [long-lived-t01-independent-review.md](../reports/review/long-lived-t01-independent-review.md)。一个实验一个长期会话、事件驱动 realtime 调度、pi 0.84.0、任务队列、四项版本化技能、总助手契约 1.1.0、Agent 面板。
 
-先读 `agent.md`、`docs/WORK_ALLOCATION.md`、v0.4 主设计、`docs/API_CONTRACT.md`（§10 会话/总助手契约）、[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) 的 D 阶段一节。历史跟进（布局/动画/网关）见各报告链接（保留有效）。
+先读 `agent.md`、[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) 的 D 阶段与「复验关闭」、`docs/API_CONTRACT.md` §10。审查脚本是验收基准，不要改它们的期望。
 
 ## 当前使用方式
 
@@ -14,18 +14,22 @@
 
 ## 关键机制（实现位置）
 
-- 写防护链：会话 lifecycle → ownership generation（`claimOwnership` fencing）→ task 状态/goal_revision（迟到的模型响应按旧 revision 拒绝 `goal_revision_stale`）→ goal 写范围（`out_of_scope`）→ 预算（跨重启累计）→ 意图先落库 → 提交带幂等键。`services/culture-agent/src/executor.ts`。
-- 唤醒：用户消息/自有意图动作终态（自动登记）/观测就绪/阈值条件（去抖+滞回+冷却，`environment.sampled` 仅调度器内评估不调模型）/sim 定时/恢复补齐。`scheduler.ts`。
+- 写防护链：会话 lifecycle → ownership generation → task 状态/goal_revision → 范围 → 预算 → 意图先落库 → 最后一次 await 之后再查撤权 → 提交带幂等键。`executor.ts`。计划/步骤写入同样在最后一次 await 后重查，并用 CAS。
+- 队列：当前任务占槽（含 paused / needs_input）。新任务只在无当前任务、无队列、且 `handoff_pending` 已清除时才是 `ready`，否则 `queued`。动作状态查不到时不晋升。
+- 唤醒：用户消息、自有动作终态、观测就绪、阈值（去抖+滞回+冷却；读 Runtime `environment.sampled` 的 `sample` 字段，普通采样不调模型）、sim 定时、恢复。成功证据的去抖不得短于目标 `debounce_sim_s`（`debounce_shortened`）。`scheduler.ts`、`skills.ts`。
 - 事件账目：inbox (source,seq) 去重且与游标同事务；SSE 断线 JSON 补齐；观测在意图迟到归属后回放（`replayAttributedObservations`）；回合简报游标在采集时推进（回合期间发出的事件必达下一回合）。
 - 记忆：checkpoint generation CAS；压缩只影响模型上下文，原始消息/事件/动作事实永不删除；`POST /sessions/:id/compact` 可强制。
 
 ## 优先下一步（建议顺序）
 
-1. **真实模型验收**：拿到凭证后设置 `OSCAR_MODEL_*` 指向 DeepSeek，用 `npm run demo:all -- --only session_monitor` 或 UI 会话跑一轮自然语言目标，记录真实调用结果（当前明确：真实提供商未验证）。
-2. **needs_input 自然语言闭环**：桩未覆盖“用户补参→模型继续”的对话路径（API/状态机已测）；真实模型下验证 `request_input` → 用户答复 → `needs_input→running`。
-3. **视觉上下文**：把观测图片物化进模型上下文（pi 后端 `images:false` 现状；受限于 max images/预算、失效图片与板 revision 规则）。
-4. **DSH 薄插件**：按 HistoPilot-DSH 模式把 supervisor v1 包成插件（契约已就绪，勿并行车轮）。
-5. 取头几何与实机标定（历史遗留）。
+复验阻塞项已关闭。剩下的都不是当前验收门槛：
+
+1. **真实模型验收**：设置 `OSCAR_MODEL_*` 后跑一轮自然语言目标。现在明确未验证。
+2. **视觉上下文**：pi 后端仍是 `images: false`。
+3. **低级遗留**（见实施状态）：面板字面量 `null`、监测模板绝对期限 93600、未复现的队列卡片、桩把 REST 路径写进对话。
+4. **测试入口**：`scripts/run-tests.mjs` 用 `args.length === 4` 判断空阶段，过滤后只剩一个文件时会跳过该阶段。单文件用 `node --test`。
+5. **DSH 薄插件**、取头几何标定：仍按原计划暂缓。
+6. 滞回/冷却尚未做成与去抖相同的“不得弱于目标”成功门槛。T01 只约束去抖。
 
 ## 执行要求
 
