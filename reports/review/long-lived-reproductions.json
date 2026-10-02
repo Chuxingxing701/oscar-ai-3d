@@ -1,0 +1,109 @@
+[
+  {
+    "name": "paused_agent_refuses_device_write",
+    "actual": {
+      "refused": true,
+      "code": "agent_paused",
+      "service_actions": 0
+    }
+  },
+  {
+    "name": "stopAll_drains_late_device_write",
+    "actual": {
+      "actions_before": 0,
+      "actions_after": 0,
+      "refused_code": "stale_turn"
+    }
+  },
+  {
+    "name": "cancelled_task_survives_old_model_effect",
+    "actual": {
+      "after_cancel": "cancelled",
+      "after_model_response": "cancelled"
+    }
+  },
+  {
+    "name": "new_goal_not_completed_by_old_revision_response",
+    "actual": {
+      "revision": 2,
+      "status": "running"
+    }
+  },
+  {
+    "name": "ready_task_resumed_on_startup",
+    "actual": {
+      "calls": 1,
+      "status": "running"
+    }
+  },
+  {
+    "name": "model_turn_budget_enforced_before_call",
+    "actual": {
+      "calls": 1,
+      "budget": {
+        "max_actions": 40,
+        "actions_used": 0,
+        "max_model_turns": 1,
+        "model_turns_used": 1
+      },
+      "reason": "budget_exhausted"
+    }
+  },
+  {
+    "name": "received_inbox_terminal_drained_after_restart",
+    "actual": {
+      "calls": 2,
+      "status": "running",
+      "armed_action_terminal_wakes": 0,
+      "terminal_inbox_state": "processed"
+    }
+  },
+  {
+    "name": "new_task_action_owned_by_new_task",
+    "actual": {
+      "actual_task": "task-5996d2bf-e25",
+      "intent_task": "task-5996d2bf-e25",
+      "key": "cs-001-1b3243c5:task-5996d2bf-e25:r1:op3",
+      "action": "act-001-02",
+      "failed_key_left_pending": "cs-001-1b3243c5:task-8c088ad5-23d:r1:op1",
+      "changed_params_new_key": "cs-001-1b3243c5:task-8c088ad5-23d:r1:op2"
+    }
+  },
+  {
+    "name": "scan_well_outside_row_scope_refused",
+    "actual": {
+      "allowed_rows": [
+        "A"
+      ],
+      "requested": [
+        "B1"
+      ],
+      "refused": true,
+      "code": "out_of_scope"
+    }
+  },
+  {
+    "name": "http_goal_edit_wakes_and_invalidates_old_wait",
+    "actual": {
+      "calls": 2,
+      "goal_revision": 2,
+      "old_wait_status": "cancelled"
+    }
+  },
+  {
+    "name": "needs_input_task_waits_for_real_parameters",
+    "actual": {
+      "calls": 0,
+      "submitted": false,
+      "status": "needs_input",
+      "supplied_user_messages": 0
+    }
+  },
+  {
+    "name": "compaction_keeps_user_constraint",
+    "actual": {
+      "first_has": true,
+      "second_round_has": true
+    }
+  }
+]

@@ -1,0 +1,240 @@
+[
+  {
+    "name": "unknown_action_status_blocks_handoff",
+    "pass": true,
+    "actual": {
+      "next_status": "queued",
+      "old_device_action": "queued",
+      "handoff_pending": true,
+      "next_turns": 0,
+      "cancel_state": "requested"
+    },
+    "expected": {
+      "next_status": "queued",
+      "handoff_pending": true
+    }
+  },
+  {
+    "name": "task_pause_during_initial_read_is_preserved",
+    "pass": true,
+    "actual": {
+      "task_status": "paused",
+      "model_calls": 0,
+      "intents": []
+    },
+    "expected": {
+      "task_status": "paused",
+      "device_writes": 0
+    }
+  },
+  {
+    "name": "monitor_without_verified_plan_cannot_complete",
+    "pass": true,
+    "actual": {
+      "complete_gate": {
+        "ok": false,
+        "code": "goal_unverified",
+        "message": "deadline_sim_s=100000 is not reached (sim clock is at 0s) and no done+verified monitor_until step of this task waited out until_sim_s >= 100000",
+        "reasons": [
+          "deadline_sim_s=100000 is not reached (sim clock is at 0s) and no done+verified monitor_until step of this task waited out until_sim_s >= 100000"
+        ]
+      },
+      "task_status": "waiting_condition",
+      "steps": 0,
+      "sim_time_s": 0
+    },
+    "expected": {
+      "complete_gate_ok": false,
+      "status_not": "completed"
+    }
+  },
+  {
+    "name": "separate_row_observations_verify_multirow_goal",
+    "pass": true,
+    "actual": {
+      "verdict": {
+        "ok": true,
+        "evidence": {
+          "mode": "metrics_verified",
+          "metrics": [
+            {
+              "metric": "medium_volume_ul",
+              "op": ">=",
+              "value": 100,
+              "row_id": "A",
+              "plate_id": "plate-01",
+              "observations": [
+                {
+                  "observation_id": "obs-001-001",
+                  "sampled_at_sim_s": 96,
+                  "wells": [
+                    {
+                      "well_id": "A1",
+                      "level_ul": 403.32
+                    },
+                    {
+                      "well_id": "A2",
+                      "level_ul": 384.68
+                    },
+                    {
+                      "well_id": "A3",
+                      "level_ul": 408.72
+                    },
+                    {
+                      "well_id": "A4",
+                      "level_ul": 419.76
+                    },
+                    {
+                      "well_id": "A5",
+                      "level_ul": 394.41
+                    },
+                    {
+                      "well_id": "A6",
+                      "level_ul": 401.74
+                    }
+                  ]
+                }
+              ],
+              "wells": [
+                {
+                  "well_id": "A1",
+                  "level_ul": 403.32,
+                  "observation_id": "obs-001-001"
+                },
+                {
+                  "well_id": "A2",
+                  "level_ul": 384.68,
+                  "observation_id": "obs-001-001"
+                },
+                {
+                  "well_id": "A3",
+                  "level_ul": 408.72,
+                  "observation_id": "obs-001-001"
+                },
+                {
+                  "well_id": "A4",
+                  "level_ul": 419.76,
+                  "observation_id": "obs-001-001"
+                },
+                {
+                  "well_id": "A5",
+                  "level_ul": 394.41,
+                  "observation_id": "obs-001-001"
+                },
+                {
+                  "well_id": "A6",
+                  "level_ul": 401.74,
+                  "observation_id": "obs-001-001"
+                }
+              ]
+            },
+            {
+              "metric": "medium_volume_ul",
+              "op": ">=",
+              "value": 100,
+              "row_id": "B",
+              "plate_id": "plate-01",
+              "observations": [
+                {
+                  "observation_id": "obs-001-002",
+                  "sampled_at_sim_s": 123,
+                  "wells": [
+                    {
+                      "well_id": "B1",
+                      "level_ul": 801.15
+                    },
+                    {
+                      "well_id": "B2",
+                      "level_ul": 816.16
+                    },
+                    {
+                      "well_id": "B3",
+                      "level_ul": 798.92
+                    },
+                    {
+                      "well_id": "B4",
+                      "level_ul": 801.9
+                    },
+                    {
+                      "well_id": "B5",
+                      "level_ul": 800.87
+                    },
+                    {
+                      "well_id": "B6",
+                      "level_ul": 806.25
+                    }
+                  ]
+                }
+              ],
+              "wells": [
+                {
+                  "well_id": "B1",
+                  "level_ul": 801.15,
+                  "observation_id": "obs-001-002"
+                },
+                {
+                  "well_id": "B2",
+                  "level_ul": 816.16,
+                  "observation_id": "obs-001-002"
+                },
+                {
+                  "well_id": "B3",
+                  "level_ul": 798.92,
+                  "observation_id": "obs-001-002"
+                },
+                {
+                  "well_id": "B4",
+                  "level_ul": 801.9,
+                  "observation_id": "obs-001-002"
+                },
+                {
+                  "well_id": "B5",
+                  "level_ul": 800.87,
+                  "observation_id": "obs-001-002"
+                },
+                {
+                  "well_id": "B6",
+                  "level_ul": 806.25,
+                  "observation_id": "obs-001-002"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "observations": [
+        {
+          "id": "obs-001-001",
+          "wells": [
+            "A1",
+            "A2",
+            "A3",
+            "A4",
+            "A5",
+            "A6"
+          ],
+          "sampled_at_sim_s": 96,
+          "plate_revision": 1,
+          "min_estimate_ul": 384.68
+        },
+        {
+          "id": "obs-001-002",
+          "wells": [
+            "B1",
+            "B2",
+            "B3",
+            "B4",
+            "B5",
+            "B6"
+          ],
+          "sampled_at_sim_s": 123,
+          "plate_revision": 1,
+          "min_estimate_ul": 798.92
+        }
+      ]
+    },
+    "expected": {
+      "ok": true
+    }
+  }
+]

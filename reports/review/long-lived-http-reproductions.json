@@ -1,0 +1,41 @@
+[
+  {
+    "name": "task_creation_retry_idempotent",
+    "actual": {
+      "replay_task_id": "task-d4e24f44-355",
+      "original_task_id": "task-d4e24f44-355"
+    }
+  },
+  {
+    "name": "real_pi_slow_response_refused_after_pause_and_state_change",
+    "actual": {
+      "model_requests": 1,
+      "agent_paused": true,
+      "service_actions": 0,
+      "old_plate_revision": 1,
+      "newer_plate_revision": 2,
+      "wire_has_media_add_tool": true
+    }
+  },
+  {
+    "name": "idle_session_archived_after_runtime_reset",
+    "actual": {
+      "runtime_experiment_status": "archived",
+      "session_lifecycle": "archived"
+    }
+  },
+  {
+    "name": "supervisor_cannot_mutate_archived_session",
+    "actual": {
+      "session_lifecycle": "archived",
+      "edit": {
+        "code": "session_archived",
+        "status": 409
+      },
+      "resume": {
+        "code": "session_archived",
+        "status": 409
+      }
+    }
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "messagesBefore": 50,
+  "actionsBefore": 0,
+  "turnsBefore": 1,
+  "killDuringAction": "act-001-47",
+  "deviceFinishesWhileAgentDead": "succeeded",
+  "agent2Pid": 562584,
+  "sameSession": true,
+  "messagesAfter": 50,
+  "taskRecovered": "waiting_device",
+  "actionsAfter": 3,
+  "turnsAfter": 4,
+  "allKeysUnique": true,
+  "serviceActions": 46,
+  "scansAfterKill": 1
+}

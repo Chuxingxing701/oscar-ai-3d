@@ -1,0 +1,196 @@
+{
+  "demo": "session_monitor",
+  "scenario": "routine_maintenance (realtime session)",
+  "seed": 42,
+  "outcome": "pass",
+  "run_id": null,
+  "experiment_id": "exp-001",
+  "criteria": [
+    {
+      "name": "supervisor delegation returned task_id immediately",
+      "pass": true,
+      "detail": "task_id=task-8b8ff085-b78"
+    },
+    {
+      "name": "task completed through the supervisor contract",
+      "pass": true,
+      "detail": "task_id=task-8b8ff085-b78"
+    },
+    {
+      "name": "≥3 monitor wakes in 26 simulated hours",
+      "pass": true,
+      "detail": "wakes=18"
+    },
+    {
+      "name": "≥1 maintenance (media.add) executed",
+      "pass": true,
+      "detail": "media.add=3"
+    },
+    {
+      "name": "≥1 no-operation decision recorded",
+      "pass": true,
+      "detail": "noOps=15"
+    },
+    {
+      "name": "model calls bounded (stub requests)",
+      "pass": true,
+      "detail": "requests=52"
+    },
+    {
+      "name": "reservoir conservation",
+      "pass": true,
+      "detail": "used=444.59999999999997 remaining=49555.4"
+    },
+    {
+      "name": "per-well conservation (effects − evaporation)",
+      "pass": true,
+      "detail": "checked 6 wells over 26.4 sim h"
+    }
+  ],
+  "commands": [
+    "node services/runtime/src/main.ts --scenario routine_maintenance --clock-mode realtime (speed 1200)",
+    "node services/culture-agent/src/main.ts (OSCAR_MODEL_* -> local HTTP model stub on the OpenAI wire)",
+    "POST /api/v1/agent/supervisor/v1/sessions + /tasks (delegated_principal, task_id returned at once)",
+    "simulated 26 h: monitor wake every 6 h, media.add below 330 µL, verify scan, complete at deadline"
+  ],
+  "actions": [
+    {
+      "action_id": "act-001-01",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-02",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-03",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-04",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-05",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-06",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-07",
+      "capability": "media.add",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-08",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-09",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-10",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-11",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-12",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-13",
+      "capability": "media.add",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-14",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-15",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-16",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-17",
+      "capability": "media.add",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-18",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-19",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-20",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-21",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-22",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    },
+    {
+      "action_id": "act-001-23",
+      "capability": "imaging.scan",
+      "status": "succeeded"
+    }
+  ],
+  "observations": [
+    "obs-001-001",
+    "obs-001-002",
+    "obs-001-003",
+    "obs-001-004",
+    "obs-001-005",
+    "obs-001-006",
+    "obs-001-007",
+    "obs-001-008",
+    "obs-001-009",
+    "obs-001-010",
+    "obs-001-011",
+    "obs-001-012",
+    "obs-001-013",
+    "obs-001-014",
+    "obs-001-015",
+    "obs-001-016",
+    "obs-001-017",
+    "obs-001-018",
+    "obs-001-019",
+    "obs-001-020"
+  ],
+  "agent_report": null
+}

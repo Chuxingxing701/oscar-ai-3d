@@ -1,0 +1,183 @@
+{
+  "model_requests": 20,
+  "record_step_calls": [
+    {
+      "id": "call_4_0",
+      "args": {
+        "index": 0,
+        "status": "done",
+        "action_ids": [
+          "act-001-01",
+          "act-001-02"
+        ],
+        "evidence_refs": [
+          "obs-001-001"
+        ]
+      }
+    },
+    {
+      "id": "call_5_0",
+      "args": {
+        "index": 1,
+        "status": "running"
+      }
+    },
+    {
+      "id": "call_6_0",
+      "args": {
+        "index": 1,
+        "status": "running"
+      }
+    },
+    {
+      "id": "call_9_0",
+      "args": {
+        "index": 1,
+        "status": "done",
+        "action_ids": [
+          "act-001-03",
+          "act-001-02",
+          "act-001-01",
+          "act-001-04"
+        ],
+        "evidence_refs": [
+          "obs-001-001"
+        ]
+      }
+    },
+    {
+      "id": "call_12_0",
+      "args": {
+        "index": 1,
+        "status": "done",
+        "action_ids": [
+          "act-001-03",
+          "act-001-01",
+          "act-001-02",
+          "act-001-04",
+          "act-001-05"
+        ],
+        "evidence_refs": [
+          "obs-001-004"
+        ]
+      }
+    },
+    {
+      "id": "call_16_0",
+      "args": {
+        "index": 2,
+        "status": "done"
+      }
+    },
+    {
+      "id": "call_19_0",
+      "args": {
+        "index": 2,
+        "status": "done"
+      }
+    }
+  ],
+  "briefs": [
+    {
+      "sim_time_s": 572,
+      "scans": [],
+      "observation_id": null,
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 645,
+      "scans": [],
+      "observation_id": null,
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 686,
+      "scans": [
+        {
+          "action_id": "act-001-01",
+          "capability": "imaging.scan",
+          "status": "succeeded"
+        },
+        {
+          "action_id": "act-001-02",
+          "capability": "imaging.scan",
+          "status": "succeeded"
+        }
+      ],
+      "observation_id": "obs-001-001",
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 747,
+      "scans": [],
+      "observation_id": null,
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 772,
+      "scans": [
+        {
+          "action_id": "act-001-04",
+          "capability": "imaging.scan",
+          "status": "succeeded"
+        }
+      ],
+      "observation_id": "obs-001-003",
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 1946,
+      "scans": [],
+      "observation_id": null,
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 1983,
+      "scans": [
+        {
+          "action_id": "act-001-05",
+          "capability": "imaging.scan",
+          "status": "succeeded"
+        }
+      ],
+      "observation_id": "obs-001-004",
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 2019,
+      "scans": [],
+      "observation_id": null,
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 2055,
+      "scans": [
+        {
+          "action_id": "act-001-06",
+          "capability": "imaging.scan",
+          "status": "succeeded"
+        }
+      ],
+      "observation_id": "obs-001-005",
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 3208,
+      "scans": [],
+      "observation_id": null,
+      "observation_action_id": null
+    },
+    {
+      "sim_time_s": 3245,
+      "scans": [
+        {
+          "action_id": "act-001-07",
+          "capability": "imaging.scan",
+          "status": "succeeded"
+        }
+      ],
+      "observation_id": "obs-001-006",
+      "observation_action_id": null
+    }
+  ]
+}

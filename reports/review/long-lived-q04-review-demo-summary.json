@@ -1,0 +1,44 @@
+{
+  "generated_at_wall": "2026-10-02T07:05:34.306Z",
+  "total": 5,
+  "passed": 5,
+  "failed": 0,
+  "speed": 600,
+  "demos": [
+    {
+      "demo": "routine_maintenance",
+      "outcome": "pass",
+      "run_id": "run-001-1",
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    },
+    {
+      "demo": "exchange_and_mix",
+      "outcome": "pass",
+      "run_id": "run-001-1",
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    },
+    {
+      "demo": "environment_drift",
+      "outcome": "pass",
+      "run_id": "run-001-1",
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    },
+    {
+      "demo": "anomaly_recovery",
+      "outcome": "pass",
+      "run_id": "run-001-1",
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    },
+    {
+      "demo": "session_monitor",
+      "outcome": "pass",
+      "run_id": null,
+      "experiment_id": "exp-001",
+      "failed_criteria": []
+    }
+  ]
+}
