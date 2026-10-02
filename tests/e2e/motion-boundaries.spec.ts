@@ -23,7 +23,14 @@ test('real scans travel from home and finish parking without boundary teleports'
     const accepted = await c.submit(exp, {capability: 'imaging.scan', arguments: {plate_id, wells: [well_id], mode: 'mono'}});
     await expect.poll(async () => (await c.actions(exp)).actions.find(a => a.action_id === accepted.action.action_id)?.status,
       {timeout: 30_000}).toBe('succeeded');
-    await page.waitForTimeout(1500); // drain the final confirmed park interval
+    // 'succeeded' is the Runtime's authoritative confirmation, but the scene's
+    // presentation clock may still be draining the final confirmed park
+    // interval (its smoothing budget is up to 1 s of confirmed time, plus
+    // stream/render lag). Wait for the authoritative end-of-motion state
+    // instead of a fixed wall delay: from that point on, every rendered pose
+    // must be exactly the parked home pose — no interpolation frame is left.
+    await page.waitForFunction(() => (window as any).oscarScene.getStatus().presentingMotion === false,
+      null, {timeout: 20_000});
     const frames = await page.evaluate(() => {
       (window as any).recordMotion = false;
       return (window as any).motionFrames as {now: number; pose: number[]}[];
@@ -42,10 +49,15 @@ test('real scans travel from home and finish parking without boundary teleports'
     const lastAtTarget = distances.findLastIndex(d => d >= peak * .99);
     const intermediate = (d: number) => d > peak * .1 && d < peak * .9;
     // Check both actual travel legs rather than a hardware-dependent frame
-    // count. A snap at either boundary has no intermediate poses on that leg.
+    // count. A snap at either boundary has NO intermediate pose on that leg,
+    // at any rAF density; a swept leg leaves one whenever a single frame lands
+    // mid-leg. Requiring several intermediate samples instead would test the
+    // renderer's frame rate under load, not the scene (the final park drains
+    // through a compressed catch-up window; per-step continuity above already
+    // bounds every recorded jump).
     expect(peak).toBeGreaterThan(.2);
-    expect(distances.slice(0, firstAtTarget).filter(intermediate).length).toBeGreaterThan(1);
-    expect(distances.slice(lastAtTarget + 1).filter(intermediate).length).toBeGreaterThan(1);
+    expect(distances.slice(0, firstAtTarget).filter(intermediate).length).toBeGreaterThan(0);
+    expect(distances.slice(lastAtTarget + 1).filter(intermediate).length).toBeGreaterThan(0);
     expect(frames.at(-1)!.pose).toEqual(frames[0].pose);
     await test.info().attach(`${plate_id}-${well_id}-motion`, {body: JSON.stringify({frames: frames.length, maxStep}), contentType: 'application/json'});
   }

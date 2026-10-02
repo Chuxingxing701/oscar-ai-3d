@@ -45,6 +45,11 @@ export function mountScene(container, options = {}) {
   let previousFrame = performance.now();
   const presentation = new PresentationClock();
   let renderedTime = null;
+  // True while the last rendered frame presented a confirmed head stage —
+  // including the park interval the presentation clock may still be draining
+  // after the Runtime already released the head (authoritative "motion has
+  // ended" signal for observers; see PresentationClock.frame).
+  let presentingMotion = false;
   const ownedGeometries = new Set(), ownedMaterials = new Set(), ownedTextures = new Set();
   function collect(root) {
     root.traverse(o => {
@@ -142,7 +147,7 @@ export function mountScene(container, options = {}) {
     dirty = true;
     mixer?.stopAllAction();
     if (next === 'idle') {
-      snapshot = null; displayPaused = false; rig?.update(null);
+      snapshot = null; displayPaused = false; presentingMotion = false; rig?.update(null);
       actions.forEach(action => action.reset().play());
     } else rig?.update(snapshot ?? {sim_time_s: 0, plates: [], actions: []});
     notify();
@@ -164,6 +169,7 @@ export function mountScene(container, options = {}) {
     if (!displayPaused) {
       const frame = presentation.frame(snapshot, performance.now());
       renderedTime = frame.sim_time_s;
+      presentingMotion = frame.actions.length > 0;
       rig.update(frame); dirty = true;
     }
     notify();
@@ -172,7 +178,9 @@ export function mountScene(container, options = {}) {
     displayPaused = Boolean(value);
     if (!displayPaused && snapshot) {
       presentation.update(snapshot, performance.now());
-      renderedTime = snapshot.sim_time_s; rig.update(snapshot); dirty = true;
+      renderedTime = snapshot.sim_time_s;
+      presentingMotion = snapshot.actions.length > 0;
+      rig.update(snapshot); dirty = true;
     }
     notify();
   }
@@ -180,7 +188,7 @@ export function mountScene(container, options = {}) {
   function getStatus() {
     return {ready, disposed, mode, playing, displayPaused, animationMode,
       experimentId: snapshot?.experiment_id ?? null, simTime: snapshot?.sim_time_s ?? null,
-      renderedSimTime: renderedTime,
+      renderedSimTime: renderedTime, presentingMotion,
       paused: snapshot?.paused ?? false, time: mixer?.time ?? 0, animationCount: actions.length,
       exteriorVisible: exterior?.visible, autoRotate: controls.autoRotate, transitioning: !!transition, frameCount, resizeCount,
       drawCalls: renderer.info.render.calls, triangles: renderer.info.render.triangles,
@@ -201,7 +209,9 @@ export function mountScene(container, options = {}) {
       const time = presentation.sample(now);
       if (time !== renderedTime) {
         renderedTime = time;
-        rig.update(presentation.frame(snapshot, now), {motionOnly: true}); dirty = true;
+        const frame = presentation.frame(snapshot, now);
+        presentingMotion = frame.actions.length > 0;
+        rig.update(frame, {motionOnly: true}); dirty = true;
       }
     }
     if (transition) {
