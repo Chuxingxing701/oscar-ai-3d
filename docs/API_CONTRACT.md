@@ -153,30 +153,44 @@ Runtime 只提供：`/web/**`（排除 `web/node_modules`、`web/scene/tests`、
 | 会话详情 | `GET /sessions/:id` | messages（尾 50）、tasks、plan、armed wakes、checkpoint、last_seq |
 | 继续对话 | `POST /sessions/:id/messages` `{content, request_id?}` | request_id 幂等（重发返回原 message）；202 返回 message_id；唤醒调度器 |
 | 会话事件 | `GET /sessions/:id/events?after_seq=&format=json\|sse` | 独立 session_seq 单调；SSE 支持 Last-Event-ID 断点续传 |
-| 创建任务 | `POST /sessions/:id/tasks` `{goal_text, goal_spec, request_id?, budget?}` | goal_spec 校验（GoalSpec）；缺关键执行参数→`needs_input`；已有活动任务 409 `task_already_active`（MVP 单活动任务） |
-| 任务详情/更新 | `GET/POST /tasks/:id` | 更新带 `expected_revision`（CAS，冲突 409 `revision_conflict`），goal_revision 单调递增 |
-| 任务控制 | `POST /tasks/:id/control` `{pause\|resume\|cancel}` | cancel=取消在途设备动作并对账+撤销 wakes；与 Runtime 控制语义分离 |
-| 聚合状态 | `GET /sessions/:id/status` | 设备新鲜度（可达/时钟/sim_time/在途动作）、loop 状态与等待原因、下次唤醒、预算、水位（消息/事件/inbox/checkpoint）、模型可用性 |
+| 创建任务 | `POST /sessions/:id/tasks` `{goal_text, goal_spec, request_id?, budget?}` | goal_spec 校验（GoalSpec）；request_id 幂等（重放返回原任务——**包括仍在排队时**；异体 409 `idempotency_conflict`）。**R07 任务队列**：无当前任务→`ready`（缺关键执行参数→`needs_input`）；已有当前任务（任何非终态：paused/needs_input 也算）→不再拒绝，持久化为 `queued`，按 queue_index FIFO 排队，响应 `task.status='queued'` + `task.queue_position`（1 起）。四个入口（Web UI、用户 HTTP、总助手委托、模型 `propose_task`）共用同一 store 级幂等入口 |
+| 任务详情/更新 | `GET/POST /tasks/:id` | 更新带 `expected_revision`（CAS，冲突 409 `revision_conflict`），goal_revision 单调递增；详情含 `queued`、`queue_position`（排队中才有值） |
+| 任务控制 | `POST /tasks/:id/control` `{pause\|resume\|cancel}` | cancel=取消在途设备动作并对账+撤销 wakes；与 Runtime 控制语义分离。**排队任务**：cancel 直接置 `cancelled`（无设备副作用，队列剩余顺序不变）；pause/resume 对 `queued` 任务拒绝 409 `task_queued`（排队任务未持有执行槽，晋升后才可暂停/恢复） |
+| 聚合状态 | `GET /sessions/:id/status` | 设备新鲜度（可达/时钟/sim_time/在途动作）、loop 状态与等待原因、下次唤醒、预算、水位（消息/事件/inbox/checkpoint）、模型可用性；**R07**：`task`=当前任务（永不返回排队任务）、`queue`=[{task_id, goal_text, status, position}]（FIFO 有序）、`queued_tasks`=queue 长度 |
 | 会话控制 | `POST /sessions/:id/control` `{pause_agent\|resume_agent}` | 暂停 Agent=停止新决策/新动作（任务与设备不受影响） |
 | 强制压缩 | `POST /sessions/:id/compact` | 测试/演示钩子：生成 checkpoint（generation 递增），原始消息不删 |
 | 记忆 | `GET /sessions/:id/memory` | 最新 memory checkpoint（summary/facts/open_questions/evidence_refs/versions） |
 
 写拒绝：归档会话一律 409 `session_archived`（messages/tasks/control/compact）。
 
+### 10.1.1 任务队列状态机与自动晋升（R07）
+
+- 状态新增 `queued`。**当前任务（current）= 唯一的非终态、非 queued 任务**（paused 与 needs_input 属于当前任务：它们占住执行槽、阻塞队列，但不是终态）。`activeTask()` 永不返回 queued 任务。
+- **准入与晋升共享同一规则（N04）**：执行槽只有在「无当前任务、无排队任务、且无待清交接（`sessions.handoff_pending=0`）」时才视为空闲。当前任务进入终态（completed/failed/cancelled）的同一事务写入 `handoff_pending=1`；晋升例程在屏障通过后清除它（无论其后是否晋升了任务）。因此任何入口的新任务只有在槽真正空闲时才诞生为 `ready`，否则一律 `queued`（queue_index = MAX+1，FIFO）——**终结→晋升之间的窗口（上一任务意图未对账、在途动作未终态、进程恢复中）不再能被后来者插队**。request_id 重放返回原任务（含排队中），异体冲突。
+- 晋升（单一 SQLite 事务，CAS）：仅当不存在当前任务且 `handoff_pending=0` 时，把 queue_index 最小的 queued 任务置为 `ready`（缺执行参数则 `needs_input`）。发 `task.status` 与 `task.promoted` 会话事件，然后调度器为晋升任务启动一个回合（onTaskCreated 式 kick）。晋升等待（= 交接屏障，由 `maybePromoteNext` 独占负责并在通过后清除 `handoff_pending`，发 `task.handoff_cleared` 事件）：上一任务的未决意图（session_intents `pending`）先对账（by-key reconcile，查询本身失败则留待下一个终态事件/watchdog/重启重试），非终态在途设备动作先到终态（其终态事件重入触发晋升）；任一时刻只有一个任务持有执行权。排队中的任务不持有任何执行权：执行器对 `queued` 任务的写请求直接拒绝（`task_queued`）。
+- 触发晋升的时机：当前任务经模型 complete/fail、预算耗尽、操作者/总助手 cancel 或归档进入终态后的回合结束；设备动作终态事件；进程重启恢复（补偿"终态后、晋升前"崩溃窗口）；以及**新建 queued 任务时**（用户/总助手/模型入口在入队后立刻 kick 晋升路径，使立即可晋升的队首尽快 ready；watchdog 周期也会清除已过屏障的残留 handoff 标记）。
+- 旧回合隔离：回合绑定 task_id；已取消/终态任务的回合在 turnStale/writeRefusal 处拒绝写入，无任务回合不能为新晋升任务写（host.submitWrite 对 null 任务返回 `task_gone`）。
+- 归档/reset：会话归档时 queued 任务全部置 `cancelled`（reason `session archived`），永不晋升。
+- 暂停/恢复：`paused` 的当前任务继续占槽（队列不前进）；期间用户聊天仍以无任务会话回合回答。queued 任务的 pause/resume 拒绝 409 `task_queued`，仅允许 cancel。
+- 重启：队列顺序与单写者不变；启动恢复在 reconcile 后、恢复回合前尝试晋升。
+- **设备取消状态机（N05）**：取消意图按动作持久化（session_intents `cancel_state`: `none|requested|confirmed`，另有 `cancel_attempts`、`cancel_last_error`）。`requested` 在尝试发出前落库；成功（POST 被受理，或动作已是终态——Runtime 对终态动作的取消返回其当前状态，"已取消"即确认）→ `confirmed`（幂等终点，不再重复 POST）。任何失败（读/写网络错误、5xx、受理后响应丢失）保持 `requested` 并安排有界退避重试（1 s→30 s，unref 定时器，stop 清除，自动尝试封顶并发出可见错误事件）；用户/总助手再次显式取消总是重新尝试所有 `requested` 项并重置计数；进程内去重只针对并发的在途尝试，绝不抑制重试；调度器重启恢复时重新尝试所有持久化 `requested` 项。
+
 ### 10.2 GoalSpec（goal_spec 字段）
 
 `{description, scope:{plates, rows?, reservoirs?}, metrics:[{metric, op, value, source, row_id?}], allowed_operations, monitoring:{interval_sim_s?, conditions?}, deadline_sim_s?, success:{description}, stop:{description, max_corrections?}, budget?, missing_parameters?}`。metric ∈ medium_volume_ul|liquid_level_ul|temperature_c|co2_pct|humidity_pct；allowed_operations ⊆ manifest 写能力。写工具执行前校验 scope（plate/row/reservoir 越界→`out_of_scope`）。
 
-### 10.3 总助手契约 v1（`/api/v1/agent/supervisor/v1/*`）
+### 10.3 总助手契约 v1.1（`/api/v1/agent/supervisor/v1/*`）
 
-`GET /supervisor`（契约自描述）、`GET /overview`、`POST /sessions`、`POST /sessions/:id/messages|/tasks`、`GET /sessions/:id/status|/events`、`GET/POST /tasks/:id`、`POST /tasks/:id/control`。与 10.1 同一核心（同队列/预算/revision 校验）；写操作要求 `delegated_principal`（服务端审计记录，权限不信任调用方自述）；长任务立即返回 `task_id`；订阅（SSE/JSON 轮询）只观察——断开不取消设备任务。响应带 `contract_version: "1.0.0"`。外部客户端示例：`tests/supervisor-contract.test.ts`（纯 HTTP，无 DOM/DB）。
+`GET /supervisor`（契约自描述）、`GET /overview`、`POST /sessions`、`POST /sessions/:id/messages|/tasks`、`GET /sessions/:id/status|/events`、`GET/POST /tasks/:id`、`POST /tasks/:id/control`。与 10.1 同一核心（同队列/预算/revision 校验）；写操作要求 `delegated_principal`（服务端审计记录，权限不信任调用方自述）；长任务立即返回 `task_id`；订阅（SSE/JSON 轮询）只观察——断开不取消设备任务。响应带 `contract_version: "1.1.0"`。外部客户端示例：`tests/supervisor-contract.test.ts`（纯 HTTP，无 DOM/DB）。
+
+**v1.1.0（R07，向后兼容新增）**：委托时若已有当前任务，不再 409 `task_already_active`，而是入队并返回 `status:'queued'` + `queue_position`（同 request_id 重放返回原任务，异体 409 `idempotency_conflict`）；`overview` 每会话新增 `queue`（有序 [{task_id, goal_text, status, position}]）与 `queued_tasks`；`/status` 同样带 `queue`；排队任务的 control 仅接受 cancel（pause/resume → 409 `task_queued`）。
 
 ### 10.4 Runtime 侧最小扩展
 
 - `GET /api/v1/health` 增返 `instance_id`（首次启动生成存 meta 表；会话绑定用它区分数据目录身份）。
 - Bearer service token（`<data>/secrets/service.token`）认证为 principal `service`：可读全部 operator 可读端点、可在 **realtime** 实验提交/取消动作（lockstep 实验写拒绝 409 `clock_mode_mismatch`，lease 纪律不变）。
 - `GET /actions/by-key/:key` 的 principal 作用域含 `service`（会话意图 by-key 恢复）。
-- 新错误码：`session_archived`(409)、`task_already_active`(409)。
+- 新错误码：`session_archived`(409)、`task_already_active`(409，保留给旧调用方兼容；R07 后创建不再触发)、`task_queued`(409，排队任务只接受 cancel)。
 
 ### 10.5 模型后端配置（服务端显式，无静默回退）
 

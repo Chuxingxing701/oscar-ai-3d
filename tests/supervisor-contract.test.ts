@@ -98,7 +98,7 @@ test('supervisor v1 contract client: delegate, observe, adjust, cancel without D
 
     // 1. overview lists nothing yet; create session (idempotent)
     const empty = await sup.overview();
-    assert.equal(empty.contract_version, '1.0.0');
+    assert.equal(empty.contract_version, '1.1.0'); // R07: queue additions are additive
     const created = await sup.createSession(experimentId);
     assert.equal(created.created, true);
     const again = await sup.createSession(experimentId);

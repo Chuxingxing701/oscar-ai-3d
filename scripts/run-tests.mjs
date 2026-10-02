@@ -23,7 +23,7 @@ if (filter.length) files = files.filter(f => filter.some(x => f.includes(x)));
 // Process-heavy acceptance suites (real Runtime + Agent + HTTP model stub
 // children with accelerated sim clocks) run SERIALLY in a second phase so
 // they never starve each other's wall-time budgets.
-const serial = files.filter(f => /long-session|session-faults|supervisor-contract/.test(f));
+  const serial = files.filter(f => /long-session|session-faults|supervisor-contract|review-fences|reacceptance|task-queue|skills-e2e|handoff-fences/.test(f));
 files = files.filter(f => !serial.includes(f));
 
 const steps = [];

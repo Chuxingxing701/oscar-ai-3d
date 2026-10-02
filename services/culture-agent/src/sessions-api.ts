@@ -116,13 +116,18 @@ export class SessionApiRouter {
     const store = this.deps.manager.store;
     const messages = store.listMessages(session.session_id, 0, 500).slice(-50);
     const tasks = store.listTasks(session.session_id);
-    const task = tasks.find(t => !['completed', 'failed', 'cancelled'].includes(t.status)) ?? tasks.at(-1) ?? null;
+    // R07: current task first (never a queued one), else the last terminal one
+    const task = store.activeTask(session.session_id)
+      ?? [...tasks].reverse().find(t => ['completed', 'failed', 'cancelled'].includes(t.status))
+      ?? tasks.at(-1) ?? null;
     this.sendJson(res, 200, {
       session: this.sessionSummary(session),
       messages: messages.map(m => ({message_id: m.message_id, seq: m.seq, role: m.role, content: m.content,
         task_id: m.task_id, created_at_wall: m.created_at_wall})),
       tasks: tasks.map(t => ({task_id: t.task_id, status: t.status, goal_text: t.goal_text,
         goal_revision: t.goal_revision, reason: t.reason, budget: t.budget})),
+      queue: store.queuedTasks(session.session_id).map(q => ({task_id: q.task_id, goal_text: q.goal_text,
+        status: q.status, position: q.position})),
       plan: task ? store.listPlanSteps(task.task_id).map(s => ({index: s.index_in_plan, skill: s.skill,
         status: s.status, action_ids: s.action_ids, evidence_refs: s.evidence_refs})) : [],
       wakes: store.armedWakes(session.session_id).map(w => ({wake_id: w.wake_id, kind: w.kind,
@@ -211,12 +216,25 @@ export class SessionApiRouter {
     return true;
   }
 
-  private createTask(ctx: RouteContext, session: SessionRow): boolean {
+  private async createTask(ctx: RouteContext, session: SessionRow): Promise<boolean> {
     const {body, res} = ctx;
     this.requireWritable(session);
     const goalText = typeof body.goal_text === 'string' ? body.goal_text.trim() : '';
     if (!goalText) throw new DeviceError('invalid_argument', 'goal_text is required');
     const store = this.deps.manager.store;
+    // 1. budget (when present): finite integers, 0..100000
+    const budget = typeof body.budget === 'object' && body.budget !== null
+      ? body.budget as Record<string, unknown> : undefined;
+    if (budget) {
+      for (const key of ['max_actions', 'max_model_turns']) {
+        const v = budget[key];
+        if (v === undefined) continue;
+        if (typeof v !== 'number' || !Number.isFinite(v) || !Number.isInteger(v) || v < 0 || v > 100_000) {
+          throw new DeviceError('invalid_argument', `budget.${key} must be an integer between 0 and 100000`);
+        }
+      }
+    }
+    // 2. normalize goal spec
     let spec: Record<string, unknown>;
     try {
       spec = normalizeGoalSpec(body.goal_spec) as unknown as Record<string, unknown>;
@@ -226,22 +244,77 @@ export class SessionApiRouter {
       }
       throw e;
     }
-    const existing = store.activeTask(session.session_id);
-    if (existing) {
-      throw new DeviceError('task_already_active',
-        `Session already has task ${existing.task_id} (${existing.status}); one active task per session (MVP)`);
+    const requestId = typeof body.request_id === 'string' && body.request_id ? body.request_id : null;
+    const mapCreateTaskError = (e: unknown): Error => {
+      const message = e instanceof Error ? e.message : String(e);
+      if (message.startsWith('request_conflict:')) {
+        return new DeviceError('idempotency_conflict', message, {request_id: requestId});
+      }
+      if (message.startsWith('invalid_budget:')) {
+        return new DeviceError('invalid_argument', message);
+      }
+      return e instanceof Error ? e : new Error(message);
+    };
+    // 3. request_id idempotency: a replay must return the original task
+    // (INCLUDING while it is queued), a divergent body must conflict — both
+    // WITHOUT any queue/current-task consideration (store.createTask decides).
+    if (requestId) {
+      const prior = store.findTaskByRequest(session.session_id, requestId);
+      if (prior) {
+        // createTask compares the canonical body itself: same row when it
+        // matches, request_conflict: when it does not.
+        let replayed;
+        try {
+          replayed = store.createTask(session.session_id, {goal_text: goalText, goal_spec: spec,
+            budget: budget as Record<string, number> | undefined, request_id: requestId});
+        } catch (e) {
+          throw mapCreateTaskError(e);
+        }
+        this.sendJson(res, 200, {task: this.taskView(replayed.task_id)});
+        return true;
+      }
     }
-    const task = store.createTask(session.session_id, {goal_text: goalText, goal_spec: spec,
-      budget: typeof body.budget === 'object' && body.budget !== null ? body.budget as Record<string, number> : undefined,
-      request_id: typeof body.request_id === 'string' && body.request_id ? body.request_id : null});
-    const missing = missingExecutionParameters(normalizeGoalSpec(spec));
-    if (missing.length) {
-      store.updateTaskStatus(task.task_id, 'needs_input', missing.join(' | '));
+    // 4. R07/N04: NO active-task rejection — the store's single idempotent
+    // entry persists the task as 'queued' (FIFO) when a current task exists
+    // (any non-terminal status, paused/needs_input included), when a queue
+    // already exists, or when the previous current task's handoff is still
+    // pending (terminal but promotion barriers uncleared).
+    let task;
+    try {
+      task = store.createTask(session.session_id, {goal_text: goalText, goal_spec: spec,
+        budget: budget as Record<string, number> | undefined, request_id: requestId});
+    } catch (e) {
+      throw mapCreateTaskError(e);
     }
+    const queued = task.status === 'queued';
+    if (!queued) {
+      // a task that holds the slot is judged now; a queued task's parameters
+      // are judged at promotion (updateTaskGoal may complete them first)
+      const missing = missingExecutionParameters(normalizeGoalSpec(spec));
+      if (missing.length) {
+        store.updateTaskStatus(task.task_id, 'needs_input', missing.join(' | '));
+      }
+    }
+    const queuePosition = store.queuePosition(session.session_id, task.task_id);
     this.deps.manager.emitSessionEvent(session.session_id, 'task.created',
-      {task_id: task.task_id, goal_text: goalText, goal_revision: 1, status: missing.length ? 'needs_input' : 'ready'});
-    this.deps.manager.ensureScheduler(this.deps.manager.store.getSession(session.session_id)!);
-    this.deps.manager.schedulerFor(session.session_id)?.onUserMessage();
+      {task_id: task.task_id, goal_text: goalText, goal_revision: 1, queued,
+        queue_position: queuePosition,
+        status: queued ? 'queued' : (this.deps.manager.store.getTask(task.task_id)?.status ?? task.status)});
+    // 5. scheduler kick: a created task (not user text); a QUEUED create must
+    // NOT kick a task turn — the current task keeps the execution slot. N04:
+    // it DOES kick the promotion path, so when the slot is genuinely free
+    // (terminal previous task, handoff barriers cleared) the queue head
+    // becomes ready quickly instead of waiting for the next device event.
+    const freshTask = this.deps.manager.store.getTask(task.task_id) ?? task;
+    if (!queued && freshTask.status !== 'needs_input') {
+      const scheduler = this.deps.manager.ensureScheduler(this.deps.manager.store.getSession(session.session_id)!);
+      scheduler?.onTaskCreated();
+    } else if (queued) {
+      const scheduler = this.deps.manager.ensureScheduler(this.deps.manager.store.getSession(session.session_id)!);
+      // bounded wait: the response reports the post-handoff status when the
+      // barriers clear at once; slow lookups leave it queued (promotion continues)
+      if (scheduler) await Promise.race([scheduler.onTaskQueued(), new Promise(r => setTimeout(r, 3000).unref())]);
+    }
     this.sendJson(res, 201, {task: this.taskView(task.task_id)});
     return true;
   }
@@ -249,8 +322,10 @@ export class SessionApiRouter {
   private taskView(taskId: string): Record<string, unknown> | null {
     const task = this.deps.manager.store.getTask(taskId);
     if (!task) return null;
+    const queued = task.status === 'queued';
     return {task_id: task.task_id, session_id: task.session_id, goal_text: task.goal_text,
       goal_spec: task.goal_spec, goal_revision: task.goal_revision, status: task.status, reason: task.reason,
+      queued, queue_position: queued ? this.deps.manager.store.queuePosition(task.session_id, task.task_id) : null,
       budget: task.budget, created_at_wall: task.created_at_wall, updated_at_wall: task.updated_at_wall,
       plan: this.deps.manager.store.listPlanSteps(task.task_id).map(s => ({index: s.index_in_plan, skill: s.skill,
         status: s.status, action_ids: s.action_ids, evidence_refs: s.evidence_refs}))};
@@ -301,9 +376,12 @@ export class SessionApiRouter {
       throw new DeviceError('revision_conflict', `goal_revision is ${result.conflict.actual}, not ${body.expected_revision}`,
         {actual_revision: result.conflict.actual});
     }
-    // a goal edit invalidates armed waits under the old revision
+    // a goal edit invalidates armed planning waits under the old revision and
+    // re-triggers scheduling — but it is NOT user text (no onUserMessage)
+    store.cancelPlanningWakes(task.session_id, task.task_id);
     this.deps.manager.emitSessionEvent(task.session_id, 'task.goal_updated',
       {task_id: task.task_id, goal_revision: result.revision, by: 'operator'});
+    this.deps.manager.ensureScheduler(store.getSession(task.session_id)!)?.onGoalUpdated();
     this.sendJson(res, 200, {task_id: task.task_id, goal_revision: result.revision});
     return true;
   }
@@ -316,27 +394,51 @@ export class SessionApiRouter {
     }
     const store = this.deps.manager.store;
     const session = store.getSession(task.session_id)!;
+    const terminal = ['completed', 'failed', 'cancelled'].includes(task.status);
     if (action === 'cancel') {
+      // an already-terminal task stays exactly as it is (no resurrection)
+      if (terminal) {
+        this.sendJson(res, 200, {task_id: task.task_id, status: task.status});
+        return true;
+      }
+      // R07: cancelling a QUEUE item (head or middle) — cancelled, no device
+      // effect, remaining order preserved (queue_index is never reused)
       const scheduler = this.deps.manager.schedulerFor(session.session_id);
       if (scheduler) void scheduler.cancelTask(task.task_id);
       else {
-        store.updateTaskStatus(task.task_id, 'cancelled', 'cancelled by operator');
+        const wasQueued = task.status === 'queued';
+        store.updateTaskStatus(task.task_id, 'cancelled',
+          wasQueued ? 'cancelled from the queue by operator' : 'cancelled by operator');
         store.cancelWakes(session.session_id, task.task_id);
       }
       this.sendJson(res, 200, {task_id: task.task_id, status: 'cancelled'});
       return true;
     }
     this.requireWritable(session);
+    // R07: pause/resume are queue-slot controls — a QUEUED task holds no slot
+    // yet; only cancel applies while queued (documented in API_CONTRACT.md)
+    if (task.status === 'queued') {
+      throw new DeviceError('task_queued',
+        `task ${task.task_id} is queued (position ${store.queuePosition(session.session_id, task.task_id) ?? '?'}); `
+        + 'only cancel applies to a queued task — pause/resume take effect after promotion');
+    }
     if (action === 'pause') {
-      if (!['completed', 'failed', 'cancelled'].includes(task.status)) {
-        store.updateTaskStatus(task.task_id, 'paused', 'operator');
-        this.deps.manager.emitSessionEvent(session.session_id, 'task.status',
-          {task_id: task.task_id, status: 'paused', reason: 'operator'});
+      // pausing a terminal task is a no-op that reports the current status
+      if (terminal) {
+        this.sendJson(res, 200, {task_id: task.task_id, status: task.status});
+        return true;
       }
+      store.updateTaskStatus(task.task_id, 'paused', 'operator');
+      this.deps.manager.emitSessionEvent(session.session_id, 'task.status',
+        {task_id: task.task_id, status: 'paused', reason: 'operator'});
       this.sendJson(res, 200, {task_id: task.task_id, status: 'paused'});
       return true;
     }
-    // resume
+    // resume: only from paused; a terminal task can never be resumed
+    if (terminal) {
+      throw new DeviceError('invalid_argument',
+        `task ${task.task_id} is ${task.status} and cannot be resumed; create a new task instead`);
+    }
     if (task.status !== 'paused') {
       this.sendJson(res, 200, {task_id: task.task_id, status: task.status});
       return true;
@@ -344,8 +446,7 @@ export class SessionApiRouter {
     store.updateTaskStatus(task.task_id, 'waiting_condition', 'resumed by operator');
     this.deps.manager.emitSessionEvent(session.session_id, 'task.status',
       {task_id: task.task_id, status: 'waiting_condition', reason: 'operator_resume'});
-    const scheduler = this.deps.manager.ensureScheduler(store.getSession(session.session_id)!);
-    scheduler?.onUserMessage();
+    this.deps.manager.ensureScheduler(store.getSession(session.session_id)!)?.onTaskResumed();
     this.sendJson(res, 200, {task_id: task.task_id, status: 'waiting_condition'});
     return true;
   }
@@ -414,8 +515,16 @@ export class SessionApiRouter {
     }
     const history = messages.map(m => ({role: m.role as 'user' | 'assistant', content: m.content}));
     const evidenceRefs = store.listSessionIntents(session.session_id).filter(i => i.action_id).map(i => i.action_id!);
+    // F09: constraints/open questions must survive forced compaction rounds —
+    // feed the previous checkpoint back in, plus the live plan and wakes.
+    const planSteps = (task ? store.listPlanSteps(task.task_id) : []).map(s => ({skill: s.skill, status: s.status}));
+    const wakes = store.armedWakes(session.session_id)
+      .map(w => ({kind: w.kind, target_sim_s: w.target_sim_s, predicate: w.predicate}));
     const compacted = this.deps.manager.backend.compact({history, task: task ?? null,
-      facts, evidenceRefs});
+      facts, evidenceRefs,
+      previous: checkpoint ? {summary: checkpoint.summary, facts: checkpoint.facts,
+        open_questions: checkpoint.open_questions} : null,
+      plan: planSteps, wakes});
     try {
       const covered = store.getSession(session.session_id)!.last_message_seq;
       store.insertCheckpoint({session_id: session.session_id, generation: (checkpoint?.generation ?? 0) + 1,

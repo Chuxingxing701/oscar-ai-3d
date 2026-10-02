@@ -1,4 +1,4 @@
-// Long-lived culture session persistence (design §4.2). Schema v2 lives in
+// Long-lived culture session persistence (design §4.2). Schema v3 lives in
 // the SAME agent.sqlite as the run/intent ledger: one process, one store,
 // incremental idempotent migrations keyed by agent_meta.schema_version.
 //
@@ -10,8 +10,11 @@
 // context (covered_message_seq watermark).
 import {DatabaseSync} from 'node:sqlite';
 import {randomUUID} from 'node:crypto';
+import {canonicalJson} from '@oscar/device-contract';
+import {missingExecutionParameters, normalizeGoalSpec} from './goal.ts';
+import type {StepVerification} from './skills.ts';
 
-export const AGENT_SCHEMA_VERSION = 2;
+export const AGENT_SCHEMA_VERSION = 3;
 
 export const SESSION_SCHEMA = `
 CREATE TABLE IF NOT EXISTS agent_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -29,7 +32,9 @@ CREATE TABLE IF NOT EXISTS sessions (
   loop_state_detail TEXT,
   last_event_seq INTEGER NOT NULL DEFAULT 0,
   last_message_seq INTEGER NOT NULL DEFAULT 0,
+  consumed_user_seq INTEGER NOT NULL DEFAULT 0,    -- max user seq a committed turn saw
   inbox_cursor INTEGER NOT NULL DEFAULT 0,         -- device event seq consumed
+  handoff_pending INTEGER NOT NULL DEFAULT 0,      -- N04: a current task went terminal but promotion barriers are uncleared
   model_state TEXT,                                -- backend continuity (pi context)
   created_at_wall TEXT NOT NULL,
   updated_at_wall TEXT NOT NULL,
@@ -62,10 +67,12 @@ CREATE TABLE IF NOT EXISTS tasks (
   goal_text TEXT NOT NULL,
   goal_spec TEXT NOT NULL,
   goal_revision INTEGER NOT NULL DEFAULT 1,
-  status TEXT NOT NULL,                            -- draft|ready|running|waiting_device|waiting_condition|needs_input|paused|completed|failed|cancelled
+  status TEXT NOT NULL,                            -- queued|draft|ready|running|waiting_device|waiting_condition|needs_input|paused|completed|failed|cancelled
   reason TEXT,
-  queue_index INTEGER NOT NULL DEFAULT 0,
+  queue_index INTEGER NOT NULL DEFAULT 0,          -- FIFO position (global create order; the queue = 'queued' rows in this order)
   budget TEXT NOT NULL,
+  create_request_id TEXT,                           -- F14 create idempotency (survives goal edits)
+  create_canonical TEXT,                            -- canonical create body (goal + spec + resolved budget)
   created_at_wall TEXT NOT NULL,
   updated_at_wall TEXT NOT NULL
 );
@@ -94,6 +101,8 @@ CREATE TABLE IF NOT EXISTS wakes (
   source_watermark REAL,
   status TEXT NOT NULL DEFAULT 'armed',            -- armed|fired|cancelled
   dedupe_key TEXT,
+  goal_revision INTEGER,                           -- N03: goal revision the wake was armed under
+  step_id TEXT,                                    -- N03: plan step the wake is bound to (monitor_until)
   created_at_wall TEXT NOT NULL,
   fired_at_wall TEXT
 );
@@ -117,6 +126,12 @@ CREATE TABLE IF NOT EXISTS session_intents (
   canonical_request TEXT NOT NULL,
   action_id TEXT,
   goal_revision INTEGER NOT NULL,
+  operation_id TEXT,                                -- F06 planner operation identity (op1, op2, ...)
+  budget_counted INTEGER NOT NULL DEFAULT 0,        -- F06 one-time action budget accounting
+  state TEXT NOT NULL DEFAULT 'pending',            -- pending|bound|not_accepted|rejected (outcome certainty)
+  cancel_state TEXT NOT NULL DEFAULT 'none',        -- N05 durable device-cancel intent: none|requested|confirmed
+  cancel_attempts INTEGER NOT NULL DEFAULT 0,       -- N05 attempts of the recorded cancel intent
+  cancel_last_error TEXT,                           -- N05 why the last cancel attempt failed
   created_at_wall TEXT NOT NULL,
   PRIMARY KEY (session_id, key)
 );
@@ -136,8 +151,20 @@ CREATE TABLE IF NOT EXISTS memory_checkpoints (
 );
 `;
 
-export type TaskStatus = 'draft' | 'ready' | 'running' | 'waiting_device' | 'waiting_condition'
+export type TaskStatus = 'queued' | 'draft' | 'ready' | 'running' | 'waiting_device' | 'waiting_condition'
   | 'needs_input' | 'paused' | 'completed' | 'failed' | 'cancelled';
+
+/**
+ * R07 task queue. `queued` tasks hold NO execution rights: they wait in FIFO
+ * queue_index order. The CURRENT task is the single non-terminal, non-queued
+ * task (paused and needs_input included — they block the queue; they are not
+ * terminal). Promotion (queued → ready/needs_input) happens only through the
+ * CAS transaction in promoteQueuedTask, so exactly one task can ever hold the
+ * execution slot.
+ */
+export const CURRENT_TASK_STATUSES: readonly TaskStatus[] = ['draft', 'ready', 'running', 'waiting_device',
+  'waiting_condition', 'needs_input', 'paused'];
+export const TERMINAL_TASK_STATUSES: readonly TaskStatus[] = ['completed', 'failed', 'cancelled'];
 /** Loop states are reported separately from task status (design §4.2). */
 export type LoopState = 'idle' | 'thinking' | 'executing' | 'waiting_device' | 'waiting_condition'
   | 'needs_input' | 'paused' | 'recovering' | 'unavailable' | 'unsupported_clock_mode';
@@ -156,7 +183,12 @@ export interface SessionRow {
   loop_state_detail: string | null;
   last_event_seq: number;
   last_message_seq: number;
+  consumed_user_seq: number;
   inbox_cursor: number;
+  /** N04: the previous current task reached a terminal state, but promotion
+   * has not cleared the handoff barriers yet (unresolved intents / in-flight
+   * device actions). While set, NO new task may be born 'ready'. */
+  handoff_pending: boolean;
   model_state: string | null;
   created_at_wall: string;
   updated_at_wall: string;
@@ -191,6 +223,8 @@ export interface TaskRow {
   reason: string | null;
   queue_index: number;
   budget: TaskBudget;
+  create_request_id: string | null;
+  create_canonical: string | null;
   created_at_wall: string;
   updated_at_wall: string;
 }
@@ -203,9 +237,13 @@ export interface PlanStepRow {
   skill: string;
   skill_version: string | null;
   inputs: Record<string, unknown> | null;
+  /** Reviewed postcondition spec of the skill@version this step was planned with (R08). */
+  postconditions: Record<string, unknown> | null;
   status: 'pending' | 'running' | 'done' | 'failed' | 'skipped';
   action_ids: string[];
   evidence_refs: string[];
+  /** Last evaluator result: pass/fail + reasons + evidence (null = never evaluated). */
+  verification: StepVerification | null;
   updated_at_wall: string;
 }
 
@@ -219,9 +257,27 @@ export interface WakeRow {
   source_watermark: number | null;
   status: 'armed' | 'fired' | 'cancelled';
   dedupe_key: string | null;
+  /** N03: goal revision at arm time (null on pre-binding rows). */
+  goal_revision: number | null;
+  /** N03: plan step (monitor_until) the wake is bound to (null = unbound). */
+  step_id: string | null;
   created_at_wall: string;
   fired_at_wall: string | null;
 }
+
+/** Certainty of an intent's device effect. `pending` = unknown (may or may
+ * not have been accepted — blocks new session writes until reconciled);
+ * `bound` = resolved to an action; `not_accepted` = the Runtime definitively
+ * holds no action for the key (same-key retry stays allowed); `rejected` =
+ * the Runtime definitively refused the submit. */
+export type IntentState = 'pending' | 'bound' | 'not_accepted' | 'rejected';
+
+/** N05 durable device-cancel intent per bound action. `none` = never
+ * requested; `requested` = a cancel must reach the device (or already did —
+ * the outcome is unknown) and stays retryable; `confirmed` = the Runtime
+ * accepted the cancel or the action is already terminal (idempotent end
+ * state, never re-POSTed). */
+export type IntentCancelState = 'none' | 'requested' | 'confirmed';
 
 export interface SessionIntentRow {
   session_id: string;
@@ -231,6 +287,12 @@ export interface SessionIntentRow {
   canonical_request: string;
   action_id: string | null;
   goal_revision: number;
+  operation_id: string | null;
+  budget_counted: boolean;
+  state: IntentState;
+  cancel_state: IntentCancelState;
+  cancel_attempts: number;
+  cancel_last_error: string | null;
   created_at_wall: string;
 }
 
@@ -266,6 +328,31 @@ export class SessionStore {
 
   migrate(): void {
     this.db.exec(SESSION_SCHEMA);
+    this.addColumnIfMissing('tasks', 'create_request_id', 'TEXT');
+    this.addColumnIfMissing('tasks', 'create_canonical', 'TEXT');
+    this.addColumnIfMissing('session_intents', 'operation_id', 'TEXT');
+    this.addColumnIfMissing('session_intents', 'budget_counted', 'INTEGER NOT NULL DEFAULT 0');
+    this.addColumnIfMissing('session_intents', 'state', "TEXT NOT NULL DEFAULT 'pending'");
+    // N04: persisted handoff marker — set in the same transaction that makes a
+    // CURRENT task terminal, cleared by promotion once the barriers passed.
+    this.addColumnIfMissing('sessions', 'handoff_pending', 'INTEGER NOT NULL DEFAULT 0');
+    // N05: durable per-action cancel intent (survives restart; the in-memory
+    // set could be lost by one transient error).
+    this.addColumnIfMissing('session_intents', 'cancel_state', "TEXT NOT NULL DEFAULT 'none'");
+    this.addColumnIfMissing('session_intents', 'cancel_attempts', 'INTEGER NOT NULL DEFAULT 0');
+    this.addColumnIfMissing('session_intents', 'cancel_last_error', 'TEXT');
+    this.addColumnIfMissing('sessions', 'consumed_user_seq', 'INTEGER NOT NULL DEFAULT 0');
+    // R08 versioned skills: steps persist the reviewed postcondition spec and
+    // every verification result (pass/fail + reasons + evidence).
+    this.addColumnIfMissing('plan_steps', 'postconditions', 'TEXT');
+    this.addColumnIfMissing('plan_steps', 'verification', 'TEXT');
+    // N03: wakes persist the goal revision and plan-step identity they were
+    // armed for, so monitor evidence cannot be substituted across revisions,
+    // steps or thresholds.
+    this.addColumnIfMissing('wakes', 'goal_revision', 'INTEGER');
+    this.addColumnIfMissing('wakes', 'step_id', 'TEXT');
+    // pre-state-schema rows that already carry an action are bound
+    this.stmt("UPDATE session_intents SET state='bound' WHERE action_id IS NOT NULL AND state='pending'").run();
     const current = this.db.prepare("SELECT value FROM agent_meta WHERE key='schema_version'")
       .get() as {value: string} | undefined;
     const version = Number(current?.value ?? 0);
@@ -273,9 +360,17 @@ export class SessionStore {
       throw new Error(`agent store schema v${version} is newer than this build (v${AGENT_SCHEMA_VERSION}); upgrade the Agent first`);
     }
     // v1 (runs/intents/events/seen) needs no transformation; v2 adds the
-    // session tables above. Re-running the DDL is idempotent.
+    // session tables above; v3 adds tasks.create_* and session_intents
+    // operation/budget columns via additive ALTER. Re-running is idempotent.
     this.db.prepare("INSERT INTO agent_meta (key, value) VALUES ('schema_version', ?) "
       + "ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(String(AGENT_SCHEMA_VERSION));
+  }
+
+  private addColumnIfMissing(table: string, column: string, ddl: string): void {
+    const cols = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{name: string}>;
+    if (!cols.some(c => c.name === column)) {
+      this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${ddl}`);
+    }
   }
 
   stmt(sql: string): import('node:sqlite').StatementSync {
@@ -415,28 +510,78 @@ export class SessionStore {
     return rows.map(toMessageRow);
   }
 
+  /** Advance the consumed-user-message watermark (monotonic; never moves back). */
+  consumeUserMessages(sessionId: string, seq: number): void {
+    if (seq <= 0) return;
+    this.stmt('UPDATE sessions SET consumed_user_seq=MAX(consumed_user_seq, ?), updated_at_wall=? WHERE session_id=?')
+      .run(seq, new Date().toISOString(), sessionId);
+  }
+
+  /** True when a persisted user message was never included in a committed turn. */
+  hasUnconsumedUserMessages(sessionId: string): boolean {
+    const hit = this.stmt(`SELECT 1 FROM messages WHERE session_id=? AND role='user'
+      AND seq > COALESCE((SELECT consumed_user_seq FROM sessions WHERE session_id=?), 0) LIMIT 1`)
+      .get(sessionId, sessionId);
+    return hit != null;
+  }
+
   // -- tasks ----------------------------------------------------------------------
 
+  /**
+   * R07 single store-level create entry for EVERY path (web UI, user HTTP,
+   * supervisor delegation, model propose_task). Idempotent on request_id (a
+   * replay returns the ORIGINAL task — including while it is queued; a
+   * divergent body conflicts). N04 admission rule, shared with promotion:
+   * a new task is born 'ready' ONLY when the execution slot is free — no
+   * current task, no queued task, AND no pending handoff (a terminal previous
+   * task whose barriers promotion has not cleared yet). Otherwise it is
+   * persisted as 'queued' in FIFO queue_index order and promotion — which
+   * owns the barriers — decides. This closes the terminal→promotion gap: a
+   * later arrival can never jump an existing queue or skip the handoff.
+   */
   createTask(sessionId: string, input: {goal_text: string; goal_spec: Record<string, unknown>;
     budget?: Partial<TaskBudget>; request_id?: string | null}): TaskRow {
     return this.tx(() => {
+      const maxActions = createBudgetLimit(input.budget?.max_actions, 40, 'max_actions');
+      const maxModelTurns = createBudgetLimit(input.budget?.max_model_turns, 200, 'max_model_turns');
+      const canonical = createCanonical(input.goal_text, input.goal_spec, maxActions, maxModelTurns);
       if (input.request_id) {
-        const hit = this.stmt("SELECT task_id FROM tasks WHERE session_id=? AND json_extract(goal_spec, '$.request_id')=?")
-          .get(sessionId, input.request_id) as {task_id: string} | undefined;
-        if (hit) return this.getTask(hit.task_id)!;
+        const existing = this.findTaskByRequest(sessionId, input.request_id);
+        if (existing) {
+          const same = existing.create_canonical !== null ? existing.create_canonical === canonical
+            : createCanonical(existing.goal_text, existing.goal_spec, existing.budget.max_actions,
+              existing.budget.max_model_turns) === canonical;
+          if (same) return existing;
+          throw new Error(`request_conflict: request_id '${input.request_id}' already created task `
+            + `${existing.task_id} with a different goal or budget`);
+        }
       }
       const now = new Date().toISOString();
       const taskId = `task-${randomUUID().slice(0, 12)}`;
       const queue = (this.stmt('SELECT COALESCE(MAX(queue_index), 0) AS q FROM tasks WHERE session_id=?')
         .get(sessionId) as {q: number}).q + 1;
-      const budget: TaskBudget = {max_actions: input.budget?.max_actions ?? 40,
-        actions_used: 0, max_model_turns: input.budget?.max_model_turns ?? 200, model_turns_used: 0};
+      // queue behind the current task, an existing queue, or an uncleared
+      // handoff; a queued task never holds execution rights
+      const status: TaskStatus = this.executionSlotFree(sessionId) ? 'ready' : 'queued';
+      const budget: TaskBudget = {max_actions: maxActions, actions_used: 0,
+        max_model_turns: maxModelTurns, model_turns_used: 0};
       const spec = input.request_id ? {...input.goal_spec, request_id: input.request_id} : input.goal_spec;
       this.stmt(`INSERT INTO tasks (task_id, session_id, goal_text, goal_spec, goal_revision, status, queue_index,
-        budget, created_at_wall, updated_at_wall) VALUES (?,?,?,?,1,'ready',?,?,?,?)`)
-        .run(taskId, sessionId, input.goal_text, JSON.stringify(spec), queue, JSON.stringify(budget), now, now);
+        budget, create_request_id, create_canonical, created_at_wall, updated_at_wall) VALUES (?,?,?,?,1,?,?,?,?,?,?,?)`)
+        .run(taskId, sessionId, input.goal_text, JSON.stringify(spec), status, queue, JSON.stringify(budget),
+          input.request_id ?? null, canonical, now, now);
       return this.getTask(taskId)!;
     });
+  }
+
+  /** Create idempotency lookup: the v3 column first, then the legacy goal_spec copy. */
+  findTaskByRequest(sessionId: string, requestId: string): TaskRow | undefined {
+    const byColumn = this.stmt('SELECT * FROM tasks WHERE session_id=? AND create_request_id=?')
+      .get(sessionId, requestId) as Record<string, unknown> | undefined;
+    if (byColumn) return toTaskRow(byColumn);
+    const legacy = this.stmt("SELECT * FROM tasks WHERE session_id=? AND json_extract(goal_spec, '$.request_id')=?")
+      .get(sessionId, requestId) as Record<string, unknown> | undefined;
+    return legacy ? toTaskRow(legacy) : undefined;
   }
 
   getTask(taskId: string): TaskRow | undefined {
@@ -449,17 +594,163 @@ export class SessionStore {
       .map(toTaskRow);
   }
 
+  /**
+   * The CURRENT task: the single non-terminal, non-queued task (paused and
+   * needs_input included — they hold the execution slot and block the queue).
+   * NEVER returns a 'queued' task; ordering by queue_index keeps the pick
+   * deterministic during the terminal→promotion window.
+   */
   activeTask(sessionId: string): TaskRow | undefined {
-    // one active task per session; others queue (design §4.1)
     const r = this.stmt(`SELECT * FROM tasks WHERE session_id=? AND status IN
-      ('draft','ready','running','waiting_device','waiting_condition','needs_input') ORDER BY queue_index ASC LIMIT 1`)
+      ('draft','ready','running','waiting_device','waiting_condition','needs_input','paused') ORDER BY queue_index ASC LIMIT 1`)
       .get(sessionId) as Record<string, unknown> | undefined;
     return r ? toTaskRow(r) : undefined;
   }
 
+  /** R07: the ordered queue (queued tasks only, FIFO by queue_index). */
+  queuedTasks(sessionId: string): Array<TaskRow & {position: number}> {
+    return (this.stmt("SELECT * FROM tasks WHERE session_id=? AND status='queued' ORDER BY queue_index ASC")
+      .all(sessionId) as Record<string, unknown>[])
+      .map((r, i) => ({...toTaskRow(r), position: i + 1}));
+  }
+
+  /**
+   * N04: the ONE admission rule shared by createTask (ready birth) and
+   * promoteQueuedTask (slot handover). The execution slot is free only when
+   * there is no current task, no queued task, and no pending handoff. All
+   * three checks are synchronous SQL, so the rule is decided inside the
+   * caller's transaction and survives restart.
+   */
+  private executionSlotFree(sessionId: string): boolean {
+    const row = this.stmt(`SELECT
+        (SELECT COUNT(*) FROM tasks WHERE session_id=? AND status IN
+          ('draft','ready','running','waiting_device','waiting_condition','needs_input','paused')) AS current_n,
+        (SELECT COUNT(*) FROM tasks WHERE session_id=? AND status='queued') AS queued_n,
+        (SELECT handoff_pending FROM sessions WHERE session_id=?) AS handoff`)
+      .get(sessionId, sessionId, sessionId) as {current_n: number; queued_n: number; handoff: number | undefined} | undefined;
+    if (!row) return true; // no session row: createTask callers validated it exists
+    return Number(row.current_n) === 0 && Number(row.queued_n) === 0 && Number(row.handoff ?? 0) === 0;
+  }
+
+  /** N04: a current task went terminal; promotion must clear the barriers. */
+  sessionHandoffPending(sessionId: string): boolean {
+    const row = this.stmt('SELECT handoff_pending FROM sessions WHERE session_id=?')
+      .get(sessionId) as {handoff_pending: number} | undefined;
+    return row != null && Number(row.handoff_pending) === 1;
+  }
+
+  /**
+   * N04: promotion clears the persisted handoff marker AFTER the barriers
+   * passed (no unresolved intents, no non-terminal in-flight actions —
+   * checked by the scheduler, which owns them). Returns true when a marker
+   * was actually cleared. Safe to call when nothing is pending.
+   */
+  clearSessionHandoff(sessionId: string): boolean {
+    const r = this.stmt('UPDATE sessions SET handoff_pending=0, updated_at_wall=? '
+      + 'WHERE session_id=? AND handoff_pending=1').run(new Date().toISOString(), sessionId);
+    return Number(r.changes) > 0;
+  }
+
+  /** 1-based FIFO position of a queued task, or null when it is not queued. */
+  queuePosition(sessionId: string, taskId: string): number | null {
+    const row = this.stmt(`SELECT COUNT(*) AS ahead FROM tasks WHERE session_id=? AND status='queued'
+      AND queue_index < (SELECT queue_index FROM tasks WHERE task_id=?)`)
+      .get(sessionId, taskId) as {ahead: number} | undefined;
+    if (!row) return null;
+    const queued = this.stmt("SELECT status FROM tasks WHERE task_id=?").get(taskId) as {status: string} | undefined;
+    return queued?.status === 'queued' ? Number(row.ahead) + 1 : null;
+  }
+
+  /**
+   * R07 promotion, ONE SQLite transaction, CAS: the queue head is promoted
+   * (queued → ready, or needs_input when its spec misses execution
+   * parameters) ONLY when no current task exists AND no handoff is pending
+   * (N04: promotion owns the barriers and is the only path that may clear
+   * the marker, so admission and promotion share one rule). The status row
+   * update is guarded by `AND status='queued'`, so two racing callers can
+   * never promote two tasks — exactly one task holds execution rights at any
+   * time.
+   */
+  promoteQueuedTask(sessionId: string): TaskRow | null {
+    return this.tx(() => {
+      if (this.activeTask(sessionId)) return null; // CAS: the slot is taken (incl. paused/needs_input)
+      if (this.sessionHandoffPending(sessionId)) return null; // N04: barriers uncleared
+      const head = this.stmt("SELECT * FROM tasks WHERE session_id=? AND status='queued' ORDER BY queue_index ASC LIMIT 1")
+        .get(sessionId) as Record<string, unknown> | undefined;
+      if (!head) return null;
+      let status: TaskStatus = 'ready';
+      let reason: string | null = 'promoted from queue (the previous task reached a terminal state)';
+      try {
+        const missing = missingExecutionParameters(normalizeGoalSpec(JSON.parse(String(head.goal_spec))));
+        if (missing.length) {
+          status = 'needs_input';
+          reason = missing.join(' | ');
+        }
+      } catch {
+        status = 'needs_input';
+        reason = 'goal_spec is invalid; fix the task before it can run';
+      }
+      this.stmt("UPDATE tasks SET status=?, reason=?, updated_at_wall=? WHERE task_id=? AND status='queued'")
+        .run(status, reason, new Date().toISOString(), String(head.task_id));
+      return this.getTask(String(head.task_id)) ?? null;
+    });
+  }
+
+  /**
+   * R07: archive cancels the whole queue — queued tasks of an archived
+   * session become cancelled (reason: session archived) and are never
+   * promoted. Returns the number of tasks cancelled.
+   */
+  cancelQueuedTasks(sessionId: string, reason: string): number {
+    const r = this.stmt("UPDATE tasks SET status='cancelled', reason=?, updated_at_wall=? WHERE session_id=? AND status='queued'")
+      .run(reason, new Date().toISOString(), sessionId);
+    return Number(r.changes);
+  }
+
+  /**
+   * Terminal statuses are final: only the same status may be written again.
+   * N04: when a CURRENT task (non-terminal, non-queued before this call)
+   * reaches completed/failed/cancelled, the session's handoff marker is set
+   * in the SAME transaction — from this instant no new task can be born
+   * 'ready' until promotion clears the marker after its barriers pass.
+   * A queued→terminal write (queue cancel/archive) never sets the marker:
+   * it does not end a current task's handoff.
+   */
   updateTaskStatus(taskId: string, status: TaskStatus, reason?: string | null): void {
-    this.stmt('UPDATE tasks SET status=?, reason=?, updated_at_wall=? WHERE task_id=?')
-      .run(status, reason ?? null, new Date().toISOString(), taskId);
+    this.tx(() => {
+      const current = this.stmt('SELECT session_id, status FROM tasks WHERE task_id=?')
+        .get(taskId) as {session_id: string; status: string} | undefined;
+      if (!current) return;
+      if (['completed', 'failed', 'cancelled'].includes(current.status) && current.status !== status) return;
+      const wasCurrent = (CURRENT_TASK_STATUSES as readonly string[]).includes(current.status);
+      this.stmt('UPDATE tasks SET status=?, reason=?, updated_at_wall=? WHERE task_id=?')
+        .run(status, reason ?? null, new Date().toISOString(), taskId);
+      if (wasCurrent && (TERMINAL_TASK_STATUSES as readonly string[]).includes(status)) {
+        this.stmt('UPDATE sessions SET handoff_pending=1, updated_at_wall=? WHERE session_id=?')
+          .run(new Date().toISOString(), current.session_id);
+      }
+    });
+  }
+
+  /**
+   * Q02 conditional turn-start write (ready→running). Unlike
+   * updateTaskStatus, this is a CAS: the row must STILL be 'ready' at the
+   * SAME goal revision the turn decided under — a task pause (or any other
+   * status write) that landed while the turn awaited its decision-start
+   * device state read is never overwritten. Returns the fresh running row on
+   * success, or null when the CAS lost (0 rows): the caller must abort the
+   * turn before any model call or device write. Never touches terminal rows
+   * (the WHERE cannot match) and never sets the handoff marker (running is
+   * not a terminal transition).
+   */
+  startTaskTurn(taskId: string, goalRevision: number, reason: string | null): TaskRow | null {
+    return this.tx(() => {
+      const r = this.stmt(`UPDATE tasks SET status='running', reason=?, updated_at_wall=?
+        WHERE task_id=? AND status='ready' AND goal_revision=?`)
+        .run(reason, new Date().toISOString(), taskId, goalRevision) as {changes: number | bigint};
+      if (Number(r.changes) === 0) return null;
+      return this.getTask(taskId) ?? null;
+    });
   }
 
   /** CAS goal update: expected_revision guards concurrent user/model edits. */
@@ -493,29 +784,78 @@ export class SessionStore {
     });
   }
 
+  /** Atomically bind an intent to its action and count it against the task budget exactly once. */
+  accountIntent(sessionId: string, key: string, actionId: string): void {
+    this.tx(() => {
+      const intent = this.stmt('SELECT task_id, action_id, budget_counted FROM session_intents WHERE session_id=? AND key=?')
+        .get(sessionId, key) as {task_id: string; action_id: string | null; budget_counted: number} | undefined;
+      if (!intent) return;
+      if (intent.action_id !== actionId) {
+        this.stmt("UPDATE session_intents SET action_id=?, state='bound' WHERE session_id=? AND key=?")
+          .run(actionId, sessionId, key);
+      } else {
+        this.stmt("UPDATE session_intents SET state='bound' WHERE session_id=? AND key=?").run(sessionId, key);
+      }
+      if (Number(intent.budget_counted) === 1) return;
+      const budget = this.stmt('SELECT budget FROM tasks WHERE task_id=?')
+        .get(intent.task_id) as {budget: string} | undefined;
+      if (budget) {
+        const parsed = JSON.parse(budget.budget) as TaskBudget;
+        parsed.actions_used += 1;
+        this.stmt('UPDATE tasks SET budget=?, updated_at_wall=? WHERE task_id=?')
+          .run(JSON.stringify(parsed), new Date().toISOString(), intent.task_id);
+      }
+      this.stmt('UPDATE session_intents SET budget_counted=1 WHERE session_id=? AND key=?').run(sessionId, key);
+    });
+  }
+
   /** Count a recovered-by-key intent against its task budget exactly once. */
   incrementTaskBudgetByIntent(sessionId: string, key: string): void {
-    const intent = this.stmt('SELECT task_id FROM session_intents WHERE session_id=? AND key=?')
-      .get(sessionId, key) as {task_id: string} | undefined;
-    if (intent) this.incrementTaskBudget(intent.task_id, {actions: 1});
+    const intent = this.stmt('SELECT action_id FROM session_intents WHERE session_id=? AND key=?')
+      .get(sessionId, key) as {action_id: string | null} | undefined;
+    if (!intent) return;
+    this.accountIntent(sessionId, key, intent.action_id ?? key);
+  }
+
+  /** Reserve one model turn up front; refuses instead of exceeding max_model_turns. */
+  tryReserveModelTurn(taskId: string): {ok: true; budget: TaskBudget} | {ok: false; budget: TaskBudget} {
+    return this.tx(() => {
+      const task = this.getTask(taskId);
+      if (!task) throw new Error(`no task ${taskId}`);
+      if (task.budget.model_turns_used >= task.budget.max_model_turns) {
+        return {ok: false, budget: task.budget};
+      }
+      const budget: TaskBudget = {...task.budget, model_turns_used: task.budget.model_turns_used + 1};
+      this.stmt('UPDATE tasks SET budget=?, updated_at_wall=? WHERE task_id=?')
+        .run(JSON.stringify(budget), new Date().toISOString(), taskId);
+      return {ok: true, budget};
+    });
   }
 
   // -- plan steps -----------------------------------------------------------------
 
+  /**
+   * N01 CAS: the plan is replaced only while the task is still at
+   * `planRevision` (the goal revision the deciding turn saw). Returns null
+   * when the task's goal revision moved on — nothing is deleted or written,
+   * so a late async tool can never clobber a newer goal's plan.
+   */
   replacePlan(taskId: string, planRevision: number, steps: Array<{skill: string; skill_version?: string;
-    inputs?: Record<string, unknown> | null}>): PlanStepRow[] {
+    inputs?: Record<string, unknown> | null; postconditions?: Record<string, unknown> | null}>): PlanStepRow[] | null {
     return this.tx(() => {
+      const task = this.stmt('SELECT goal_revision FROM tasks WHERE task_id=?').get(taskId) as {goal_revision: unknown} | undefined;
+      if (!task || Number(task.goal_revision) !== planRevision) return null;
       this.stmt('DELETE FROM plan_steps WHERE task_id=?').run(taskId);
       const now = new Date().toISOString();
       const rows: PlanStepRow[] = steps.map((s, i) => {
         const stepId = `step-${randomUUID().slice(0, 10)}`;
         this.stmt(`INSERT INTO plan_steps (step_id, task_id, plan_revision, index_in_plan, skill, skill_version,
-          inputs, status, action_ids, evidence_refs, updated_at_wall) VALUES (?,?,?,?,?,?,?, 'pending', '[]', '[]', ?)`)
+          inputs, postconditions, status, action_ids, evidence_refs, updated_at_wall) VALUES (?,?,?,?,?,?,?,?,'pending','[]','[]',?)`)
           .run(stepId, taskId, planRevision, i, s.skill, s.skill_version ?? null,
-            s.inputs ? JSON.stringify(s.inputs) : null, now);
+            s.inputs ? JSON.stringify(s.inputs) : null, s.postconditions ? JSON.stringify(s.postconditions) : null, now);
         return {step_id: stepId, task_id: taskId, plan_revision: planRevision, index_in_plan: i, skill: s.skill,
-          skill_version: s.skill_version ?? null, inputs: s.inputs ?? null, status: 'pending' as const,
-          action_ids: [], evidence_refs: [], updated_at_wall: now};
+          skill_version: s.skill_version ?? null, inputs: s.inputs ?? null, postconditions: s.postconditions ?? null,
+          status: 'pending' as const, action_ids: [], evidence_refs: [], verification: null, updated_at_wall: now};
       });
       return rows;
     });
@@ -526,21 +866,54 @@ export class SessionStore {
       .map(toPlanStepRow);
   }
 
-  updatePlanStep(stepId: string, fields: Partial<Pick<PlanStepRow, 'status' | 'action_ids' | 'evidence_refs'>>): void {
-    const current = this.stmt('SELECT * FROM plan_steps WHERE step_id=?').get(stepId) as Record<string, unknown> | undefined;
-    if (!current) throw new Error(`no plan step ${stepId}`);
-    this.stmt('UPDATE plan_steps SET status=?, action_ids=?, evidence_refs=?, updated_at_wall=? WHERE step_id=?')
-      .run(fields.status ?? String(current.status),
+  /**
+   * N01 CAS: the update lands only on the SAME row (step_id), the SAME plan
+   * revision and the SAME prior status the caller decided against
+   * (`UPDATE ... WHERE step_id=? AND plan_revision=? AND status=?`). A step
+   * replaced by a newer plan, or changed by another writer while evidence was
+   * being verified, matches 0 rows: the caller sees `false` and refuses.
+   */
+  updatePlanStep(stepId: string, fields: Partial<Pick<PlanStepRow, 'status' | 'action_ids' | 'evidence_refs'
+    | 'verification' | 'postconditions'>>, expected?: {plan_revision?: number; status?: string}): boolean {
+    return this.tx(() => {
+      const current = this.stmt('SELECT * FROM plan_steps WHERE step_id=?').get(stepId) as Record<string, unknown> | undefined;
+      if (!current) {
+        // a CAS caller sees a miss (the row was deleted by a newer plan); the
+        // unguarded legacy path keeps its explicit error
+        if (expected) return false;
+        throw new Error(`no plan step ${stepId}`);
+      }
+      const guards: string[] = [];
+      const params: Array<string | number | null> = [fields.status ?? String(current.status),
         JSON.stringify(fields.action_ids ?? JSON.parse(String(current.action_ids))),
         JSON.stringify(fields.evidence_refs ?? JSON.parse(String(current.evidence_refs))),
-        new Date().toISOString(), stepId);
+        fields.verification !== undefined ? JSON.stringify(fields.verification)
+          : (typeof current.verification === 'string' ? current.verification : null),
+        fields.postconditions !== undefined ? JSON.stringify(fields.postconditions)
+          : (typeof current.postconditions === 'string' ? current.postconditions : null),
+        new Date().toISOString()];
+      let sql = `UPDATE plan_steps SET status=?, action_ids=?, evidence_refs=?, verification=?, postconditions=?, updated_at_wall=?
+        WHERE step_id=?`;
+      params.push(stepId);
+      if (expected?.plan_revision !== undefined) {
+        guards.push('plan_revision=?');
+        params.push(expected.plan_revision);
+      }
+      if (expected?.status !== undefined) {
+        guards.push('status=?');
+        params.push(expected.status);
+      }
+      if (guards.length) sql += ` AND ${guards.join(' AND ')}`;
+      const r = this.stmt(sql).run(...params) as {changes: number | bigint};
+      return Number(r.changes) > 0;
+    });
   }
 
   // -- wakes ------------------------------------------------------------------------
 
   armWake(input: {session_id: string; task_id: string; kind: WakeRow['kind'];
     predicate?: Record<string, unknown> | null; target_sim_s?: number | null; source_watermark?: number | null;
-    dedupe_key?: string | null}): WakeRow {
+    dedupe_key?: string | null; goal_revision?: number | null; step_id?: string | null}): WakeRow {
     return this.tx(() => {
       if (input.dedupe_key) {
         const hit = this.stmt("SELECT * FROM wakes WHERE session_id=? AND dedupe_key=? AND status='armed'")
@@ -550,10 +923,11 @@ export class SessionStore {
       const id = `wake-${randomUUID().slice(0, 10)}`;
       const now = new Date().toISOString();
       this.stmt(`INSERT INTO wakes (wake_id, session_id, task_id, kind, predicate, target_sim_s, source_watermark,
-        status, dedupe_key, created_at_wall) VALUES (?,?,?,?,?,?,?,'armed',?,?)`)
+        status, dedupe_key, goal_revision, step_id, created_at_wall) VALUES (?,?,?,?,?,?,?,'armed',?,?,?,?)`)
         .run(id, input.session_id, input.task_id, input.kind,
           input.predicate ? JSON.stringify(input.predicate) : null, input.target_sim_s ?? null,
-          input.source_watermark ?? null, input.dedupe_key ?? null, now);
+          input.source_watermark ?? null, input.dedupe_key ?? null,
+          input.goal_revision ?? null, input.step_id ?? null, now);
       return this.getWake(id)!;
     });
   }
@@ -566,6 +940,17 @@ export class SessionStore {
   armedWakes(sessionId: string): WakeRow[] {
     return (this.stmt("SELECT * FROM wakes WHERE session_id=? AND status='armed' ORDER BY created_at_wall")
       .all(sessionId) as Record<string, unknown>[]).map(toWakeRow);
+  }
+
+  /** Fired wakes of a session (optionally one task) — monitor_until evidence (R08). */
+  firedWakes(sessionId: string, taskId?: string): WakeRow[] {
+    const sql = taskId == null
+      ? "SELECT * FROM wakes WHERE session_id=? AND status='fired' ORDER BY fired_at_wall"
+      : "SELECT * FROM wakes WHERE session_id=? AND task_id=? AND status='fired' ORDER BY fired_at_wall";
+    const rows = (taskId == null
+      ? this.stmt(sql).all(sessionId)
+      : this.stmt(sql).all(sessionId, taskId)) as Record<string, unknown>[];
+    return rows.map(toWakeRow);
   }
 
   fireWake(id: string): void {
@@ -581,6 +966,12 @@ export class SessionStore {
     } else {
       this.stmt("UPDATE wakes SET status='cancelled', fired_at_wall=? WHERE session_id=? AND status='armed'").run(now, sessionId);
     }
+  }
+
+  /** Planning wakes only (sim_time/condition); never touches action_terminal wakes. */
+  cancelPlanningWakes(sessionId: string, taskId: string): void {
+    this.stmt(`UPDATE wakes SET status='cancelled', fired_at_wall=? WHERE session_id=? AND task_id=? AND status='armed'
+      AND kind IN ('sim_time','condition')`).run(new Date().toISOString(), sessionId, taskId);
   }
 
   // -- inbox (device events, at-least-once → dedupe by (source, seq)) -----------------
@@ -618,6 +1009,14 @@ export class SessionStore {
     this.stmt('UPDATE inbox SET state=? WHERE session_id=? AND source=? AND source_seq=?').run(state, sessionId, source, seq);
   }
 
+  /** Undrained inbox rows for a session, oldest first (F03 drain half). */
+  listReceivedInbox(sessionId: string): Array<{source: string; source_seq: number; event_type: string;
+    payload: Record<string, unknown>}> {
+    return (this.stmt("SELECT source, source_seq, event_type, payload FROM inbox WHERE session_id=? AND state='received' ORDER BY source_seq")
+      .all(sessionId) as Record<string, unknown>[]).map(r => ({source: String(r.source), source_seq: Number(r.source_seq),
+      event_type: String(r.event_type), payload: JSON.parse(String(r.payload)) as Record<string, unknown>}));
+  }
+
   setInboxCursor(sessionId: string, seq: number): void {
     this.stmt('UPDATE sessions SET inbox_cursor=?, updated_at_wall=? WHERE session_id=?')
       .run(seq, new Date().toISOString(), sessionId);
@@ -626,15 +1025,45 @@ export class SessionStore {
   // -- session intents (persisted BEFORE submit; recovery by idempotency key) -------------
 
   insertSessionIntent(input: {session_id: string; task_id: string; key: string; capability: string;
-    canonical: string; goal_revision: number}): void {
+    canonical: string; goal_revision: number; operation_id?: string | null}): void {
     this.stmt(`INSERT OR IGNORE INTO session_intents (session_id, task_id, key, capability, canonical_request,
-      action_id, goal_revision, created_at_wall) VALUES (?,?,?,?,?,NULL,?,?)`)
+      action_id, goal_revision, operation_id, budget_counted, created_at_wall) VALUES (?,?,?,?,?,NULL,?,?,0,?)`)
       .run(input.session_id, input.task_id, input.key, input.capability, input.canonical, input.goal_revision,
-        new Date().toISOString());
+        input.operation_id ?? null, new Date().toISOString());
+  }
+
+  /** Persisted monotonic per-session counter (agent_meta); independent of actions_used. */
+  nextOperationId(sessionId: string): string {
+    return this.tx(() => {
+      const key = `operation_seq:${sessionId}`;
+      const row = this.stmt('SELECT value FROM agent_meta WHERE key=?').get(key) as {value: string} | undefined;
+      const n = Number(row?.value ?? 0) + 1;
+      this.stmt('INSERT INTO agent_meta (key, value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value')
+        .run(key, String(n));
+      return `op${n}`;
+    });
+  }
+
+  /** Reuse requires the same task, canonical request and goal revision, an
+   * outcome that is still safely retryable with the SAME key (unknown, or the
+   * Runtime's definite "no action for this key"), and no action yet. A
+   * definitively rejected operation is finished; a re-plan gets a fresh key. */
+  findReusableIntent(sessionId: string, taskId: string, canonical: string, goalRevision: number): SessionIntentRow | undefined {
+    const r = this.stmt(`SELECT * FROM session_intents WHERE session_id=? AND task_id=? AND canonical_request=?
+      AND goal_revision=? AND action_id IS NULL AND state IN ('pending','not_accepted') ORDER BY created_at_wall LIMIT 1`)
+      .get(sessionId, taskId, canonical, goalRevision) as Record<string, unknown> | undefined;
+    return r ? toSessionIntentRow(r) : undefined;
   }
 
   setSessionIntentAction(sessionId: string, key: string, actionId: string): void {
-    this.stmt('UPDATE session_intents SET action_id=? WHERE session_id=? AND key=?').run(actionId, sessionId, key);
+    this.stmt("UPDATE session_intents SET action_id=?, state='bound' WHERE session_id=? AND key=?")
+      .run(actionId, sessionId, key);
+  }
+
+  /** Outcome-certainty transition (pending ⇄ terminal); bound goes through accountIntent. */
+  setSessionIntentState(sessionId: string, key: string, state: IntentState): void {
+    this.stmt('UPDATE session_intents SET state=? WHERE session_id=? AND key=? AND action_id IS NULL')
+      .run(state, sessionId, key);
   }
 
   listSessionIntents(sessionId: string): SessionIntentRow[] {
@@ -647,10 +1076,65 @@ export class SessionStore {
       .all(sessionId) as Record<string, unknown>[]).map(toSessionIntentRow);
   }
 
+  /** Intents whose device effect is UNKNOWN: no action bound and no definitive
+   * not_accepted/rejected resolution. These block new session writes. */
+  unresolvedSessionIntents(sessionId: string): SessionIntentRow[] {
+    return (this.stmt(`SELECT * FROM session_intents WHERE session_id=? AND action_id IS NULL AND state='pending'
+      ORDER BY created_at_wall, key`).all(sessionId) as Record<string, unknown>[]).map(toSessionIntentRow);
+  }
+
   findPendingSessionIntentByCanonical(sessionId: string, canonical: string): SessionIntentRow | undefined {
     const r = this.stmt(`SELECT * FROM session_intents WHERE session_id=? AND canonical_request=? AND action_id IS NULL
       ORDER BY created_at_wall LIMIT 1`).get(sessionId, canonical) as Record<string, unknown> | undefined;
     return r ? toSessionIntentRow(r) : undefined;
+  }
+
+  // -- durable device-cancel intents (N05) -----------------------------------
+
+  /** Find the bound intent that owns a device action. */
+  findIntentByAction(sessionId: string, actionId: string): SessionIntentRow | undefined {
+    const r = this.stmt('SELECT * FROM session_intents WHERE session_id=? AND action_id=?')
+      .get(sessionId, actionId) as Record<string, unknown> | undefined;
+    return r ? toSessionIntentRow(r) : undefined;
+  }
+
+  /**
+   * N05: record the cancel intent DURABLY before the attempt (state stays
+   * 'requested' even if the process dies mid-POST, so recovery retries).
+   * `reset` (an explicit user/supervisor cancel) restarts the bounded
+   * attempt counter after exhaustion.
+   */
+  markIntentCancelRequested(sessionId: string, key: string, opts: {reset?: boolean} = {}): void {
+    if (opts.reset) {
+      this.stmt(`UPDATE session_intents SET cancel_state='requested', cancel_attempts=0, cancel_last_error=NULL
+        WHERE session_id=? AND key=? AND cancel_state!='confirmed'`).run(sessionId, key);
+    }
+    this.stmt(`UPDATE session_intents SET cancel_state='requested',
+      cancel_attempts=cancel_attempts+1, cancel_last_error=NULL WHERE session_id=? AND key=?`)
+      .run(sessionId, key);
+  }
+
+  /**
+   * N05: the cancel is confirmed — the Runtime accepted the POST, or the
+   * action was already terminal (incl. already cancelled). Confirmed is the
+   * idempotent end state: no further cancel POST for this action.
+   */
+  markIntentCancelConfirmed(sessionId: string, key: string): void {
+    this.stmt(`UPDATE session_intents SET cancel_state='confirmed', cancel_last_error=NULL
+      WHERE session_id=? AND key=?`).run(sessionId, key);
+  }
+
+  /** N05: the attempt failed; 'requested' stays, the error is visible. */
+  markIntentCancelFailed(sessionId: string, key: string, error: string): void {
+    this.stmt(`UPDATE session_intents SET cancel_state='requested', cancel_last_error=?
+      WHERE session_id=? AND key=? AND cancel_state!='confirmed'`).run(error, sessionId, key);
+  }
+
+  /** N05: intents whose cancel still has to reach the device (restart + backoff retries). */
+  intentsCancelRequested(sessionId: string): SessionIntentRow[] {
+    return (this.stmt(`SELECT * FROM session_intents WHERE session_id=? AND action_id IS NOT NULL
+      AND cancel_state='requested' ORDER BY created_at_wall, key`).all(sessionId) as Record<string, unknown>[])
+      .map(toSessionIntentRow);
   }
 
   // -- memory checkpoints (generation CAS; compaction never deletes raw facts) -------------
@@ -683,6 +1167,20 @@ export class SessionStore {
 
 // -- row mappers -------------------------------------------------------------------
 
+function createBudgetLimit(value: number | undefined | null, fallback: number, what: string): number {
+  if (value === undefined || value === null) return fallback;
+  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < 0 || value > 100000) {
+    throw new Error(`invalid_budget: ${what} must be an integer between 0 and 100000`);
+  }
+  return value;
+}
+
+function createCanonical(goalText: string, goalSpec: Record<string, unknown>, maxActions: number,
+  maxModelTurns: number): string {
+  return canonicalJson({goal_text: goalText, goal_spec: {...goalSpec, request_id: undefined},
+    budget: {max_actions: maxActions, max_model_turns: maxModelTurns}});
+}
+
 function toSessionRow(r: Record<string, unknown>): SessionRow {
   return {
     session_id: String(r.session_id), runtime_instance_id: String(r.runtime_instance_id),
@@ -694,7 +1192,10 @@ function toSessionRow(r: Record<string, unknown>): SessionRow {
     loop_state: String(r.loop_state) as SessionRow['loop_state'],
     loop_state_detail: r.loop_state_detail ? String(r.loop_state_detail) : null,
     last_event_seq: Number(r.last_event_seq), last_message_seq: Number(r.last_message_seq),
-    inbox_cursor: Number(r.inbox_cursor), model_state: r.model_state ? String(r.model_state) : null,
+    consumed_user_seq: Number(r.consumed_user_seq ?? 0),
+    inbox_cursor: Number(r.inbox_cursor),
+    handoff_pending: Number(r.handoff_pending ?? 0) === 1,
+    model_state: r.model_state ? String(r.model_state) : null,
     created_at_wall: String(r.created_at_wall), updated_at_wall: String(r.updated_at_wall),
   };
 }
@@ -716,6 +1217,8 @@ function toTaskRow(r: Record<string, unknown>): TaskRow {
     goal_revision: Number(r.goal_revision), status: String(r.status) as TaskStatus,
     reason: r.reason ? String(r.reason) : null, queue_index: Number(r.queue_index),
     budget: JSON.parse(String(r.budget)) as TaskBudget,
+    create_request_id: r.create_request_id ? String(r.create_request_id) : null,
+    create_canonical: r.create_canonical ? String(r.create_canonical) : null,
     created_at_wall: String(r.created_at_wall), updated_at_wall: String(r.updated_at_wall),
   };
 }
@@ -726,9 +1229,11 @@ function toPlanStepRow(r: Record<string, unknown>): PlanStepRow {
     index_in_plan: Number(r.index_in_plan), skill: String(r.skill),
     skill_version: r.skill_version ? String(r.skill_version) : null,
     inputs: r.inputs ? JSON.parse(String(r.inputs)) as Record<string, unknown> : null,
+    postconditions: r.postconditions ? JSON.parse(String(r.postconditions)) as Record<string, unknown> : null,
     status: String(r.status) as PlanStepRow['status'],
     action_ids: JSON.parse(String(r.action_ids)) as string[],
     evidence_refs: JSON.parse(String(r.evidence_refs)) as string[],
+    verification: r.verification ? JSON.parse(String(r.verification)) as PlanStepRow['verification'] : null,
     updated_at_wall: String(r.updated_at_wall),
   };
 }
@@ -741,6 +1246,8 @@ function toWakeRow(r: Record<string, unknown>): WakeRow {
     target_sim_s: r.target_sim_s == null ? null : Number(r.target_sim_s),
     source_watermark: r.source_watermark == null ? null : Number(r.source_watermark),
     status: String(r.status) as WakeRow['status'], dedupe_key: r.dedupe_key ? String(r.dedupe_key) : null,
+    goal_revision: r.goal_revision == null ? null : Number(r.goal_revision),
+    step_id: r.step_id ? String(r.step_id) : null,
     created_at_wall: String(r.created_at_wall),
     fired_at_wall: r.fired_at_wall ? String(r.fired_at_wall) : null,
   };
@@ -751,6 +1258,12 @@ function toSessionIntentRow(r: Record<string, unknown>): SessionIntentRow {
     session_id: String(r.session_id), task_id: String(r.task_id), key: String(r.key),
     capability: String(r.capability), canonical_request: String(r.canonical_request),
     action_id: r.action_id ? String(r.action_id) : null, goal_revision: Number(r.goal_revision),
+    operation_id: r.operation_id ? String(r.operation_id) : null,
+    budget_counted: Number(r.budget_counted ?? 0) === 1,
+    state: (r.state ? String(r.state) : 'pending') as SessionIntentRow['state'],
+    cancel_state: (r.cancel_state ? String(r.cancel_state) : 'none') as SessionIntentRow['cancel_state'],
+    cancel_attempts: Number(r.cancel_attempts ?? 0),
+    cancel_last_error: r.cancel_last_error ? String(r.cancel_last_error) : null,
     created_at_wall: String(r.created_at_wall),
   };
 }

@@ -146,5 +146,15 @@ export function scopeAllowsWrite(spec: GoalSpec, capability: string, args: Recor
   if (reservoirId && spec.scope.reservoirs?.length && !spec.scope.reservoirs.includes(reservoirId)) {
     return {ok: false, reason: `reservoir '${reservoirId}' is outside the goal scope`};
   }
+  const wells: string[] = Array.isArray(args.wells) && args.wells.every(w => typeof w === 'string')
+    ? args.wells as string[]
+    : [];
+  if (typeof args.well_id === 'string') wells.push(args.well_id);
+  for (const well of wells) {
+    const row = /^[A-Za-z]+/.exec(well)?.[0] ?? '';
+    if (spec.scope.rows?.length && !spec.scope.rows.includes(row)) {
+      return {ok: false, reason: `well '${well}' targets row '${row}' which is outside the goal scope rows ${spec.scope.rows.join(', ')}`};
+    }
+  }
   return {ok: true};
 }

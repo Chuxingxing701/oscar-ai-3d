@@ -39,9 +39,11 @@ export const ERROR_STATUS = {
   target_changed: 409,
   timeout: 409,
   // long-lived culture sessions (D1+): archived sessions are read-only, one
-  // active task per session
+  // active task per session; R07 task queue — a queued task holds no
+  // execution slot, so only cancel applies to it (pause/resume → task_queued)
   session_archived: 409,
   task_already_active: 409,
+  task_queued: 409,
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_STATUS;

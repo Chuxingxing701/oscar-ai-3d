@@ -13,7 +13,7 @@ const BASIS_SET = new Set(['scripted', 'llm', 'oracle_demo', 'device_estimate', 
 const LOOP_LABELS = {idle: '空闲', thinking: '思考中', executing: '执行动作', waiting_device: '等待设备',
   waiting_condition: '等待条件', needs_input: '需要输入', paused: '已暂停', recovering: '恢复中',
   unavailable: '模型不可用', unsupported_clock_mode: '时钟模式不支持'};
-const TASK_LABELS = {draft: '草稿', ready: '就绪', running: '运行中', waiting_device: '等待设备',
+const TASK_LABELS = {queued: '排队中', draft: '草稿', ready: '就绪', running: '运行中', waiting_device: '等待设备',
   waiting_condition: '等待条件', needs_input: '需要输入', paused: '已暂停', completed: '已完成',
   failed: '失败', cancelled: '已取消'};
 
@@ -43,6 +43,11 @@ export function mountAgent(root, ctx) {
   let logRevision = 0, renderedLogRevision = -1;
   let statusRevision = 0, renderedStatusRevision = -1;
   let lastReport = null;
+  let selectionGen = 0;              // monotonic selection generation (stale HTTP guard)
+  // R06 same-session ordering: every refreshSessionDetail() call takes the
+  // next number; appliedRefresh records the last refresh actually painted.
+  let refreshSeq = 0;
+  let appliedRefresh = {sessionId: null, seq: 0, messageSeq: -1};
 
   // legacy run area state
   let runEntries = [];
@@ -138,7 +143,8 @@ export function mountAgent(root, ctx) {
         entries.push({...entry, type: entry?.type || name});
         if (entries.length > 400) entries = entries.slice(-400);
         logRevision++;
-        if (['message.appended', 'task.created', 'task.status', 'task.goal_updated', 'plan.updated',
+        if (['message.appended', 'task.created', 'task.status', 'task.promoted', 'task.queue_cancelled',
+          'task.goal_updated', 'plan.updated',
           'plan.step', 'checkpoint.created', 'session.archived', 'turn.completed', 'loop.state'].includes(entry?.type)) {
           void refreshSessionDetail();
         }
@@ -150,18 +156,29 @@ export function mountAgent(root, ctx) {
   }
 
   async function refreshSessions() {
+    const gen = selectionGen;
     try {
       agentUnavailable = false;
       const {sessions: list} = await ctx.api.agentSessions();
       sessions = list;
-      if (!activeSession && list.length) selectSession(list.find(s => s.lifecycle === 'active') ?? list[0]);
-      else if (activeSession) {
-        const fresh = list.find(s => s.session_id === activeSession.session_id);
-        if (!fresh) {activeSession = null; sessionDetail = null; sessionStatus = null; connectSessionEvents(null);}
-        else activeSession = fresh;
+      // a selection made while the list was in flight owns the panel now
+      if (gen === selectionGen) {
+        if (!activeSession && list.length) selectSession(list.find(s => s.lifecycle === 'active') ?? list[0]);
+        else if (activeSession) {
+          const fresh = list.find(s => s.session_id === activeSession.session_id);
+          if (!fresh) {
+            // active session vanished: bump generation so its in-flight
+            // detail/status responses cannot paint over the empty state
+            selectionGen++;
+            activeSession = null; sessionDetail = null; sessionStatus = null;
+            appliedRefresh = {sessionId: null, seq: 0, messageSeq: -1};
+            connectSessionEvents(null);
+            void refreshSessionDetail();
+          } else activeSession = fresh;
+        }
       }
       renderSessionList();
-      await refreshSessionDetail();
+      if (gen === selectionGen) await refreshSessionDetail();
     } catch (error) {
       if (error.code === 'agent_unavailable' || error.status === 503) agentUnavailable = true;
       renderSessionList();
@@ -170,8 +187,10 @@ export function mountAgent(root, ctx) {
 
   function selectSession(session) {
     if (activeSession?.session_id === session.session_id) return;
+    selectionGen++;
     activeSession = session;
     sessionDetail = null; sessionStatus = null;
+    appliedRefresh = {sessionId: null, seq: 0, messageSeq: -1};
     connectSessionEvents(session);
     renderSessionList();
     void refreshSessionDetail();
@@ -179,13 +198,37 @@ export function mountAgent(root, ctx) {
 
   async function refreshSessionDetail() {
     if (!activeSession) {sessionDetail = null; sessionStatus = null; statusRevision++; renderSession(); return;}
+    const gen = selectionGen;
+    const sessionId = activeSession.session_id;
+    const seq = ++refreshSeq;
     try {
       const [detail, status] = await Promise.all([
-        ctx.api.agentSession(activeSession.session_id),
-        ctx.api.agentSessionStatus(activeSession.session_id),
+        ctx.api.agentSession(sessionId),
+        ctx.api.agentSessionStatus(sessionId),
       ]);
+      // Ordering rule (status and detail are applied strictly as one pair):
+      // 1. cross-session — selectionGen + session id (unchanged guard); a
+      //    response for another selection must never paint this panel;
+      // 2. same-session request order — a refresh issued BEFORE the last
+      //    applied one is stale, however late it returns (SSE and the 5 s
+      //    poll start overlapping refreshes of the SAME session);
+      // 3. server watermark — the pair's authoritative version is
+      //    status.watermarks.last_message_seq, corroborated by the detail
+      //    messages' own seq when present. A pair older than what is
+      //    displayed is dropped WHOLE (status AND chat together), so the
+      //    chat log and the status chips can never regress to an older
+      //    revision; an equal watermark stays admissible so a later refresh
+      //    can still repaint non-message status fields.
+      if (gen !== selectionGen || activeSession?.session_id !== sessionId) return;
+      if (appliedRefresh.sessionId === sessionId && seq < appliedRefresh.seq) return;
+      const watermarkCandidates = [status?.watermarks?.last_message_seq,
+        ...((detail?.messages ?? []).map(m => m?.seq))].filter(v => Number.isFinite(v));
+      const watermark = watermarkCandidates.length ? Math.max(...watermarkCandidates) : null;
+      if (appliedRefresh.sessionId === sessionId && watermark != null
+        && appliedRefresh.messageSeq >= 0 && watermark < appliedRefresh.messageSeq) return;
       sessionDetail = detail;
       sessionStatus = status;
+      appliedRefresh = {sessionId, seq, messageSeq: watermark ?? appliedRefresh.messageSeq};
       statusRevision++;
       renderSession();
     } catch { /* status may lag during restarts; SSE keeps the log fresh */ }
@@ -219,6 +262,7 @@ export function mountAgent(root, ctx) {
       next: s.next_wake && [s.next_wake.kind, s.next_wake.target_sim_s],
       task: s.task && [s.task.task_id, s.task.status, s.task.reason, s.task.goal_revision,
         s.task.budget.actions_used, s.task.budget.model_turns_used, JSON.stringify(s.task.plan)],
+      queue: (s.queue ?? []).map(q => [q.task_id, q.status, q.position]),
       msgs: (sessionDetail?.messages ?? []).length, cp: sessionDetail?.checkpoint?.generation ?? 0,
       nSessions: sessions.length}]);
     if (key === lastSessionKey) return;
@@ -269,14 +313,15 @@ export function mountAgent(root, ctx) {
       task ? h('span', {class: 'muted'}, `预算：动作 ${task.budget.actions_used}/${task.budget.max_actions} · 模型回合 ${task.budget.model_turns_used}/${task.budget.max_model_turns}`) : null,
     );
 
-    // task + plan
+    // task + plan + queue (R07: queued tasks wait in FIFO order behind the current one)
     const plan = task?.plan ?? [];
+    const queue = s.queue ?? [];
     taskBox.replaceChildren(
       task ? h('div', {class: 'card'},
         h('div', {class: 'row'},
           h('b', {}, `任务 ${task.task_id.slice(0, 12)}…`),
-          h('span', {class: `chip ${task.status === 'completed' ? 'ok' : ['failed', 'cancelled'].includes(task.status) ? 'bad' : 'warn'}`},
-            `${TASK_LABELS[task.status] ?? task.status}`),
+          h('span', {class: `chip ${task.status === 'completed' ? 'ok' : ['failed', 'cancelled'].includes(task.status) ? 'bad' : 'warn'}`,
+            title: task.status}, `${TASK_LABELS[task.status] ?? task.status}`),
           h('span', {class: 'muted'}, `goal r${task.goal_revision}`),
         ),
         h('div', {style: {'font-size': '12px'}}, task.goal_text),
@@ -287,12 +332,28 @@ export function mountAgent(root, ctx) {
             p.evidence_refs?.length ? h('span', {class: 'muted'}, ` · 证据 ${p.evidence_refs.join(', ')}`) : null))) : null)
         : h('p', {class: 'muted'}, s.session.lifecycle === 'active'
           ? '当前会话没有任务。发送消息描述目标，或用下方按钮创建结构化监测任务。' : '归档会话：只读。'),
-      !task && s.session.lifecycle === 'active' ? h('button', {type: 'button', style: {'margin-top': '4px'},
+      queue.length ? h('div', {class: 'card', style: {'margin-top': '4px'}},
+        h('div', {class: 'row'},
+          h('b', {}, '任务队列（FIFO）'),
+          h('span', {class: 'muted', style: {'font-size': '11px'}},
+            `${queue.length} 个排队任务 · 当前任务结束后自动晋升`)),
+        ...queue.map((q, i) => h('div', {class: 'row', style: {'font-size': '11px', 'margin-top': '2px'}},
+          h('span', {class: 'chip'}, `#${q.position ?? i + 1} ${TASK_LABELS[q.status] ?? q.status}`),
+          h('span', {style: {flex: '1'}}, `${q.task_id.slice(0, 12)}… ${q.goal_text ?? ''}`),
+          h('button', {type: 'button', style: {'font-size': '11px'},
+            onclick: () => ctx.api.agentTaskControl(q.task_id, 'cancel')
+              .then(refreshSessionDetail)
+              .catch(e => ctx.showError(`取消排队任务失败：${e.message}`))}, '取消排队'))))
+        : null,
+      s.session.lifecycle === 'active'
+        ? h('button', {type: 'button', style: {'margin-top': '4px'},
         onclick: () => ctx.api.agentSessionTask(activeSession.session_id, {
           goal_text: '照看 plate-01 A 排：定期扫描，液位低于 330 µL 时整排补液并复查（演示协议）',
           goal_spec: defaultGoalSpec(),
         }).then(refreshSessionDetail).catch(e => ctx.showError(`创建任务失败：${e.message}`))},
-        '创建监测任务（演示协议：A 排 ≥ 330 µL · 每 6 模拟小时检查 · 期限 26 模拟小时）') : null,
+        task && !['completed', 'failed', 'cancelled'].includes(task.status)
+          ? '追加监测任务（进入队列，当前任务结束后自动开始）'
+          : '创建监测任务（演示协议：A 排 ≥ 330 µL · 每 6 模拟小时检查 · 期限 26 模拟小时）') : null,
     );
 
     // conversation
@@ -494,6 +555,7 @@ export function mountAgent(root, ctx) {
     render,
     dispose() {
       clearInterval(poll);
+      selectionGen++;  // in-flight detail/status must not render after dispose
       if (source) {try {source.close();} catch { /* noop */ } source = null;}
       if (runSource) {try {runSource.close();} catch { /* noop */ } runSource = null;}
     },

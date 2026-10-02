@@ -32,6 +32,8 @@ export interface SessionStatusView {
   };
   loop: {state: LoopState; detail: string | null; agent_paused: boolean; owner_generation: number};
   task: Record<string, unknown> | null;
+  /** R07: the ordered queue behind the current task (status 'queued', FIFO). */
+  queue: Array<{task_id: string; goal_text: string; status: string; position: number}>;
   queued_tasks: number;
   next_wake: {wake_id: string; kind: string; target_sim_s: number | null; predicate: Record<string, unknown> | null} | null;
   wakes_armed: number;
@@ -90,7 +92,10 @@ export class SessionManager {
   async stopAll(): Promise<void> {
     const all = [...this.schedulers.values()];
     for (const s of all) s.stop();
-    await Promise.race([Promise.all(all.map(s => s.done)), new Promise(r => setTimeout(r, 5000).unref())]);
+    // F01: drain covers the main loop AND any in-flight turn, so a tool
+    // submit can never outlive stopAll; the 5s race only bounds a hung
+    // shutdown (the success path always includes the in-flight turn).
+    await Promise.race([Promise.all(all.map(s => s.drain())), new Promise(r => setTimeout(r, 5000).unref())]);
     this.schedulers.clear();
   }
 
@@ -107,9 +112,14 @@ export class SessionManager {
     const session = this.deps.store.getSession(sessionId);
     if (!session) return null;
     const tasks = this.deps.store.listTasks(sessionId);
-    // the ACTIVE task, or the most recent terminal one (the UI and callers
-    // still want to see what last happened on this session)
-    const task = this.deps.store.activeTask(sessionId) ?? tasks.at(-1) ?? null;
+    // R07: the CURRENT task (non-terminal, non-queued — never a queued one),
+    // or the most recent terminal one (the UI and callers still want to see
+    // what last happened on this session); the queue is reported separately.
+    const task = this.deps.store.activeTask(sessionId)
+      ?? [...tasks].reverse().find(t => ['completed', 'failed', 'cancelled'].includes(t.status))
+      ?? tasks.at(-1) ?? null;
+    const queue = this.deps.store.queuedTasks(sessionId)
+      .map(q => ({task_id: q.task_id, goal_text: q.goal_text, status: q.status, position: q.position}));
     const wakes = this.deps.store.armedWakes(sessionId);
     const checkpoint = this.deps.store.latestCheckpoint(sessionId);
     const device: SessionStatusView['device'] = {reachable: false};
@@ -142,7 +152,8 @@ export class SessionManager {
         goal_text: task.goal_text, goal_revision: task.goal_revision, budget: task.budget,
         plan: this.deps.store.listPlanSteps(task.task_id).map(s => ({index: s.index_in_plan, skill: s.skill,
           status: s.status, action_ids: s.action_ids, evidence_refs: s.evidence_refs}))} : null,
-      queued_tasks: tasks.filter(t => t !== task && !['completed', 'failed', 'cancelled'].includes(t.status)).length,
+      queue,
+      queued_tasks: queue.length,
       next_wake: nextWake ? {wake_id: nextWake.wake_id, kind: nextWake.kind, target_sim_s: nextWake.target_sim_s,
         predicate: nextWake.predicate} : null,
       wakes_armed: wakes.length,
